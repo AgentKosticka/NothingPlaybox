@@ -17,9 +17,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.io.ByteArrayOutputStream
 import java.util.zip.ZipEntry
-import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
 
 class EffectRepository(context: Context) {
@@ -65,39 +63,24 @@ class EffectRepository(context: Context) {
         resolver.openOutputStream(uri, "w")?.use { output ->
             ZipOutputStream(output).use { zip ->
                 zip.putNextEntry(ZipEntry("manifest.json"))
-                zip.write(effectToJson(effect).put("schema", 1).toString(2).toByteArray())
+                zip.write(
+                    effectToJson(effect)
+                        .put("schema", PLAYBOX_SCHEMA_VERSION)
+                        .toString(2)
+                        .toByteArray(Charsets.UTF_8),
+                )
                 zip.closeEntry()
             }
         } ?: error("Unable to open export destination")
     }
 
     suspend fun importEffect(resolver: ContentResolver, uri: Uri): PlayboxEffect = withContext(Dispatchers.IO) {
-        val bytes = resolver.openInputStream(uri)?.use { input ->
-            ZipInputStream(input).use { zip ->
-                var entry = zip.nextEntry
-                var result: ByteArray? = null
-                while (entry != null) {
-                    if (!entry.isDirectory && entry.name == "manifest.json") {
-                        val sink = ByteArrayOutputStream()
-                        val buffer = ByteArray(8_192)
-                        var total = 0
-                        while (true) {
-                            val count = zip.read(buffer)
-                            if (count <= 0) break
-                            total += count
-                            require(total <= MAX_IMPORT_BYTES) { "Effect file is too large" }
-                            sink.write(buffer, 0, count)
-                        }
-                        result = sink.toByteArray()
-                    }
-                    zip.closeEntry()
-                    entry = zip.nextEntry
-                }
-                result
-            }
-        } ?: error("Unable to read effect")
-        val parsed = effectFromJson(JSONObject(String(bytes))).editableCopy()
-        save(parsed)
+        val bytes = resolver.openInputStream(uri)?.use(::readPlayboxManifest)
+            ?: error("Unable to read effect")
+        val manifest = JSONObject(String(bytes, Charsets.UTF_8))
+        require(manifest.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION) { "Unsupported Playbox effect version" }
+        val decoded = effectFromJson(manifest)
+        save(decoded.editableCopy(decoded.name))
     }
 
     private fun mergedEffects() = userEffects.sortedByDescending { it.updatedAt } + EffectCatalog.builtIns
@@ -105,18 +88,18 @@ class EffectRepository(context: Context) {
     private fun loadUsers(): List<PlayboxEffect> = runCatching {
         if (!storage.baseFile.exists()) return@runCatching emptyList()
         val root = storage.openRead().bufferedReader().use { JSONObject(it.readText()) }
-        require(root.optInt("schema", 0) == 1)
+        require(root.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION)
         val array = root.getJSONArray("effects")
         buildList { for (index in 0 until array.length()) add(effectFromJson(array.getJSONObject(index))) }
     }.getOrDefault(emptyList())
 
     private fun persistUsers() {
-        val root = JSONObject().put("schema", 1).put("effects", JSONArray().apply {
+        val root = JSONObject().put("schema", PLAYBOX_SCHEMA_VERSION).put("effects", JSONArray().apply {
             userEffects.forEach { put(effectToJson(it)) }
         })
         val output = storage.startWrite()
         try {
-            output.write(root.toString().toByteArray())
+            output.write(root.toString().toByteArray(Charsets.UTF_8))
             output.flush()
             storage.finishWrite(output)
         } catch (error: Throwable) {
@@ -169,7 +152,6 @@ class EffectRepository(context: Context) {
 
     private companion object {
         const val KEY_ACTIVE_EFFECT = "active_effect"
-        const val MAX_IMPORT_BYTES = 2_000_000
         const val MAX_FRAMES = 600
     }
 }
