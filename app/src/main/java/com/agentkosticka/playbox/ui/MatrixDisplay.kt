@@ -23,6 +23,8 @@ fun MatrixDisplay(
     pixels: IntArray,
     modifier: Modifier = Modifier,
     onPixel: ((Int) -> Unit)? = null,
+    onStrokeStart: (() -> Unit)? = null,
+    onStrokeEnd: (() -> Unit)? = null,
 ) {
     fun indexAt(offset: Offset, size: IntSize): Int? {
         val side = min(size.width, size.height).toFloat()
@@ -36,24 +38,41 @@ fun MatrixDisplay(
     }
 
     val currentOnPixel = rememberUpdatedState(onPixel)
+    val currentOnStrokeStart = rememberUpdatedState(onStrokeStart)
+    val currentOnStrokeEnd = rememberUpdatedState(onStrokeEnd)
     var canvasModifier = modifier.semantics { contentDescription = "13 by 13 Glyph Matrix preview" }
     if (onPixel != null) {
         canvasModifier = canvasModifier
             .pointerInput(Unit) {
-                detectTapGestures { offset -> indexAt(offset, size)?.let { currentOnPixel.value?.invoke(it) } }
+                detectTapGestures { offset ->
+                    val index = indexAt(offset, size) ?: return@detectTapGestures
+                    currentOnStrokeStart.value?.invoke()
+                    currentOnPixel.value?.invoke(index)
+                    currentOnStrokeEnd.value?.invoke()
+                }
             }
             .pointerInput(Unit) {
                 var last = -1
                 detectDragGestures(
                     onDragStart = { offset ->
                         last = indexAt(offset, size) ?: -1
-                        if (last >= 0) currentOnPixel.value?.invoke(last)
+                        if (last >= 0) {
+                            currentOnStrokeStart.value?.invoke()
+                            currentOnPixel.value?.invoke(last)
+                        }
                     },
-                    onDragEnd = { last = -1 },
-                    onDragCancel = { last = -1 },
+                    onDragEnd = {
+                        if (last >= 0) currentOnStrokeEnd.value?.invoke()
+                        last = -1
+                    },
+                    onDragCancel = {
+                        if (last >= 0) currentOnStrokeEnd.value?.invoke()
+                        last = -1
+                    },
                     onDrag = { change, _ ->
                         val current = indexAt(change.position, size)
                         if (current == null) {
+                            if (last >= 0) currentOnStrokeEnd.value?.invoke()
                             last = -1
                         } else if (current != last) {
                             if (last >= 0) {
@@ -61,6 +80,7 @@ fun MatrixDisplay(
                                     if (index != last) currentOnPixel.value?.invoke(index)
                                 }
                             } else {
+                                currentOnStrokeStart.value?.invoke()
                                 currentOnPixel.value?.invoke(current)
                             }
                             last = current

@@ -46,6 +46,25 @@ class EffectModelTest {
     }
 
     @Test
+    fun pingPongTimingTraversesBackThroughIntermediateFrames() {
+        val effect = PlayboxEffect(
+            name = "ping pong",
+            frames = listOf(
+                EffectFrame(durationMs = 100),
+                EffectFrame(durationMs = 200),
+                EffectFrame(durationMs = 300),
+            ),
+            loopMode = LoopMode.PING_PONG,
+        )
+
+        assertEquals(0, effect.frameIndexAt(0))
+        assertEquals(1, effect.frameIndexAt(100))
+        assertEquals(2, effect.frameIndexAt(300))
+        assertEquals(1, effect.frameIndexAt(600))
+        assertEquals(0, effect.frameIndexAt(800))
+    }
+
+    @Test
     fun allBuiltInsAreHardwareSafe() {
         assertEquals(18, EffectCatalog.builtIns.size)
         assertTrue(EffectCatalog.builtIns.any { it.name.contains("EYE") })
