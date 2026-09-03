@@ -5,17 +5,20 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import com.agentkosticka.playbox.model.EffectFrame
 import com.agentkosticka.playbox.model.PlayboxEffect
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.math.ceil
+import kotlin.math.roundToInt
 
 object VideoImporter {
     private const val FRAME_DURATION_MS = 100
     private const val MAX_DURATION_MS = 60_000L
     private const val MAX_FRAMES = 600
+    private const val MAX_DECODE_EDGE = 256
 
     suspend fun import(
         context: Context,
@@ -28,32 +31,40 @@ object VideoImporter {
             val sourceDuration = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLongOrNull()
                 ?: error("This video does not report a duration")
             require(sourceDuration > 0) { "The selected video is empty" }
+
             val duration = sourceDuration.coerceAtMost(MAX_DURATION_MS)
             val sampleCount = ceil(duration / FRAME_DURATION_MS.toDouble()).toInt().coerceIn(1, MAX_FRAMES)
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
-            val frames = mutableListOf<EffectFrame>()
+            val decodeSize = scaledDecodeSize(
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull(),
+                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull(),
+            )
+            val accumulator = VideoFrameAccumulator(FRAME_DURATION_MS)
 
             repeat(sampleCount) { index ->
+                currentCoroutineContext().ensureActive()
                 val timeUs = index.toLong() * FRAME_DURATION_MS * 1_000L
-                val decoded = retriever.getFrameAtTime(timeUs, MediaMetadataRetriever.OPTION_CLOSEST)
-                if (decoded != null) {
-                    val oriented = decoded.rotated(rotation)
-                    val pixels = ImageImporter.bitmapToPixels(oriented)
-                    if (oriented !== decoded) oriented.recycle()
-                    decoded.recycle()
-
-                    val previous = frames.lastOrNull()
-                    if (previous != null && previous.pixels.contentEquals(pixels) && previous.durationMs < 5_000) {
-                        frames[frames.lastIndex] = previous.copy(
-                            durationMs = (previous.durationMs + FRAME_DURATION_MS).coerceAtMost(5_000),
-                        )
-                    } else {
-                        frames += EffectFrame(pixels, FRAME_DURATION_MS)
+                val decoded = retriever.decodeFrame(timeUs, decodeSize)
+                if (decoded == null) {
+                    accumulator.addMissing()
+                } else {
+                    val oriented = try {
+                        decoded.rotated(rotation)
+                    } catch (error: Throwable) {
+                        decoded.recycle()
+                        throw error
+                    }
+                    try {
+                        accumulator.addDecoded(ImageImporter.bitmapToPixels(oriented))
+                    } finally {
+                        if (oriented !== decoded) oriented.recycle()
+                        decoded.recycle()
                     }
                 }
                 onProgress((index + 1f) / sampleCount)
             }
 
+            val frames = accumulator.frames
             require(frames.isNotEmpty()) { "No frames could be decoded from this video" }
             val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
                 ?.takeIf { it.isNotBlank() }
@@ -73,6 +84,38 @@ object VideoImporter {
         } finally {
             retriever.release()
         }
+    }
+
+    private data class DecodeSize(val width: Int, val height: Int)
+
+    private fun scaledDecodeSize(width: Int?, height: Int?): DecodeSize? {
+        if (width == null || height == null || width <= 0 || height <= 0) return null
+        val longestEdge = maxOf(width, height)
+        if (longestEdge <= MAX_DECODE_EDGE) return null
+        val scale = MAX_DECODE_EDGE.toDouble() / longestEdge
+        return DecodeSize(
+            width = (width * scale).roundToInt().coerceAtLeast(1),
+            height = (height * scale).roundToInt().coerceAtLeast(1),
+        )
+    }
+
+    private fun MediaMetadataRetriever.decodeFrame(timeUs: Long, size: DecodeSize?): Bitmap? {
+        val options = intArrayOf(OPTION_CLOSEST, OPTION_CLOSEST_SYNC)
+        for (option in options) {
+            if (size != null) {
+                decodeRuntimeFailure { getScaledFrameAtTime(timeUs, option, size.width, size.height) }
+                    ?.let { return it }
+            }
+            decodeRuntimeFailure { getFrameAtTime(timeUs, option) }
+                ?.let { return it }
+        }
+        return null
+    }
+
+    private inline fun decodeRuntimeFailure(block: () -> Bitmap?): Bitmap? = try {
+        block()
+    } catch (_: RuntimeException) {
+        null
     }
 
     private fun Bitmap.rotated(degrees: Float): Bitmap {
