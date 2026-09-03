@@ -1,0 +1,93 @@
+name: Android quality gates
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-quality-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Build, test and lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Verify bundled Nothing Glyph Matrix SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "be00ee9cd7115f6b11984c6e31fe98e298fb726940d1555063610685ef3bbf29  app/libs/glyph-matrix-sdk-2.0.aar" | sha256sum --check --strict
+
+      - name: Unit tests, lint and build variants
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --build-cache --parallel \
+            testDebugUnitTest \
+            lintDebug \
+            assembleDebug \
+            assembleDebugAndroidTest \
+            assembleRelease
+
+      - name: Add build summary
+        if: always()
+        shell: bash
+        run: |
+          {
+            echo "### Android quality gates"
+            echo "- Unit tests"
+            echo "- Android lint"
+            echo "- Debug APK"
+            echo "- Android test APK"
+            echo "- Release APK"
+            echo "- Bundled Nothing SDK checksum verification"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload APKs
+        if: success()
+        uses: actions/upload-artifact@v7
+        with:
+          name: nothing-playbox-apks
+          path: |
+            app/build/outputs/apk/debug/*.apk
+            app/build/outputs/apk/androidTest/debug/*.apk
+            app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: android-quality-reports
+          path: app/build/reports/
+          if-no-files-found: ignore
+          retention-days: 7
