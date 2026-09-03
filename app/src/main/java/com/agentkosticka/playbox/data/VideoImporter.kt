@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
+import android.provider.OpenableColumns
 import com.agentkosticka.playbox.model.PlayboxEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -69,6 +70,7 @@ object VideoImporter {
             val title = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE)
                 ?.takeIf { it.isNotBlank() }
                 ?.take(60)
+                ?: context.displayName(uri)
                 ?: "Imported video"
             PlayboxEffect(
                 id = UUID.randomUUID().toString(),
@@ -103,6 +105,8 @@ object VideoImporter {
         val options = intArrayOf(
             MediaMetadataRetriever.OPTION_CLOSEST,
             MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+            MediaMetadataRetriever.OPTION_PREVIOUS_SYNC,
+            MediaMetadataRetriever.OPTION_NEXT_SYNC,
         )
         for (option in options) {
             if (size != null) {
@@ -117,6 +121,22 @@ object VideoImporter {
 
     private inline fun decodeRuntimeFailure(block: () -> Bitmap?): Bitmap? = try {
         block()
+    } catch (_: RuntimeException) {
+        null
+    }
+
+    private fun Context.displayName(uri: Uri): String? = try {
+        contentResolver.query(uri, arrayOf(OpenableColumns.DISPLAY_NAME), null, null, null)?.use { cursor ->
+            if (!cursor.moveToFirst()) return@use null
+            val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+            if (column < 0) return@use null
+            val rawName = cursor.getString(column)?.trim().orEmpty()
+            if (rawName.isEmpty()) return@use null
+            rawName.substringBeforeLast('.', missingDelimiterValue = rawName)
+                .trim()
+                .takeIf { it.isNotEmpty() }
+                ?.take(60)
+        }
     } catch (_: RuntimeException) {
         null
     }
