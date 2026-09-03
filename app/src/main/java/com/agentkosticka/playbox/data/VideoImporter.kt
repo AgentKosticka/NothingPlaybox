@@ -130,10 +130,11 @@ object VideoImporter {
             if (!cursor.moveToFirst()) return@use null
             val column = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
             if (column < 0) return@use null
-            cursor.getString(column)
-                ?.substringBeforeLast('.', missingDelimiterValue = cursor.getString(column))
-                ?.trim()
-                ?.takeIf { it.isNotEmpty() }
+            val rawName = cursor.getString(column)?.trim().orEmpty()
+            if (rawName.isEmpty()) return@use null
+            rawName.substringBeforeLast('.', missingDelimiterValue = rawName)
+                .trim()
+                .takeIf { it.isNotEmpty() }
                 ?.take(60)
         }
     } catch (_: RuntimeException) {
