@@ -100,7 +100,10 @@ object VideoImporter {
     }
 
     private fun MediaMetadataRetriever.decodeFrame(timeUs: Long, size: DecodeSize?): Bitmap? {
-        val options = intArrayOf(OPTION_CLOSEST, OPTION_CLOSEST_SYNC)
+        val options = intArrayOf(
+            MediaMetadataRetriever.OPTION_CLOSEST,
+            MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+        )
         for (option in options) {
             if (size != null) {
                 decodeRuntimeFailure { getScaledFrameAtTime(timeUs, option, size.width, size.height) }
