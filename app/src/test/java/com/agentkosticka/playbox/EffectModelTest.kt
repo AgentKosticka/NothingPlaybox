@@ -1,13 +1,13 @@
 package com.agentkosticka.playbox
 
-import com.agentkosticka.playbox.data.BuiltInEffects
+import com.agentkosticka.playbox.data.EffectCatalog
+import com.agentkosticka.playbox.matrix.HardwareFrameEncoder
 import com.agentkosticka.playbox.model.EffectFrame
 import com.agentkosticka.playbox.model.LoopMode
 import com.agentkosticka.playbox.model.PHONE_4A_PRO_MASK
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.model.PlayboxEffect
 import com.agentkosticka.playbox.model.frameIndexAt
-import com.agentkosticka.playbox.matrix.HardwareFrameEncoder
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,12 +47,14 @@ class EffectModelTest {
 
     @Test
     fun allBuiltInsAreHardwareSafe() {
-        assertEquals(16, BuiltInEffects.all.size)
-        assertTrue(BuiltInEffects.all.any { it.name.contains("EYE") })
-        assertTrue(BuiltInEffects.all.any { it.name.contains("BEER") })
-        assertTrue(BuiltInEffects.all.any { it.name.contains("BLACK HOLE") })
-        assertTrue(BuiltInEffects.all.any { it.name.contains("SKULL") })
-        BuiltInEffects.all.forEach { effect ->
+        assertEquals(18, EffectCatalog.builtIns.size)
+        assertTrue(EffectCatalog.builtIns.any { it.name.contains("EYE") })
+        assertTrue(EffectCatalog.builtIns.any { it.name.contains("BEER") })
+        assertTrue(EffectCatalog.builtIns.any { it.name.contains("BLACK HOLE") })
+        assertTrue(EffectCatalog.builtIns.any { it.name.contains("SKULL") })
+        assertTrue(EffectCatalog.builtIns.any { it.name.contains("LIFE") })
+        assertTrue(EffectCatalog.builtIns.any { it.name.contains("NOISE") })
+        EffectCatalog.builtIns.forEach { effect ->
             assertTrue(effect.frames.isNotEmpty())
             effect.frames.forEach { frame ->
                 assertEquals(PIXEL_COUNT, frame.pixels.size)

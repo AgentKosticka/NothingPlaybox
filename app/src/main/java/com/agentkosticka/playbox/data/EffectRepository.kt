@@ -52,7 +52,7 @@ class EffectRepository(context: Context) {
     @Synchronized
     fun delete(id: String) {
         userEffects.removeAll { it.id == id }
-        if (activeEffectId == id) setActiveEffect(BuiltInEffects.all.first().id)
+        if (activeEffectId == id) setActiveEffect(EffectCatalog.builtIns.first().id)
         persistUsers()
         _effects.value = mergedEffects()
     }
@@ -100,7 +100,7 @@ class EffectRepository(context: Context) {
         save(parsed)
     }
 
-    private fun mergedEffects() = userEffects.sortedByDescending { it.updatedAt } + BuiltInEffects.all
+    private fun mergedEffects() = userEffects.sortedByDescending { it.updatedAt } + EffectCatalog.builtIns
 
     private fun loadUsers(): List<PlayboxEffect> = runCatching {
         if (!storage.baseFile.exists()) return@runCatching emptyList()
