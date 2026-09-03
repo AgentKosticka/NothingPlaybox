@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Nothing Playbox</string>
+    <string name="toy_name">Nothing Playbox</string>
+    <string name="toy_summary">Play the effect selected in Nothing Playbox</string>
+</resources>
