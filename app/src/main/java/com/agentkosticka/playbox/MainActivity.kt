@@ -94,6 +94,7 @@ import com.agentkosticka.playbox.matrix.GlyphConnectionState
 import com.agentkosticka.playbox.matrix.GlyphMatrixClient
 import com.agentkosticka.playbox.model.EffectFrame
 import com.agentkosticka.playbox.model.LoopMode
+import com.agentkosticka.playbox.model.MAX_EFFECT_FRAMES
 import com.agentkosticka.playbox.model.PlayboxEffect
 import com.agentkosticka.playbox.model.blankEffect
 import com.agentkosticka.playbox.model.frameIndexAt
@@ -274,7 +275,13 @@ private fun HomeScreen(
     val playingEffect = playingId?.let { id -> effects.firstOrNull { it.id == id } }
 
     LaunchedEffect(playingEffect, connection) {
-        val effect = playingEffect ?: return@LaunchedEffect
+        val effect = playingEffect
+        if (effect == null) {
+            playingId = null
+            playingFrame = 0
+            glyphClient.stopDisplay()
+            return@LaunchedEffect
+        }
         val started = android.os.SystemClock.elapsedRealtime()
         while (true) {
             val index = effect.frameIndexAt(android.os.SystemClock.elapsedRealtime() - started)
@@ -534,7 +541,7 @@ private fun EditorScreen(
             }
             item { HorizontalDivider() }
             item {
-                Text("FRAMES", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                Text("FRAMES  ${draft.frames.size} / $MAX_EFFECT_FRAMES", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp), contentPadding = PaddingValues(vertical = 8.dp)) {
                     itemsIndexed(draft.frames, key = { index, _ -> index }) { index, frame ->
                         Card(
@@ -550,18 +557,24 @@ private fun EditorScreen(
                     }
                 }
                 Row {
-                    OutlinedButton(onClick = {
-                        val frames = draft.frames.toMutableList().apply { add(frameIndex + 1, EffectFrame()) }
-                        frameIndex++
-                        draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
-                    }) { Icon(Icons.Default.Add, null); Text(" Blank") }
+                    OutlinedButton(
+                        enabled = draft.frames.size < MAX_EFFECT_FRAMES,
+                        onClick = {
+                            val frames = draft.frames.toMutableList().apply { add(frameIndex + 1, EffectFrame()) }
+                            frameIndex++
+                            draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
+                        },
+                    ) { Icon(Icons.Default.Add, null); Text(" Blank") }
                     Spacer(Modifier.width(8.dp))
-                    OutlinedButton(onClick = {
-                        val copy = draft.frames[frameIndex].copy(pixels = draft.frames[frameIndex].pixels.copyOf())
-                        val frames = draft.frames.toMutableList().apply { add(frameIndex + 1, copy) }
-                        frameIndex++
-                        draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
-                    }) { Icon(Icons.Default.ContentCopy, null); Text(" Duplicate") }
+                    OutlinedButton(
+                        enabled = draft.frames.size < MAX_EFFECT_FRAMES,
+                        onClick = {
+                            val copy = draft.frames[frameIndex].copy(pixels = draft.frames[frameIndex].pixels.copyOf())
+                            val frames = draft.frames.toMutableList().apply { add(frameIndex + 1, copy) }
+                            frameIndex++
+                            draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
+                        },
+                    ) { Icon(Icons.Default.ContentCopy, null); Text(" Duplicate") }
                     Spacer(Modifier.weight(1f))
                     TextButton(enabled = frameIndex > 0, onClick = {
                         val frames = draft.frames.toMutableList()

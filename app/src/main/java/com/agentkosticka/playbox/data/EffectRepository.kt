@@ -8,6 +8,7 @@ import android.util.Base64
 import androidx.core.content.edit
 import com.agentkosticka.playbox.model.EffectFrame
 import com.agentkosticka.playbox.model.LoopMode
+import com.agentkosticka.playbox.model.MAX_EFFECT_FRAMES
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.model.PlayboxEffect
 import kotlinx.coroutines.Dispatchers
@@ -126,7 +127,7 @@ class EffectRepository(context: Context) {
 
     private fun effectFromJson(json: JSONObject): PlayboxEffect {
         val framesJson = json.getJSONArray("frames")
-        require(framesJson.length() in 1..MAX_FRAMES) { "Invalid frame count" }
+        require(framesJson.length() in 1..MAX_EFFECT_FRAMES) { "Invalid frame count" }
         val frames = buildList {
             for (index in 0 until framesJson.length()) {
                 val source = framesJson.getJSONObject(index)
@@ -152,6 +153,5 @@ class EffectRepository(context: Context) {
 
     private companion object {
         const val KEY_ACTIVE_EFFECT = "active_effect"
-        const val MAX_FRAMES = 600
     }
 }

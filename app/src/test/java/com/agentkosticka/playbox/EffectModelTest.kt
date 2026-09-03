@@ -4,11 +4,13 @@ import com.agentkosticka.playbox.data.EffectCatalog
 import com.agentkosticka.playbox.matrix.HardwareFrameEncoder
 import com.agentkosticka.playbox.model.EffectFrame
 import com.agentkosticka.playbox.model.LoopMode
+import com.agentkosticka.playbox.model.MAX_EFFECT_FRAMES
 import com.agentkosticka.playbox.model.PHONE_4A_PRO_MASK
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.model.PlayboxEffect
 import com.agentkosticka.playbox.model.frameIndexAt
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -62,6 +64,16 @@ class EffectModelTest {
         assertEquals(2, effect.frameIndexAt(300))
         assertEquals(1, effect.frameIndexAt(600))
         assertEquals(0, effect.frameIndexAt(800))
+    }
+
+    @Test
+    fun effectFrameCountStopsAtPortableFormatLimit() {
+        val maximum = List(MAX_EFFECT_FRAMES) { EffectFrame() }
+        assertEquals(MAX_EFFECT_FRAMES, PlayboxEffect(name = "max", frames = maximum).frames.size)
+
+        assertThrows(IllegalArgumentException::class.java) {
+            PlayboxEffect(name = "too many", frames = maximum + EffectFrame())
+        }
     }
 
     @Test

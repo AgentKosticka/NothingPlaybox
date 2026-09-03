@@ -4,6 +4,7 @@ import java.util.UUID
 
 const val MATRIX_SIZE = 13
 const val PIXEL_COUNT = MATRIX_SIZE * MATRIX_SIZE
+const val MAX_EFFECT_FRAMES = 600
 
 /** Physical Phone (4a) Pro mask: 137 active LEDs in the 13x13 address space. */
 val PHONE_4A_PRO_MASK: BooleanArray = BooleanArray(PIXEL_COUNT).also { mask ->
@@ -48,7 +49,10 @@ data class PlayboxEffect(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
 ) {
-    init { require(frames.isNotEmpty()) { "An effect needs at least one frame" } }
+    init {
+        require(frames.isNotEmpty()) { "An effect needs at least one frame" }
+        require(frames.size <= MAX_EFFECT_FRAMES) { "An effect supports at most $MAX_EFFECT_FRAMES frames" }
+    }
 
     val isAnimated: Boolean get() = frames.size > 1
     val totalDurationMs: Int get() = frames.sumOf { it.durationMs }
