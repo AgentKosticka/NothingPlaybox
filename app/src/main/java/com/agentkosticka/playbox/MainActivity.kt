@@ -399,15 +399,31 @@ private fun EditorScreen(
     var intensity by rememberSaveable { mutableIntStateOf(255) }
     var playing by remember { mutableStateOf(false) }
     var live by remember { mutableStateOf(false) }
-    val undo = remember { mutableStateListOf<IntArray>() }
-    val redo = remember { mutableStateListOf<IntArray>() }
+    val undo = remember(frameIndex) { mutableStateListOf<IntArray>() }
+    val redo = remember(frameIndex) { mutableStateListOf<IntArray>() }
+    var strokeStart by remember(frameIndex) { mutableStateOf<IntArray?>(null) }
 
     fun replaceFrame(frame: EffectFrame) {
         draft = draft.copy(frames = draft.frames.toMutableList().also { it[frameIndex] = frame }, updatedAt = System.currentTimeMillis())
     }
+    fun pushUndo(snapshot: IntArray) {
+        undo.add(snapshot.copyOf())
+        if (undo.size > 50) undo.removeAt(0)
+        redo.clear()
+    }
     fun commitPixels(next: IntArray, recordUndo: Boolean = true) {
-        if (recordUndo) { undo.add(draft.frames[frameIndex].pixels.copyOf()); if (undo.size > 50) undo.removeAt(0); redo.clear() }
+        val current = draft.frames[frameIndex].pixels
+        if (current.contentEquals(next)) return
+        if (recordUndo) pushUndo(current)
         replaceFrame(draft.frames[frameIndex].copy(pixels = next).normalized())
+    }
+    fun beginStroke() {
+        if (strokeStart == null) strokeStart = draft.frames[frameIndex].pixels.copyOf()
+    }
+    fun endStroke() {
+        val snapshot = strokeStart ?: return
+        strokeStart = null
+        if (!snapshot.contentEquals(draft.frames[frameIndex].pixels)) pushUndo(snapshot)
     }
     fun finish() { glyphClient.stopDisplay(); onBack(draft) }
 
@@ -418,16 +434,14 @@ private fun EditorScreen(
     }
     LaunchedEffect(playing, live, connection, draft.id, draft.updatedAt) {
         if (!playing) return@LaunchedEffect
-        var index = frameIndex.coerceIn(draft.frames.indices)
+        val startingIndex = frameIndex.coerceIn(draft.frames.indices)
+        val startingOffset = draft.frames.take(startingIndex).sumOf { it.durationMs }.toLong()
+        val started = android.os.SystemClock.elapsedRealtime() - startingOffset
         while (true) {
+            val index = draft.frameIndexAt(android.os.SystemClock.elapsedRealtime() - started)
             frameIndex = index
             if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(draft.frames[index].pixels)
             delay(draft.frames[index].durationMs.toLong())
-            index = when {
-                index < draft.frames.lastIndex -> index + 1
-                draft.loopMode == LoopMode.HOLD -> draft.frames.lastIndex
-                else -> 0
-            }
         }
     }
 
@@ -466,9 +480,11 @@ private fun EditorScreen(
                         onPixel = { index ->
                             val next = draft.frames[frameIndex].pixels.copyOf()
                             next[index] = intensity
-                            commitPixels(next)
+                            commitPixels(next, recordUndo = false)
                             if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(next)
                         },
+                        onStrokeStart = ::beginStroke,
+                        onStrokeEnd = ::endStroke,
                     )
                 }
             }
@@ -494,6 +510,7 @@ private fun EditorScreen(
                     }) { Text("↶", fontSize = 24.sp) }
                     IconButton(enabled = redo.isNotEmpty(), onClick = {
                         undo.add(draft.frames[frameIndex].pixels.copyOf())
+                        if (undo.size > 50) undo.removeAt(0)
                         commitPixels(redo.removeAt(redo.lastIndex), recordUndo = false)
                     }) { Text("↷", fontSize = 24.sp) }
                 }
@@ -572,8 +589,8 @@ private fun EditorScreen(
                 Text("FRAME TIME  ${duration} ms", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 Slider(
                     value = duration.toFloat(),
-                    onValueChange = { replaceFrame(draft.frames[frameIndex].copy(durationMs = it.roundToInt().coerceIn(33, 1000))) },
-                    valueRange = 33f..1000f,
+                    onValueChange = { replaceFrame(draft.frames[frameIndex].copy(durationMs = it.roundToInt().coerceIn(33, 5_000))) },
+                    valueRange = 33f..5_000f,
                 )
             }
             item {
