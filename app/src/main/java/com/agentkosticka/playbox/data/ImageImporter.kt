@@ -12,24 +12,48 @@ import com.agentkosticka.playbox.model.PHONE_4A_PRO_MASK
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.model.PlayboxEffect
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.util.UUID
 import kotlin.math.pow
+import kotlin.math.roundToInt
+
+internal data class ImageDecodeSize(val width: Int, val height: Int)
+
+internal fun boundedImageDecodeSize(width: Int, height: Int, maxEdge: Int = 1_024): ImageDecodeSize? {
+    require(width > 0 && height > 0 && maxEdge > 0)
+    val longestEdge = maxOf(width, height)
+    if (longestEdge <= maxEdge) return null
+    val scale = maxEdge.toDouble() / longestEdge
+    return ImageDecodeSize(
+        width = (width * scale).roundToInt().coerceAtLeast(1),
+        height = (height * scale).roundToInt().coerceAtLeast(1),
+    )
+}
 
 object ImageImporter {
-    suspend fun import(resolver: ContentResolver, uris: List<Uri>): PlayboxEffect = withContext(Dispatchers.Default) {
+    suspend fun import(resolver: ContentResolver, uris: List<Uri>): PlayboxEffect = withContext(Dispatchers.IO) {
         require(uris.isNotEmpty())
         require(uris.size <= 100) { "Choose at most 100 images" }
-        val frames = uris.map { uri ->
-            val source = ImageDecoder.createSource(resolver, uri)
-            val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
-                val scale = maxOf(info.size.width, info.size.height) / 1024f
-                if (scale > 1f) decoder.setTargetSize((info.size.width / scale).toInt(), (info.size.height / scale).toInt())
-                decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+        val frameDuration = if (uris.size == 1) 120 else 180
+        val frames = buildList {
+            for (uri in uris) {
+                currentCoroutineContext().ensureActive()
+                val source = ImageDecoder.createSource(resolver, uri)
+                val bitmap = ImageDecoder.decodeBitmap(source) { decoder, info, _ ->
+                    boundedImageDecodeSize(info.size.width, info.size.height)?.let { target ->
+                        decoder.setTargetSize(target.width, target.height)
+                    }
+                    decoder.allocator = ImageDecoder.ALLOCATOR_SOFTWARE
+                }
+                try {
+                    currentCoroutineContext().ensureActive()
+                    add(EffectFrame(bitmapToPixels(bitmap), frameDuration))
+                } finally {
+                    bitmap.recycle()
+                }
             }
-            val pixels = bitmapToPixels(bitmap)
-            bitmap.recycle()
-            EffectFrame(pixels, if (uris.size == 1) 120 else 180)
         }
         PlayboxEffect(
             id = UUID.randomUUID().toString(),
