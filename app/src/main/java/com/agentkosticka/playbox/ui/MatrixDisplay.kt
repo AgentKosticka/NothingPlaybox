@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -34,22 +35,35 @@ fun MatrixDisplay(
         return (y * MATRIX_SIZE + x).takeIf { PHONE_4A_PRO_MASK[it] }
     }
 
+    val currentOnPixel = rememberUpdatedState(onPixel)
     var canvasModifier = modifier.semantics { contentDescription = "13 by 13 Glyph Matrix preview" }
     if (onPixel != null) {
         canvasModifier = canvasModifier
-            .pointerInput(onPixel) {
-                detectTapGestures { offset -> indexAt(offset, size)?.let(onPixel) }
+            .pointerInput(Unit) {
+                detectTapGestures { offset -> indexAt(offset, size)?.let { currentOnPixel.value?.invoke(it) } }
             }
-            .pointerInput(onPixel) {
+            .pointerInput(Unit) {
                 var last = -1
                 detectDragGestures(
                     onDragStart = { offset ->
-                        indexAt(offset, size)?.let { last = it; onPixel(it) }
+                        last = indexAt(offset, size) ?: -1
+                        if (last >= 0) currentOnPixel.value?.invoke(last)
                     },
+                    onDragEnd = { last = -1 },
+                    onDragCancel = { last = -1 },
                     onDrag = { change, _ ->
-                        indexAt(change.position, size)?.takeIf { it != last }?.let {
-                            last = it
-                            onPixel(it)
+                        val current = indexAt(change.position, size)
+                        if (current == null) {
+                            last = -1
+                        } else if (current != last) {
+                            if (last >= 0) {
+                                matrixLineIndices(last, current).forEach { index ->
+                                    if (index != last) currentOnPixel.value?.invoke(index)
+                                }
+                            } else {
+                                currentOnPixel.value?.invoke(current)
+                            }
+                            last = current
                         }
                         change.consume()
                     },
