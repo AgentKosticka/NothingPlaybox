@@ -9,7 +9,7 @@ import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import com.agentkosticka.playbox.PlayboxApplication
-import com.agentkosticka.playbox.data.BuiltInEffects
+import com.agentkosticka.playbox.data.EffectCatalog
 import com.agentkosticka.playbox.model.frameIndexAt
 import com.nothing.ketchum.Glyph
 import com.nothing.ketchum.GlyphMatrixManager
@@ -58,7 +58,7 @@ class PlayboxToyService : Service() {
     private fun startPlayback() {
         playback?.cancel()
         val repository = (application as PlayboxApplication).repository
-        val effect = repository.activeEffectId?.let(repository::find) ?: BuiltInEffects.all.first()
+        val effect = repository.activeEffectId?.let(repository::find) ?: EffectCatalog.builtIns.first()
         playback = scope.launch {
             val started = android.os.SystemClock.elapsedRealtime()
             while (isActive) {
