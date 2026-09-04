@@ -201,11 +201,19 @@ fun ProceduralEditorScreen(
                         Text("Tap or drag the matrix to define generation 0. Playback always starts from this seed.", color = Muted, fontSize = 12.sp)
                     }
                     item {
-                        Text("STEP TIME  ${spec.frameDurationMs} ms", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        val stepsPerSecond = 1_000f / spec.frameDurationMs
+                        Text(
+                            "SPEED  ${String.format(java.util.Locale.US, "%.1f", stepsPerSecond)} steps/s",
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                        )
                         Slider(
-                            value = spec.frameDurationMs.toFloat(),
-                            onValueChange = { updateSpec(spec.copy(frameDurationMs = it.roundToInt())) },
-                            valueRange = 67f..1_000f,
+                            value = stepsPerSecond,
+                            onValueChange = { speed ->
+                                val duration = (1_000f / speed.coerceAtLeast(0.5f)).roundToInt().coerceIn(67, 2_000)
+                                updateSpec(spec.copy(frameDurationMs = duration))
+                            },
+                            valueRange = 0.5f..15f,
                         )
                     }
                     item {
