@@ -48,7 +48,7 @@ object VideoImporter {
             repeat(sampleCount) { index ->
                 currentCoroutineContext().ensureActive()
                 val sampleDurationMs = sampleDurations[index]
-                val decoded = retriever.decodeFrame(sampleTimesUs[index], decodeSize, duration)
+                val decoded = retriever.decodeFrame(sampleTimesUs[index], decodeSize, duration, sampleDurationMs)
                 if (decoded == null) {
                     accumulator.addMissing(sampleDurationMs)
                 } else {
@@ -104,7 +104,12 @@ object VideoImporter {
         )
     }
 
-    private fun MediaMetadataRetriever.decodeFrame(timeUs: Long, size: DecodeSize?, sourceDurationMs: Long): Bitmap? {
+    private fun MediaMetadataRetriever.decodeFrame(
+        timeUs: Long,
+        size: DecodeSize?,
+        sourceDurationMs: Long,
+        sampleDurationMs: Int,
+    ): Bitmap? {
         val options = intArrayOf(
             MediaMetadataRetriever.OPTION_CLOSEST,
             MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
@@ -117,7 +122,8 @@ object VideoImporter {
             MediaMetadataRetriever.OPTION_CLOSEST,
             MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
         )
-        for (candidateTimeUs in videoNearbyDecodeTimesUs(timeUs, sourceDurationMs, NEARBY_RETRY_OFFSET_US)) {
+        val retryOffsetUs = minOf(NEARBY_RETRY_OFFSET_US, sampleDurationMs * 1_000L / 2L)
+        for (candidateTimeUs in videoNearbyDecodeTimesUs(timeUs, sourceDurationMs, retryOffsetUs)) {
             decodeFrameAt(candidateTimeUs, size, nearbyOptions)?.let { return it }
         }
         return null
