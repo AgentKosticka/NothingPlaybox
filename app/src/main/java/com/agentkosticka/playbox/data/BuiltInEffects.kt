@@ -19,7 +19,7 @@ import kotlin.random.Random
 object BuiltInEffects {
     val all: List<PlayboxEffect> by lazy {
         listOf(
-            eye(), beer(), neonVortex(), blackHole(), lightningStorm(), lavaLamp(),
+            eye(), beer(), neonVortex(), blackHole(), lightningStorm(),
             hyperspace(), interference(), cyberSkull(), spaceInvader(), orbitingComet(),
             liquidMetal(), pulse(), scanner(), rain(), fireworks(),
         )
@@ -199,28 +199,8 @@ object BuiltInEffects {
                 }
             }
         }
-        return PlayboxEffect("builtin-lightning", "LIGHTNING STORM", "Procedural branching bolts and retina flash", frames, builtIn = true)
+        return PlayboxEffect("builtin-lightning", "LIGHTNING STORM", "Branching bolts and retina flash", frames, builtIn = true)
     }
-
-    private fun lavaLamp(): PlayboxEffect = PlayboxEffect(
-        "builtin-lava", "LAVA LAMP", "Soft glowing blobs merge and float",
-        (0 until 40).map { tick ->
-            frame(80) {
-                val time = tick * PI * 2 / 40.0
-                val blobs = listOf(
-                    Triple(6 + sin(time) * 2.7, 6 + cos(time * .7) * 4.2, 1.8),
-                    Triple(6 + cos(time * 1.3) * 3.8, 6 + sin(time * .9) * 2.8, 2.1),
-                    Triple(6 + sin(time * .6 + 2) * 2.2, 6 + cos(time * 1.1 + 1) * 3.4, 1.5),
-                )
-                for (y in 0 until 13) for (x in 0 until 13) {
-                    val energy = blobs.sumOf { (bx, by, size) ->
-                        exp(-((x - bx).pow(2) + (y - by).pow(2)) / (size * size))
-                    }
-                    pixel(x, y, ((energy - .12).coerceIn(0.0, 1.0) * 255).roundToInt())
-                }
-            }
-        }, builtIn = true,
-    )
 
     private fun hyperspace(): PlayboxEffect {
         val random = Random(1977)

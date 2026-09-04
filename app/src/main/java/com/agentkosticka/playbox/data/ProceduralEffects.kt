@@ -127,6 +127,8 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
     private val spec = requireNotNull(effect.procedural) { "Effect is not procedural" }
     private var lifeState = (spec as? ProceduralSpec.ConwayLife)?.initialState?.copyOf()
     private var lifeGeneration = 0L
+    private var bloomState = (spec as? ProceduralSpec.OrganicBloom)?.let(::createBloomState)
+    private var bloomFrame = 0L
 
     private val noiseGrids: Pair<DoubleArray, DoubleArray>? = (spec as? ProceduralSpec.ShiftingNoise)?.let { noise ->
         val random = Random(noise.seed.foldToInt())
@@ -151,6 +153,7 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
         is ProceduralSpec.ConwayLife -> renderLife(current, elapsedMs.coerceAtLeast(0))
         is ProceduralSpec.ShiftingNoise -> renderNoise(current, elapsedMs.coerceAtLeast(0))
         is ProceduralSpec.LavaLamp -> renderLava(current, elapsedMs.coerceAtLeast(0))
+        is ProceduralSpec.OrganicBloom -> renderBloom(current, elapsedMs.coerceAtLeast(0))
     }
 
     private fun renderLife(spec: ProceduralSpec.ConwayLife, elapsedMs: Long): EffectFrame {
@@ -216,6 +219,72 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
         }, spec.frameDurationMs).normalized()
     }
 
+    private fun renderBloom(spec: ProceduralSpec.OrganicBloom, elapsedMs: Long): EffectFrame {
+        val targetFrame = elapsedMs / spec.frameDurationMs
+        if (targetFrame < bloomFrame) {
+            bloomState = createBloomState(spec)
+            bloomFrame = 0
+        }
+        while (bloomFrame < targetFrame) {
+            repeat(BLOOM_STEPS_PER_FRAME) { bloomState = stepBloom(requireNotNull(bloomState), spec) }
+            bloomFrame++
+        }
+        val state = requireNotNull(bloomState)
+        return EffectFrame(IntArray(PIXEL_COUNT) { index ->
+            if (!PHONE_4A_PRO_MASK[index]) return@IntArray 0
+            ((state.b[index] - state.a[index] * 0.34) * 420.0)
+                .coerceIn(0.0, 255.0)
+                .roundToInt()
+        }, spec.frameDurationMs).normalized()
+    }
+
+    private fun createBloomState(spec: ProceduralSpec.OrganicBloom): BloomState {
+        val a = DoubleArray(PIXEL_COUNT) { 1.0 }
+        val b = DoubleArray(PIXEL_COUNT)
+        val random = Random(spec.seed.foldToInt())
+        val seeds = linkedSetOf(6 * MATRIX_SIZE + 6)
+        while (seeds.size < BLOOM_SEED_CELLS) {
+            val x = 3 + random.nextInt(7)
+            val y = 3 + random.nextInt(7)
+            val index = y * MATRIX_SIZE + x
+            if (PHONE_4A_PRO_MASK[index]) seeds += index
+        }
+        seeds.forEach { b[it] = 1.0 }
+        return BloomState(a, b)
+    }
+
+    private fun stepBloom(state: BloomState, spec: ProceduralSpec.OrganicBloom): BloomState {
+        val nextA = state.a.copyOf()
+        val nextB = state.b.copyOf()
+        for (index in 0 until PIXEL_COUNT) {
+            if (!PHONE_4A_PRO_MASK[index]) continue
+            val lapA = bloomLaplacian(state.a, index)
+            val lapB = bloomLaplacian(state.b, index)
+            val reaction = state.a[index] * state.b[index] * state.b[index]
+            nextA[index] = (state.a[index] + BLOOM_DIFFUSION_A * lapA - reaction + spec.feed * (1.0 - state.a[index]))
+                .coerceIn(0.0, 1.0)
+            nextB[index] = (state.b[index] + BLOOM_DIFFUSION_B * lapB + reaction - (spec.kill + spec.feed) * state.b[index])
+                .coerceIn(0.0, 1.0)
+        }
+        return BloomState(nextA, nextB)
+    }
+
+    private fun bloomLaplacian(values: DoubleArray, index: Int): Double {
+        val x = index % MATRIX_SIZE
+        val y = index / MATRIX_SIZE
+        var result = -values[index]
+        for (dy in -1..1) for (dx in -1..1) {
+            if (dx == 0 && dy == 0) continue
+            val nx = x + dx
+            val ny = y + dy
+            if (nx !in 0 until MATRIX_SIZE || ny !in 0 until MATRIX_SIZE) continue
+            val neighbor = ny * MATRIX_SIZE + nx
+            if (!PHONE_4A_PRO_MASK[neighbor]) continue
+            result += values[neighbor] * if (dx == 0 || dy == 0) 0.2 else 0.05
+        }
+        return result
+    }
+
     private data class LavaBlob(
         val xRadius: Double,
         val yRadius: Double,
@@ -224,8 +293,14 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
         val speed: Double,
     )
 
+    private data class BloomState(val a: DoubleArray, val b: DoubleArray)
+
     private companion object {
         const val NOISE_GRID = 8
+        const val BLOOM_STEPS_PER_FRAME = 3
+        const val BLOOM_SEED_CELLS = 8
+        const val BLOOM_DIFFUSION_A = 1.0
+        const val BLOOM_DIFFUSION_B = 0.5
         const val TAU = 6.283185307179586
     }
 }
