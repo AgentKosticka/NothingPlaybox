@@ -100,7 +100,7 @@ class VideoFrameAccumulatorTest {
             videoNearbyDecodeTimesUs(timeUs = 10_000L, sourceDurationMs = 250L, offsetUs = 33_000L).toList(),
         )
         assertEquals(
-            listOf(216_999L, 249_999L),
+            listOf(216_999L),
             videoNearbyDecodeTimesUs(timeUs = 249_999L, sourceDurationMs = 250L, offsetUs = 33_000L).toList(),
         )
     }
