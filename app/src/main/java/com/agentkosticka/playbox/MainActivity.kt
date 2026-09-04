@@ -626,13 +626,33 @@ private fun EditorScreen(
                 }
             }
             item {
-                val duration = draft.frames[frameIndex].durationMs
-                Text("FRAME TIME  ${duration} ms", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                val duration = draft.frames[frameIndex].durationMs.coerceIn(33, 5_000)
+                val minDuration = 33.0
+                val maxDuration = 5_000.0
+                val logMin = kotlin.math.ln(minDuration)
+                val logSpan = kotlin.math.ln(maxDuration) - logMin
+                val sliderPosition = ((kotlin.math.ln(duration.toDouble()) - logMin) / logSpan).toFloat().coerceIn(0f, 1f)
+                val fpsTenths = (10_000.0 / duration).roundToInt()
+                val fpsLabel = if (fpsTenths >= 100) {
+                    "${fpsTenths / 10} FPS"
+                } else {
+                    "${fpsTenths / 10}.${fpsTenths % 10} FPS"
+                }
+                Text("FRAME TIME  ${duration} ms  •  $fpsLabel", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                 Slider(
-                    value = duration.toFloat(),
-                    onValueChange = { replaceFrame(draft.frames[frameIndex].copy(durationMs = it.roundToInt().coerceIn(33, 5_000))) },
-                    valueRange = 33f..5_000f,
+                    value = sliderPosition,
+                    onValueChange = { position ->
+                        val nextDuration = kotlin.math.exp(logMin + position.coerceIn(0f, 1f) * logSpan)
+                            .roundToInt()
+                            .coerceIn(33, 5_000)
+                        replaceFrame(draft.frames[frameIndex].copy(durationMs = nextDuration))
+                    },
+                    valueRange = 0f..1f,
                 )
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text("FAST", color = Muted, fontSize = 10.sp)
+                    Text("SLOW", color = Muted, fontSize = 10.sp)
+                }
             }
             item {
                 Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
