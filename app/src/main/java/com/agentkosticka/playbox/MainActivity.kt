@@ -72,7 +72,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -408,10 +407,16 @@ private fun EditorScreen(
     var live by remember { mutableStateOf(false) }
     val undoByFrame = remember(initial.id) { mutableMapOf<Int, MutableList<IntArray>>() }
     val redoByFrame = remember(initial.id) { mutableMapOf<Int, MutableList<IntArray>>() }
+    var historyVersion by remember(initial.id) { mutableIntStateOf(0) }
     var strokeStart by remember(frameIndex) { mutableStateOf<IntArray?>(null) }
 
     fun undoStack(): MutableList<IntArray> = undoByFrame.getOrPut(frameIndex) { mutableListOf() }
     fun redoStack(): MutableList<IntArray> = redoByFrame.getOrPut(frameIndex) { mutableListOf() }
+    fun clearFrameHistory() {
+        undoByFrame.clear()
+        redoByFrame.clear()
+        historyVersion++
+    }
     fun replaceFrame(frame: EffectFrame) {
         draft = draft.copy(frames = draft.frames.toMutableList().also { it[frameIndex] = frame }, updatedAt = System.currentTimeMillis())
     }
@@ -419,12 +424,14 @@ private fun EditorScreen(
         undoStack().add(snapshot.copyOf())
         if (undoStack().size > 50) undoStack().removeAt(0)
         redoStack().clear()
+        historyVersion++
     }
     fun commitPixels(next: IntArray, recordUndo: Boolean = true) {
         val current = draft.frames[frameIndex].pixels
         if (current.contentEquals(next)) return
         if (recordUndo) pushUndo(current)
         replaceFrame(draft.frames[frameIndex].copy(pixels = next).normalized())
+        if (!recordUndo) historyVersion++
     }
     fun beginStroke() {
         if (strokeStart == null) strokeStart = draft.frames[frameIndex].pixels.copyOf()
@@ -498,6 +505,7 @@ private fun EditorScreen(
                 }
             }
             item {
+                historyVersion
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     FilledIconButton(onClick = { playing = !playing }) {
                         Icon(if (playing) Icons.Default.Stop else Icons.Default.PlayArrow, if (playing) "Stop" else "Play")
@@ -564,6 +572,7 @@ private fun EditorScreen(
                         onClick = {
                             val frames = draft.frames.toMutableList().apply { add(frameIndex + 1, EffectFrame()) }
                             frameIndex++
+                            clearFrameHistory()
                             draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
                         },
                     ) { Icon(Icons.Default.Add, null); Text(" Blank") }
@@ -574,6 +583,7 @@ private fun EditorScreen(
                             val copy = draft.frames[frameIndex].copy(pixels = draft.frames[frameIndex].pixels.copyOf())
                             val frames = draft.frames.toMutableList().apply { add(frameIndex + 1, copy) }
                             frameIndex++
+                            clearFrameHistory()
                             draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
                         },
                     ) { Icon(Icons.Default.ContentCopy, null); Text(" Duplicate") }
@@ -583,6 +593,7 @@ private fun EditorScreen(
                         val moved = frames.removeAt(frameIndex)
                         frames.add(frameIndex - 1, moved)
                         frameIndex--
+                        clearFrameHistory()
                         draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
                     }) { Text("←") }
                     TextButton(enabled = frameIndex < draft.frames.lastIndex, onClick = {
@@ -590,11 +601,13 @@ private fun EditorScreen(
                         val moved = frames.removeAt(frameIndex)
                         frames.add(frameIndex + 1, moved)
                         frameIndex++
+                        clearFrameHistory()
                         draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
                     }) { Text("→") }
                     IconButton(enabled = draft.frames.size > 1, onClick = {
                         val frames = draft.frames.toMutableList().apply { removeAt(frameIndex) }
                         frameIndex = frameIndex.coerceAtMost(frames.lastIndex)
+                        clearFrameHistory()
                         draft = draft.copy(frames = frames, updatedAt = System.currentTimeMillis())
                     }) { Icon(Icons.Default.Delete, "Delete frame") }
                 }
