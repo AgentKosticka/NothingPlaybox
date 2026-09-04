@@ -127,7 +127,6 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
     private val spec = requireNotNull(effect.procedural) { "Effect is not procedural" }
     private var lifeState = (spec as? ProceduralSpec.ConwayLife)?.initialState?.copyOf()
     private var lifeGeneration = 0L
-    private val afterglow = IntArray(PIXEL_COUNT)
 
     private val noiseGrids: Pair<DoubleArray, DoubleArray>? = (spec as? ProceduralSpec.ShiftingNoise)?.let { noise ->
         val random = Random(noise.seed.foldToInt())
@@ -159,26 +158,13 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
         if (targetGeneration < lifeGeneration) {
             lifeState = spec.initialState.copyOf()
             lifeGeneration = 0
-            afterglow.fill(0)
         }
         while (lifeGeneration < targetGeneration) {
-            val current = requireNotNull(lifeState)
-            val next = ProceduralEffects.lifeStep(current)
-            for (index in 0 until PIXEL_COUNT) {
-                afterglow[index] = when {
-                    !PHONE_4A_PRO_MASK[index] -> 0
-                    current[index] > 0 && next[index] == 0 -> 112
-                    else -> (afterglow[index] * 0.48).roundToInt()
-                }
-            }
-            lifeState = next
+            lifeState = ProceduralEffects.lifeStep(requireNotNull(lifeState))
             lifeGeneration++
         }
-        val state = requireNotNull(lifeState)
         return EffectFrame(
-            pixels = IntArray(PIXEL_COUNT) { index ->
-                if (state[index] > 0) 255 else afterglow[index]
-            },
+            pixels = requireNotNull(lifeState).copyOf(),
             durationMs = spec.frameDurationMs,
         ).normalized()
     }
@@ -202,7 +188,8 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
             val field = broad * (1.0 - detail) + fineValue * detail
             val normalized = ((field - 0.16) / 0.7).coerceIn(0.0, 1.0)
             val smooth = normalized * normalized * (3.0 - 2.0 * normalized)
-            (smooth * 255.0).roundToInt()
+            val contrasted = ((smooth - 0.5) * 1.55 + 0.5).coerceIn(0.0, 1.0)
+            (contrasted * 255.0).roundToInt()
         }, spec.frameDurationMs).normalized()
     }
 
