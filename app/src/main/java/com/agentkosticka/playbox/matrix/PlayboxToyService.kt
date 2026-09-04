@@ -3,6 +3,7 @@ package com.agentkosticka.playbox.matrix
 import android.app.Service
 import android.content.ComponentName
 import android.content.Intent
+import android.os.Build
 import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
@@ -51,6 +52,7 @@ class PlayboxToyService : Service() {
     }
 
     override fun onBind(intent: Intent?): IBinder {
+        if (!isPhone4aPro(Build.MANUFACTURER, Build.BRAND, Build.MODEL)) return messenger.binder
         manager = GlyphMatrixManager.getInstance(applicationContext)
         manager?.init(callback)
         return messenger.binder
