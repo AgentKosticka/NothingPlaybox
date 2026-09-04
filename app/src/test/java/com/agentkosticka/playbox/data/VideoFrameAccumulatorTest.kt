@@ -51,4 +51,27 @@ class VideoFrameAccumulatorTest {
         assertEquals(listOf(5_000, 200), accumulator.frames.map { it.durationMs })
         assertEquals(5_200, accumulator.frames.sumOf { it.durationMs })
     }
+
+    @Test
+    fun variableSampleDurationsPreserveTailTiming() {
+        val accumulator = VideoFrameAccumulator(sampleDurationMs = 100)
+        val pixels = IntArray(PIXEL_COUNT) { 90 }
+
+        accumulator.addDecoded(pixels, 100)
+        accumulator.addDecoded(pixels, 50)
+
+        assertEquals(150, accumulator.frames.single().durationMs)
+    }
+
+    @Test
+    fun sampleDurationsPreserveNonAlignedClipLength() {
+        assertEquals(listOf(100, 100, 50), videoSampleDurations(250, 100, 600).toList())
+        assertEquals(listOf(100, 68, 33), videoSampleDurations(201, 100, 600).toList())
+        assertEquals(201, videoSampleDurations(201, 100, 600).sum())
+    }
+
+    @Test
+    fun subMinimumClipUsesMinimumRepresentableFrameTime() {
+        assertEquals(listOf(33), videoSampleDurations(20, 100, 600).toList())
+    }
 }
