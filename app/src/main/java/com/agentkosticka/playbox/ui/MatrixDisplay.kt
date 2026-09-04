@@ -30,17 +30,24 @@ fun MatrixDisplay(
         val side = min(size.width, size.height).toFloat()
         val originX = (size.width - side) / 2f
         val originY = (size.height - side) / 2f
+        val localX = offset.x - originX
+        val localY = offset.y - originY
+        if (localX < 0f || localY < 0f || localX >= side || localY >= side) return null
         val cell = side / MATRIX_SIZE
-        val x = ((offset.x - originX) / cell).toInt()
-        val y = ((offset.y - originY) / cell).toInt()
-        if (x !in 0 until MATRIX_SIZE || y !in 0 until MATRIX_SIZE) return null
+        val x = (localX / cell).toInt()
+        val y = (localY / cell).toInt()
         return (y * MATRIX_SIZE + x).takeIf { PHONE_4A_PRO_MASK[it] }
     }
 
     val currentOnPixel = rememberUpdatedState(onPixel)
     val currentOnStrokeStart = rememberUpdatedState(onStrokeStart)
     val currentOnStrokeEnd = rememberUpdatedState(onStrokeEnd)
-    var canvasModifier = modifier.semantics { contentDescription = "13 by 13 Glyph Matrix preview" }
+    val matrixDescription = if (onPixel == null) {
+        "13 by 13 Glyph Matrix preview"
+    } else {
+        "Editable 13 by 13 Glyph Matrix"
+    }
+    var canvasModifier = modifier.semantics { contentDescription = matrixDescription }
     if (onPixel != null) {
         canvasModifier = canvasModifier
             .pointerInput(Unit) {
