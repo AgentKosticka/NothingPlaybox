@@ -6,6 +6,7 @@ import android.graphics.Matrix
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.OpenableColumns
+import com.agentkosticka.playbox.model.MAX_EFFECT_FRAMES
 import com.agentkosticka.playbox.model.PlayboxEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.currentCoroutineContext
@@ -18,7 +19,6 @@ import kotlin.math.roundToInt
 object VideoImporter {
     private const val FRAME_DURATION_MS = 100
     private const val MAX_DURATION_MS = 60_000L
-    private const val MAX_FRAMES = 600
     private const val MAX_DECODE_EDGE = 256
 
     suspend fun import(
@@ -34,7 +34,7 @@ object VideoImporter {
             require(sourceDuration > 0) { "The selected video is empty" }
 
             val duration = sourceDuration.coerceAtMost(MAX_DURATION_MS)
-            val sampleCount = ceil(duration / FRAME_DURATION_MS.toDouble()).toInt().coerceIn(1, MAX_FRAMES)
+            val sampleCount = ceil(duration / FRAME_DURATION_MS.toDouble()).toInt().coerceIn(1, MAX_EFFECT_FRAMES)
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
             val decodeSize = scaledDecodeSize(
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull(),
