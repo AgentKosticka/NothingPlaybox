@@ -34,6 +34,9 @@ jobs:
           distribution: temurin
           java-version: "17"
 
+      - name: Validate Gradle wrapper
+        uses: gradle/actions/wrapper-validation@v6
+
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v6
         with:
@@ -45,22 +48,15 @@ jobs:
           set -euo pipefail
           echo "be00ee9cd7115f6b11984c6e31fe98e298fb726940d1555063610685ef3bbf29  app/libs/glyph-matrix-sdk-2.0.aar" | sha256sum --check --strict
 
-      - name: Unit tests
-        shell: bash
-        run: ./gradlew --build-cache --parallel testDebugUnitTest
-
-      - name: Android lint
-        shell: bash
-        run: ./gradlew --build-cache --parallel lintDebug
-
-      - name: Build app variants
+      - name: Unit tests, lint, and APKs
         shell: bash
         run: |
           set -euo pipefail
-          ./gradlew --build-cache --parallel \
-            assembleDebug \
-            assembleDebugAndroidTest \
-            assembleRelease
+          tasks=(testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest)
+          if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
+            tasks+=(assembleRelease)
+          fi
+          ./gradlew --build-cache --parallel "${tasks[@]}"
 
       - name: Add build summary
         if: always()
@@ -72,7 +68,12 @@ jobs:
             echo "- Android lint"
             echo "- Debug APK"
             echo "- Android test APK"
-            echo "- Release APK"
+            if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
+              echo "- Release APK"
+            else
+              echo "- Release APK deferred to master"
+            fi
+            echo "- Gradle wrapper validation"
             echo "- Bundled Nothing SDK checksum verification"
           } >> "$GITHUB_STEP_SUMMARY"
 
