@@ -406,17 +406,19 @@ private fun EditorScreen(
     var intensity by rememberSaveable { mutableIntStateOf(255) }
     var playing by remember { mutableStateOf(false) }
     var live by remember { mutableStateOf(false) }
-    val undo = remember(frameIndex) { mutableStateListOf<IntArray>() }
-    val redo = remember(frameIndex) { mutableStateListOf<IntArray>() }
+    val undoByFrame = remember(initial.id) { mutableMapOf<Int, MutableList<IntArray>>() }
+    val redoByFrame = remember(initial.id) { mutableMapOf<Int, MutableList<IntArray>>() }
     var strokeStart by remember(frameIndex) { mutableStateOf<IntArray?>(null) }
 
+    fun undoStack(): MutableList<IntArray> = undoByFrame.getOrPut(frameIndex) { mutableListOf() }
+    fun redoStack(): MutableList<IntArray> = redoByFrame.getOrPut(frameIndex) { mutableListOf() }
     fun replaceFrame(frame: EffectFrame) {
         draft = draft.copy(frames = draft.frames.toMutableList().also { it[frameIndex] = frame }, updatedAt = System.currentTimeMillis())
     }
     fun pushUndo(snapshot: IntArray) {
-        undo.add(snapshot.copyOf())
-        if (undo.size > 50) undo.removeAt(0)
-        redo.clear()
+        undoStack().add(snapshot.copyOf())
+        if (undoStack().size > 50) undoStack().removeAt(0)
+        redoStack().clear()
     }
     fun commitPixels(next: IntArray, recordUndo: Boolean = true) {
         val current = draft.frames[frameIndex].pixels
@@ -511,14 +513,14 @@ private fun EditorScreen(
                         leadingIcon = { Icon(Icons.Default.Lightbulb, null) },
                     )
                     Spacer(Modifier.weight(1f))
-                    IconButton(enabled = undo.isNotEmpty(), onClick = {
-                        redo.add(draft.frames[frameIndex].pixels.copyOf())
-                        commitPixels(undo.removeAt(undo.lastIndex), recordUndo = false)
+                    IconButton(enabled = undoStack().isNotEmpty(), onClick = {
+                        redoStack().add(draft.frames[frameIndex].pixels.copyOf())
+                        commitPixels(undoStack().removeAt(undoStack().lastIndex), recordUndo = false)
                     }) { Text("↶", fontSize = 24.sp) }
-                    IconButton(enabled = redo.isNotEmpty(), onClick = {
-                        undo.add(draft.frames[frameIndex].pixels.copyOf())
-                        if (undo.size > 50) undo.removeAt(0)
-                        commitPixels(redo.removeAt(redo.lastIndex), recordUndo = false)
+                    IconButton(enabled = redoStack().isNotEmpty(), onClick = {
+                        undoStack().add(draft.frames[frameIndex].pixels.copyOf())
+                        if (undoStack().size > 50) undoStack().removeAt(0)
+                        commitPixels(redoStack().removeAt(redoStack().lastIndex), recordUndo = false)
                     }) { Text("↷", fontSize = 24.sp) }
                 }
                 if (connection is GlyphConnectionState.Connecting) LinearProgressIndicator(Modifier.fillMaxWidth())
