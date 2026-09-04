@@ -1,8 +1,8 @@
 # Nothing Playbox
 
-Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It includes 20 built-in effects, a 137-pixel intensity editor, multi-frame animation, image and video import, a simulator, live Matrix output, portable `.playbox` files, and one dynamic Always-on Glyph Toy.
+Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It includes 19 built-in effects, a 137-pixel intensity editor, multi-frame animation, image and video import, a simulator, live Matrix output, portable `.playbox` files, and one dynamic Always-on Glyph Toy.
 
-The showcase library includes Eye, Drinking Beer, Neon Vortex, Black Hole, Lightning Storm, Lava Lamp, Hyperspace, Wave Collider, Cyber Skull, Last Invader, Orbital Comet, Liquid Metal, Pulse, Scanner, Digital Rain, Fireworks, Conway Life, Shifting Noise, and Organic Bloom, with both classic and live-configurable Lava Lamp variants. Conway Life, Shifting Noise, the live Lava Lamp, and Organic Bloom are generated at runtime from persisted settings rather than stored animation loops.
+The showcase library includes Eye, Drinking Beer, Neon Vortex, Black Hole, Lightning Storm, Lava Lamp, Hyperspace, Wave Collider, Cyber Skull, Last Invader, Orbital Comet, Liquid Metal, Pulse, Scanner, Digital Rain, Fireworks, Conway Life, Shifting Noise, and Organic Bloom. Conway Life, Shifting Noise, Lava Lamp, and Organic Bloom are generated at runtime from persisted settings rather than stored animation loops.
 
 ## Build
 
