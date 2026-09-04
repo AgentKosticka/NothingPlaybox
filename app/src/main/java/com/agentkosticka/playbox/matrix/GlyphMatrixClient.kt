@@ -17,6 +17,10 @@ sealed interface GlyphConnectionState {
     data class Error(val message: String) : GlyphConnectionState
 }
 
+internal fun isPhone4aPro(manufacturer: String, brand: String, model: String): Boolean =
+    (manufacturer.equals("Nothing", ignoreCase = true) || brand.equals("Nothing", ignoreCase = true)) &&
+        model.equals("A069P", ignoreCase = true)
+
 class GlyphMatrixClient(context: Context) {
     private val appContext = context.applicationContext
     private var manager: GlyphMatrixManager? = null
@@ -24,8 +28,7 @@ class GlyphMatrixClient(context: Context) {
     val state: StateFlow<GlyphConnectionState> = _state.asStateFlow()
 
     val isProbablySupported: Boolean
-        get() = Build.MANUFACTURER.equals("Nothing", ignoreCase = true) ||
-            Build.BRAND.equals("Nothing", ignoreCase = true)
+        get() = isPhone4aPro(Build.MANUFACTURER, Build.BRAND, Build.MODEL)
 
     private val callback = object : GlyphMatrixManager.Callback {
         override fun onServiceConnected(componentName: ComponentName?) {
