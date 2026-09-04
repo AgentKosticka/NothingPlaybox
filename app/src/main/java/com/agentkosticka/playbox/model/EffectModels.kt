@@ -46,6 +46,7 @@ data class PlayboxEffect(
     val frames: List<EffectFrame>,
     val loopMode: LoopMode = LoopMode.LOOP,
     val builtIn: Boolean = false,
+    val procedural: ProceduralSpec? = null,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
 ) {
@@ -54,13 +55,14 @@ data class PlayboxEffect(
         require(frames.size <= MAX_EFFECT_FRAMES) { "An effect supports at most $MAX_EFFECT_FRAMES frames" }
     }
 
-    val isAnimated: Boolean get() = frames.size > 1
+    val isAnimated: Boolean get() = procedural != null || frames.size > 1
     val totalDurationMs: Int get() = frames.sumOf { it.durationMs }
 
     fun editableCopy(newName: String = "$name copy") = copy(
         id = UUID.randomUUID().toString(),
         name = newName,
         frames = frames.map { it.copy(pixels = it.pixels.copyOf()) },
+        procedural = procedural?.deepCopy(),
         builtIn = false,
         createdAt = System.currentTimeMillis(),
         updatedAt = System.currentTimeMillis(),

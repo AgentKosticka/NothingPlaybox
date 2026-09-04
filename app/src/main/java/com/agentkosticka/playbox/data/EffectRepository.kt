@@ -11,6 +11,8 @@ import com.agentkosticka.playbox.model.LoopMode
 import com.agentkosticka.playbox.model.MAX_EFFECT_FRAMES
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.model.PlayboxEffect
+import com.agentkosticka.playbox.model.ProceduralSpec
+import com.agentkosticka.playbox.model.normalized
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -36,11 +38,15 @@ class EffectRepository(context: Context) {
 
     @Synchronized
     fun save(effect: PlayboxEffect): PlayboxEffect {
-        val normalized = effect.copy(
+        var normalized = effect.copy(
             frames = effect.frames.map(EffectFrame::normalized),
+            procedural = effect.procedural?.normalized(),
             builtIn = false,
             updatedAt = System.currentTimeMillis(),
         )
+        if (normalized.procedural != null) {
+            normalized = normalized.copy(frames = listOf(ProceduralEffectRuntime(normalized).frameAt(0)))
+        }
         val index = userEffects.indexOfFirst { it.id == normalized.id }
         if (index >= 0) userEffects[index] = normalized else userEffects.add(0, normalized)
         persistUsers()
@@ -124,6 +130,7 @@ class EffectRepository(context: Context) {
         .put("loopMode", effect.loopMode.name)
         .put("createdAt", effect.createdAt)
         .put("updatedAt", effect.updatedAt)
+        .apply { effect.procedural?.let { put("procedural", proceduralToJson(it)) } }
         .put("frames", JSONArray().apply {
             effect.frames.forEach { frame ->
                 val bytes = ByteArray(PIXEL_COUNT) { frame.pixels[it].coerceIn(0, 255).toByte() }
@@ -132,6 +139,59 @@ class EffectRepository(context: Context) {
                     .put("pixels", Base64.encodeToString(bytes, Base64.NO_WRAP)))
             }
         })
+
+    private fun proceduralToJson(spec: ProceduralSpec): JSONObject = when (spec) {
+        is ProceduralSpec.ConwayLife -> {
+            val bytes = ByteArray(PIXEL_COUNT) { if (spec.initialState[it] > 0) 1 else 0 }
+            JSONObject()
+                .put("type", "conway")
+                .put("frameDurationMs", spec.frameDurationMs)
+                .put("initialState", Base64.encodeToString(bytes, Base64.NO_WRAP))
+        }
+        is ProceduralSpec.ShiftingNoise -> JSONObject()
+            .put("type", "noise")
+            .put("frameDurationMs", spec.frameDurationMs)
+            .put("seed", spec.seed)
+            .put("speed", spec.speed.toDouble())
+            .put("scale", spec.scale.toDouble())
+            .put("detail", spec.detail.toDouble())
+        is ProceduralSpec.LavaLamp -> JSONObject()
+            .put("type", "lava")
+            .put("frameDurationMs", spec.frameDurationMs)
+            .put("seed", spec.seed)
+            .put("speed", spec.speed.toDouble())
+            .put("blobCount", spec.blobCount)
+            .put("softness", spec.softness.toDouble())
+    }
+
+    private fun proceduralFromJson(json: JSONObject?): ProceduralSpec? {
+        json ?: return null
+        return when (json.getString("type")) {
+            "conway" -> {
+                val bytes = Base64.decode(json.getString("initialState"), Base64.DEFAULT)
+                require(bytes.size == PIXEL_COUNT) { "Invalid Conway seed dimensions" }
+                ProceduralSpec.ConwayLife(
+                    frameDurationMs = json.optInt("frameDurationMs", 140).coerceIn(67, 2_000),
+                    initialState = IntArray(PIXEL_COUNT) { if (bytes[it].toInt() != 0) 255 else 0 },
+                ).normalized()
+            }
+            "noise" -> ProceduralSpec.ShiftingNoise(
+                frameDurationMs = json.optInt("frameDurationMs", 67).coerceIn(67, 500),
+                seed = json.optLong("seed", 0x51F7L),
+                speed = json.optDouble("speed", 1.0).toFloat(),
+                scale = json.optDouble("scale", 1.0).toFloat(),
+                detail = json.optDouble("detail", 0.35).toFloat(),
+            ).normalized()
+            "lava" -> ProceduralSpec.LavaLamp(
+                frameDurationMs = json.optInt("frameDurationMs", 67).coerceIn(67, 500),
+                seed = json.optLong("seed", 0x1A7A1A7AL),
+                speed = json.optDouble("speed", 1.0).toFloat(),
+                blobCount = json.optInt("blobCount", 4),
+                softness = json.optDouble("softness", 0.18).toFloat(),
+            ).normalized()
+            else -> error("Unknown procedural effect type")
+        }
+    }
 
     private fun effectFromJson(json: JSONObject): PlayboxEffect {
         val framesJson = json.getJSONArray("frames")
@@ -154,6 +214,7 @@ class EffectRepository(context: Context) {
             frames = frames,
             loopMode = runCatching { LoopMode.valueOf(json.optString("loopMode")) }.getOrDefault(LoopMode.LOOP),
             builtIn = false,
+            procedural = proceduralFromJson(json.optJSONObject("procedural")),
             createdAt = json.optLong("createdAt", System.currentTimeMillis()),
             updatedAt = json.optLong("updatedAt", System.currentTimeMillis()),
         )

@@ -36,7 +36,6 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.PlayArrow
@@ -88,6 +87,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.agentkosticka.playbox.data.EffectRepository
 import com.agentkosticka.playbox.data.ImageImporter
+import com.agentkosticka.playbox.data.ProceduralEffectRuntime
 import com.agentkosticka.playbox.data.VideoImporter
 import com.agentkosticka.playbox.matrix.GlyphConnectionState
 import com.agentkosticka.playbox.matrix.GlyphMatrixClient
@@ -270,23 +270,25 @@ private fun HomeScreen(
     onImport: () -> Unit,
 ) {
     var playingId by remember { mutableStateOf<String?>(null) }
-    var playingFrame by remember { mutableIntStateOf(0) }
+    var playingPixels by remember { mutableStateOf<IntArray?>(null) }
     val playingEffect = playingId?.let { id -> effects.firstOrNull { it.id == id } }
 
     LaunchedEffect(playingEffect, connection) {
         val effect = playingEffect
         if (effect == null) {
             playingId = null
-            playingFrame = 0
+            playingPixels = null
             glyphClient.stopDisplay()
             return@LaunchedEffect
         }
+        val runtime = effect.procedural?.let { ProceduralEffectRuntime(effect) }
         val started = android.os.SystemClock.elapsedRealtime()
         while (true) {
-            val index = effect.frameIndexAt(android.os.SystemClock.elapsedRealtime() - started)
-            playingFrame = index
-            if (connection == GlyphConnectionState.Ready) glyphClient.showFrame(effect.frames[index].pixels)
-            delay(effect.frames[index].durationMs.toLong())
+            val elapsed = android.os.SystemClock.elapsedRealtime() - started
+            val frame = runtime?.frameAt(elapsed) ?: effect.frames[effect.frameIndexAt(elapsed)]
+            playingPixels = frame.pixels
+            if (connection == GlyphConnectionState.Ready) glyphClient.showFrame(frame.pixels)
+            delay(frame.durationMs.toLong())
         }
     }
     DisposableEffect(Unit) {
@@ -328,15 +330,15 @@ private fun HomeScreen(
             items(effects, key = { it.id }) { effect ->
                 EffectCard(
                     effect = effect,
-                    previewFrame = if (effect.id == playingId) playingFrame else 0,
+                    previewPixels = if (effect.id == playingId) playingPixels else null,
                     isPlaying = effect.id == playingId,
                     onPlay = {
                         if (playingId == effect.id) {
                             playingId = null
-                            playingFrame = 0
+                            playingPixels = null
                             glyphClient.stopDisplay()
                         } else {
-                            playingFrame = 0
+                            playingPixels = null
                             playingId = effect.id
                         }
                     },
@@ -352,7 +354,7 @@ private fun HomeScreen(
 @Composable
 private fun EffectCard(
     effect: PlayboxEffect,
-    previewFrame: Int,
+    previewPixels: IntArray?,
     isPlaying: Boolean,
     onPlay: () -> Unit,
     onEdit: (PlayboxEffect) -> Unit,
@@ -362,7 +364,7 @@ private fun EffectCard(
     Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface), shape = RoundedCornerShape(20.dp)) {
         Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(104.dp).clip(CircleShape).background(Color.Black).padding(7.dp)) {
-                MatrixDisplay(effect.frames[previewFrame.coerceIn(effect.frames.indices)].pixels, Modifier.fillMaxSize())
+                MatrixDisplay(previewPixels ?: effect.frames.first().pixels, Modifier.fillMaxSize())
             }
             Spacer(Modifier.width(14.dp))
             Column(Modifier.weight(1f)) {
@@ -371,7 +373,11 @@ private fun EffectCard(
                     if (effect.builtIn) Text("BUILT-IN", color = NothingRed, fontSize = 9.sp)
                 }
                 Text(effect.description, color = Muted, fontSize = 12.sp, maxLines = 2)
-                Text("${effect.frames.size} frame${if (effect.frames.size == 1) "" else "s"}", fontSize = 11.sp)
+                Text(
+                    if (effect.procedural != null) "LIVE • PROCEDURAL" else "${effect.frames.size} frame${if (effect.frames.size == 1) "" else "s"}",
+                    fontSize = 11.sp,
+                    color = if (effect.procedural != null) NothingRed else Color.Unspecified,
+                )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Button(onClick = onPlay, contentPadding = PaddingValues(horizontal = 12.dp)) {
                         Icon(if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow, null)
@@ -400,6 +406,11 @@ private fun EditorScreen(
     onBack: (PlayboxEffect) -> Unit,
     onExport: (PlayboxEffect) -> Unit,
 ) {
+    if (initial.procedural != null) {
+        ProceduralEditorScreen(initial, connection, glyphClient, onBack, onExport)
+        return
+    }
+
     var draft by remember(initial.id) { mutableStateOf(initial.copy(frames = initial.frames.map { it.copy(pixels = it.pixels.copyOf()) })) }
     var frameIndex by remember { mutableIntStateOf(0) }
     var intensity by rememberSaveable { mutableIntStateOf(255) }

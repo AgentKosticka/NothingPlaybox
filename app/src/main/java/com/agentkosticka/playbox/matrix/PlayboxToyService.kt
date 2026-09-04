@@ -10,6 +10,7 @@ import android.os.Message
 import android.os.Messenger
 import com.agentkosticka.playbox.PlayboxApplication
 import com.agentkosticka.playbox.data.EffectCatalog
+import com.agentkosticka.playbox.data.ProceduralEffectRuntime
 import com.agentkosticka.playbox.model.frameIndexAt
 import com.nothing.ketchum.Glyph
 import com.nothing.ketchum.GlyphMatrixManager
@@ -59,16 +60,19 @@ class PlayboxToyService : Service() {
         playback?.cancel()
         val repository = (application as PlayboxApplication).repository
         val effect = repository.activeEffectId?.let(repository::find) ?: EffectCatalog.builtIns.first()
+        val proceduralRuntime = effect.procedural?.let { ProceduralEffectRuntime(effect) }
         playback = scope.launch {
             val started = android.os.SystemClock.elapsedRealtime()
             while (isActive) {
                 val elapsed = android.os.SystemClock.elapsedRealtime() - started
-                val frame = effect.frames[effect.frameIndexAt(elapsed)]
+                val frame = proceduralRuntime?.frameAt(elapsed)
+                    ?: effect.frames[effect.frameIndexAt(elapsed)]
                 withContext(Dispatchers.Main.immediate) {
                     runCatching { manager?.setMatrixFrame(HardwareFrameEncoder.encode(frame.pixels)) }
                 }
                 delay(frame.durationMs.coerceAtLeast(67).toLong())
-                if (effect.loopMode == com.agentkosticka.playbox.model.LoopMode.HOLD &&
+                if (proceduralRuntime == null &&
+                    effect.loopMode == com.agentkosticka.playbox.model.LoopMode.HOLD &&
                     elapsed >= effect.totalDurationMs) break
             }
         }

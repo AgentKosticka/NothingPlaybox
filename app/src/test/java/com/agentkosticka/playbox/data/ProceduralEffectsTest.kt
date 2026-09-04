@@ -2,6 +2,7 @@ package com.agentkosticka.playbox.data
 
 import com.agentkosticka.playbox.model.MATRIX_SIZE
 import com.agentkosticka.playbox.model.PIXEL_COUNT
+import com.agentkosticka.playbox.model.ProceduralSpec
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -26,14 +27,48 @@ class ProceduralEffectsTest {
     }
 
     @Test
-    fun proceduralEffectsContainRealMotion() {
-        val life = ProceduralEffects.all.single { it.name == "CONWAY LIFE" }
-        val noise = ProceduralEffects.all.single { it.name == "SHIFTING NOISE" }
+    fun proceduralBuiltInsStoreSettingsNotBakedAnimations() {
+        val procedural = ProceduralEffects.all
 
-        assertEquals(56, life.frames.size)
-        assertEquals(60, noise.frames.size)
-        assertTrue(life.frames.zipWithNext().any { (a, b) -> !a.pixels.contentEquals(b.pixels) })
-        assertTrue(noise.frames.zipWithNext().all { (a, b) -> !a.pixels.contentEquals(b.pixels) })
-        assertFalse(noise.frames.first().pixels.contentEquals(noise.frames.last().pixels))
+        assertEquals(3, procedural.size)
+        procedural.forEach { effect ->
+            assertTrue(effect.procedural != null)
+            assertEquals("Procedural effects should only keep one static compatibility thumbnail", 1, effect.frames.size)
+            assertTrue(effect.isAnimated)
+        }
+    }
+
+    @Test
+    fun liveNoiseAndLavaChangeWithoutStoredFrameSequences() {
+        listOf("SHIFTING NOISE", "LAVA LAMP").forEach { name ->
+            val effect = ProceduralEffects.all.single { it.name == name }
+            val runtime = ProceduralEffectRuntime(effect)
+            val first = runtime.frameAt(0).pixels
+            val later = runtime.frameAt(750).pixels
+
+            assertFalse("$name should be generated live", first.contentEquals(later))
+            assertEquals(1, effect.frames.size)
+        }
+    }
+
+    @Test
+    fun conwayRuntimeHonorsCustomSeedAndStepTime() {
+        val horizontal = IntArray(PIXEL_COUNT).apply {
+            this[6 * MATRIX_SIZE + 5] = 255
+            this[6 * MATRIX_SIZE + 6] = 255
+            this[6 * MATRIX_SIZE + 7] = 255
+        }
+        val template = ProceduralEffects.all.single { it.name == "CONWAY LIFE" }
+        val effect = template.copy(
+            procedural = ProceduralSpec.ConwayLife(frameDurationMs = 200, initialState = horizontal),
+        )
+        val runtime = ProceduralEffectRuntime(effect)
+
+        assertTrue(runtime.frameAt(0).pixels.contentEquals(horizontal))
+        assertTrue(runtime.frameAt(199).pixels.contentEquals(horizontal))
+        val vertical = runtime.frameAt(200).pixels
+        assertEquals(255, vertical[5 * MATRIX_SIZE + 6])
+        assertEquals(255, vertical[6 * MATRIX_SIZE + 6])
+        assertEquals(255, vertical[7 * MATRIX_SIZE + 6])
     }
 }
