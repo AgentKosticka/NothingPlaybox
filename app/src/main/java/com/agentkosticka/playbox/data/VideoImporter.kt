@@ -34,7 +34,8 @@ object VideoImporter {
             require(sourceDuration > 0) { "The selected video is empty" }
 
             val duration = sourceDuration.coerceAtMost(MAX_DURATION_MS)
-            val sampleCount = ceil(duration / FRAME_DURATION_MS.toDouble()).toInt().coerceIn(1, MAX_EFFECT_FRAMES)
+            val sampleDurations = videoSampleDurations(duration, FRAME_DURATION_MS, MAX_EFFECT_FRAMES)
+            val sampleCount = sampleDurations.size
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
             val decodeSize = scaledDecodeSize(
                 retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull(),
@@ -45,9 +46,10 @@ object VideoImporter {
             repeat(sampleCount) { index ->
                 currentCoroutineContext().ensureActive()
                 val timeUs = index.toLong() * FRAME_DURATION_MS * 1_000L
+                val sampleDurationMs = sampleDurations[index]
                 val decoded = retriever.decodeFrame(timeUs, decodeSize)
                 if (decoded == null) {
-                    accumulator.addMissing()
+                    accumulator.addMissing(sampleDurationMs)
                 } else {
                     val oriented = try {
                         decoded.rotated(rotation)
@@ -56,7 +58,7 @@ object VideoImporter {
                         throw error
                     }
                     try {
-                        accumulator.addDecoded(ImageImporter.bitmapToPixels(oriented))
+                        accumulator.addDecoded(ImageImporter.bitmapToPixels(oriented), sampleDurationMs)
                     } finally {
                         if (oriented !== decoded) oriented.recycle()
                         decoded.recycle()
@@ -148,4 +150,27 @@ object VideoImporter {
         val matrix = Matrix().apply { postRotate(degrees) }
         return Bitmap.createBitmap(this, 0, 0, width, height, matrix, true)
     }
+}
+
+internal fun videoSampleDurations(durationMs: Long, sampleDurationMs: Int, maxSamples: Int): IntArray {
+    require(durationMs > 0)
+    require(sampleDurationMs >= 33)
+    require(maxSamples > 0)
+
+    val boundedDuration = durationMs.coerceAtMost(sampleDurationMs.toLong() * maxSamples)
+    val sampleCount = ceil(boundedDuration / sampleDurationMs.toDouble()).toInt().coerceIn(1, maxSamples)
+    if (sampleCount == 1) return intArrayOf(boundedDuration.toInt().coerceIn(33, sampleDurationMs))
+
+    val durations = IntArray(sampleCount) { sampleDurationMs }
+    val tail = (boundedDuration % sampleDurationMs).toInt()
+    if (tail == 0) return durations
+
+    if (tail >= 33) {
+        durations[durations.lastIndex] = tail
+    } else {
+        val borrowed = 33 - tail
+        durations[durations.lastIndex - 1] -= borrowed
+        durations[durations.lastIndex] = 33
+    }
+    return durations
 }

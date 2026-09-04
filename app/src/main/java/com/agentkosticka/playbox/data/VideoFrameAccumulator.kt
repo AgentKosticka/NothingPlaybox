@@ -21,8 +21,9 @@ internal class VideoFrameAccumulator(
     val frames: List<EffectFrame>
         get() = mutableFrames.toList()
 
-    fun addDecoded(pixels: IntArray) {
-        var remaining = sampleDurationMs + leadingMissingDurationMs
+    fun addDecoded(pixels: IntArray, durationMs: Int = sampleDurationMs) {
+        require(durationMs in 33..maxFrameDurationMs)
+        var remaining = durationMs + leadingMissingDurationMs
         leadingMissingDurationMs = 0
         while (remaining > 0) {
             val previous = mutableFrames.lastOrNull()
@@ -38,13 +39,14 @@ internal class VideoFrameAccumulator(
         }
     }
 
-    fun addMissing() {
+    fun addMissing(durationMs: Int = sampleDurationMs) {
+        require(durationMs in 33..maxFrameDurationMs)
         if (mutableFrames.isEmpty()) {
-            leadingMissingDurationMs += sampleDurationMs
+            leadingMissingDurationMs += durationMs
             return
         }
 
-        var remaining = sampleDurationMs
+        var remaining = durationMs
         while (remaining > 0) {
             val previous = mutableFrames.last()
             val available = maxFrameDurationMs - previous.durationMs
