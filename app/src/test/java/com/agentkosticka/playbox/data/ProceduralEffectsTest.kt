@@ -28,9 +28,9 @@ class ProceduralEffectsTest {
 
     @Test
     fun proceduralBuiltInsStoreSettingsNotBakedAnimations() {
-        val procedural = ProceduralEffects.all
+        val procedural = ProceduralEffects.all + OrganicEffects.all
 
-        assertEquals(3, procedural.size)
+        assertEquals(4, procedural.size)
         procedural.forEach { effect ->
             assertTrue(effect.procedural != null)
             assertEquals("Procedural effects should only keep one static compatibility thumbnail", 1, effect.frames.size)
@@ -39,9 +39,10 @@ class ProceduralEffectsTest {
     }
 
     @Test
-    fun liveNoiseAndLavaChangeWithoutStoredFrameSequences() {
-        listOf("SHIFTING NOISE", "LAVA LAMP").forEach { name ->
-            val effect = ProceduralEffects.all.single { it.name == name }
+    fun liveProceduralFieldsChangeWithoutStoredFrameSequences() {
+        val effects = ProceduralEffects.all + OrganicEffects.all
+        listOf("SHIFTING NOISE", "LAVA LAMP", "ORGANIC BLOOM").forEach { name ->
+            val effect = effects.single { it.name == name }
             val runtime = ProceduralEffectRuntime(effect)
             val first = runtime.frameAt(0).pixels
             val later = runtime.frameAt(750).pixels
@@ -49,6 +50,15 @@ class ProceduralEffectsTest {
             assertFalse("$name should be generated live", first.contentEquals(later))
             assertEquals(1, effect.frames.size)
         }
+    }
+
+    @Test
+    fun organicBloomIsDeterministicForTheSameSeedAndSettings() {
+        val template = OrganicEffects.all.single()
+        val first = ProceduralEffectRuntime(template).frameAt(900).pixels
+        val second = ProceduralEffectRuntime(template).frameAt(900).pixels
+
+        assertTrue(first.contentEquals(second))
     }
 
     @Test
