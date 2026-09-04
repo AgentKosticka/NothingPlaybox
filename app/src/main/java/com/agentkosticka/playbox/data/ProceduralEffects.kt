@@ -64,6 +64,7 @@ object ProceduralEffects {
                 val population = next.count { it }
                 val stalled = next.contentEquals(state) || previousState?.let { next.contentEquals(it) } == true
                 if (population < 4 || stalled) {
+                    // Let the old generation fade under the new seed instead of hard-cutting it away.
                     for (index in 0 until PIXEL_COUNT) {
                         if (state[index]) afterglow[index] = maxOf(afterglow[index], 105)
                     }
@@ -88,6 +89,7 @@ object ProceduralEffects {
         val state = BooleanArray(PIXEL_COUNT) { index ->
             PHONE_4A_PRO_MASK[index] && random.nextDouble() < 0.28
         }
+        // Give every generation a lively center instead of relying on a lucky random seed.
         listOf(5 to 6, 6 to 6, 7 to 6, 7 to 5, 6 to 4).forEach { (x, y) ->
             state[y * MATRIX_SIZE + x] = true
         }
@@ -127,10 +129,10 @@ object ProceduralEffects {
 
     private fun lavaLamp(): PlayboxEffect {
         val blobs = listOf(
-            LavaBlob(0.8, 0.92, 0.2, 0.18, 0.35, 2.2),
-            LavaBlob(1.25, 0.7, 1.9, 0.14, 0.31, 1.8),
-            LavaBlob(0.55, 1.15, 3.4, 0.2, 0.29, 2.5),
-            LavaBlob(1.05, 0.58, 5.1, 0.16, 0.27, 1.6),
+            LavaBlob(0.8, 0.92, 0.2, 0.18, 0.35, 1),
+            LavaBlob(1.25, 0.7, 1.9, 0.14, 0.31, 2),
+            LavaBlob(0.55, 1.15, 3.4, 0.2, 0.29, 1),
+            LavaBlob(1.05, 0.58, 5.1, 0.16, 0.27, 2),
         )
         val frames = (0 until 72).map { tick ->
             val phase = tick * PI * 2.0 / 72.0
@@ -142,7 +144,7 @@ object ProceduralEffects {
                 blobs.forEachIndexed { blobIndex, blob ->
                     val angle = phase * blob.speed + blob.phase
                     val cx = sin(angle) * blob.xRadius + sin(angle * 2.0 + blobIndex) * 0.08
-                    val cy = cos(angle * 0.73 + blob.phase) * blob.yRadius + sin(angle * 1.37) * 0.1
+                    val cy = cos(phase * (blob.speed + 1) + blob.phase) * blob.yRadius + sin(phase * 3.0 + blob.phase) * 0.1
                     val dx = x - cx
                     val dy = y - cy
                     val distanceSquared = dx * dx + dy * dy
@@ -167,7 +169,7 @@ object ProceduralEffects {
         val phase: Double,
         val softness: Double,
         val strength: Double,
-        val speed: Double,
+        val speed: Int,
     )
 
     private fun sampleNoise(grid: DoubleArray, x: Double, y: Double): Double {
