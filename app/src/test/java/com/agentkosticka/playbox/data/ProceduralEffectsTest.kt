@@ -52,7 +52,7 @@ class ProceduralEffectsTest {
     }
 
     @Test
-    fun conwayRuntimeHonorsCustomSeedAndStepTime() {
+    fun conwayRuntimeHonorsCustomSeedAndStepTimeWithoutAfterglow() {
         val horizontal = IntArray(PIXEL_COUNT).apply {
             this[6 * MATRIX_SIZE + 5] = 255
             this[6 * MATRIX_SIZE + 6] = 255
@@ -70,5 +70,6 @@ class ProceduralEffectsTest {
         assertEquals(255, vertical[5 * MATRIX_SIZE + 6])
         assertEquals(255, vertical[6 * MATRIX_SIZE + 6])
         assertEquals(255, vertical[7 * MATRIX_SIZE + 6])
+        assertTrue("Conway frames should contain only dead/off or alive/full-brightness cells", vertical.all { it == 0 || it == 255 })
     }
 }
