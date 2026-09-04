@@ -88,4 +88,20 @@ class VideoFrameAccumulatorTest {
         assertEquals(listOf(16_500L), videoSampleTimesUs(intArrayOf(33), 20).toList())
         assertEquals(listOf(9_999L), videoSampleTimesUs(intArrayOf(33), 10).toList())
     }
+
+    @Test
+    fun nearbyDecodeRetriesStayInsideSourceAndDoNotRepeatOriginalTimestamp() {
+        assertEquals(
+            listOf(67_000L, 133_000L),
+            videoNearbyDecodeTimesUs(timeUs = 100_000L, sourceDurationMs = 250L, offsetUs = 33_000L).toList(),
+        )
+        assertEquals(
+            listOf(0L, 43_000L),
+            videoNearbyDecodeTimesUs(timeUs = 10_000L, sourceDurationMs = 250L, offsetUs = 33_000L).toList(),
+        )
+        assertEquals(
+            listOf(216_999L, 249_999L),
+            videoNearbyDecodeTimesUs(timeUs = 249_999L, sourceDurationMs = 250L, offsetUs = 33_000L).toList(),
+        )
+    }
 }
