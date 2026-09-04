@@ -8,13 +8,14 @@ import com.agentkosticka.playbox.model.PlayboxEffect
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.floor
+import kotlin.math.pow
 import kotlin.math.roundToInt
 import kotlin.math.sin
 import kotlin.random.Random
 
 object ProceduralEffects {
     val all: List<PlayboxEffect> by lazy {
-        listOf(conwayLife(), shiftingNoise())
+        listOf(conwayLife(), shiftingNoise(), lavaLamp())
     }
 
     internal fun lifeStep(current: BooleanArray): BooleanArray {
@@ -63,7 +64,6 @@ object ProceduralEffects {
                 val population = next.count { it }
                 val stalled = next.contentEquals(state) || previousState?.let { next.contentEquals(it) } == true
                 if (population < 4 || stalled) {
-                    // Let the old generation fade under the new seed instead of hard-cutting it away.
                     for (index in 0 until PIXEL_COUNT) {
                         if (state[index]) afterglow[index] = maxOf(afterglow[index], 105)
                     }
@@ -88,7 +88,6 @@ object ProceduralEffects {
         val state = BooleanArray(PIXEL_COUNT) { index ->
             PHONE_4A_PRO_MASK[index] && random.nextDouble() < 0.28
         }
-        // Give every generation a lively center instead of relying on a lucky random seed.
         listOf(5 to 6, 6 to 6, 7 to 6, 7 to 5, 6 to 4).forEach { (x, y) ->
             state[y * MATRIX_SIZE + x] = true
         }
@@ -125,6 +124,51 @@ object ProceduralEffects {
             builtIn = true,
         )
     }
+
+    private fun lavaLamp(): PlayboxEffect {
+        val blobs = listOf(
+            LavaBlob(0.8, 0.92, 0.2, 0.18, 0.35, 2.2),
+            LavaBlob(1.25, 0.7, 1.9, 0.14, 0.31, 1.8),
+            LavaBlob(0.55, 1.15, 3.4, 0.2, 0.29, 2.5),
+            LavaBlob(1.05, 0.58, 5.1, 0.16, 0.27, 1.6),
+        )
+        val frames = (0 until 72).map { tick ->
+            val phase = tick * PI * 2.0 / 72.0
+            EffectFrame(IntArray(PIXEL_COUNT) { index ->
+                if (!PHONE_4A_PRO_MASK[index]) return@IntArray 0
+                val x = (index % MATRIX_SIZE - 6) / 6.0
+                val y = (index / MATRIX_SIZE - 6) / 6.0
+                var field = 0.0
+                blobs.forEachIndexed { blobIndex, blob ->
+                    val angle = phase * blob.speed + blob.phase
+                    val cx = sin(angle) * blob.xRadius + sin(angle * 2.0 + blobIndex) * 0.08
+                    val cy = cos(angle * 0.73 + blob.phase) * blob.yRadius + sin(angle * 1.37) * 0.1
+                    val dx = x - cx
+                    val dy = y - cy
+                    val distanceSquared = dx * dx + dy * dy
+                    field += blob.strength / (distanceSquared + blob.softness)
+                }
+                val shaped = ((field - 1.55) / 4.1).coerceIn(0.0, 1.0).pow(1.25)
+                (shaped * 255.0).roundToInt()
+            }, 75).normalized()
+        }
+        return PlayboxEffect(
+            id = "builtin-lava-lamp",
+            name = "LAVA LAMP",
+            description = "Soft metaballs merge and drift in a seamless liquid loop",
+            frames = frames,
+            builtIn = true,
+        )
+    }
+
+    private data class LavaBlob(
+        val xRadius: Double,
+        val yRadius: Double,
+        val phase: Double,
+        val softness: Double,
+        val strength: Double,
+        val speed: Double,
+    )
 
     private fun sampleNoise(grid: DoubleArray, x: Double, y: Double): Double {
         val xFloor = floor(x)
