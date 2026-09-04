@@ -88,10 +88,13 @@ fun ProceduralEditorScreen(
     }
 
     fun updateSpec(next: ProceduralSpec) {
-        playing = false
         draft = draft.copy(procedural = next, updatedAt = System.currentTimeMillis())
         refreshPreview()
     }
+
+    fun exportableDraft(): PlayboxEffect = draft.copy(
+        frames = listOf(ProceduralEffectRuntime(draft).frameAt(0)),
+    )
 
     fun finish() {
         glyphClient.stopDisplay()
@@ -138,7 +141,7 @@ fun ProceduralEditorScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onExport(draft) }) { Icon(Icons.Default.Download, "Export") }
+                    IconButton(onClick = { onExport(exportableDraft()) }) { Icon(Icons.Default.Download, "Export") }
                     TextButton(onClick = ::finish) { Text("SAVE") }
                 },
             )
@@ -237,11 +240,11 @@ fun ProceduralEditorScreen(
                         Text("Nothing is pre-rendered: the field is sampled continuously while the effect runs.", color = Muted, fontSize = 12.sp)
                     }
                     item {
-                        Text("DRIFT SPEED  ${"%.2f".format(spec.speed)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text("DRIFT SPEED  ${String.format(java.util.Locale.US, "%.2f", spec.speed)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = spec.speed, onValueChange = { updateSpec(spec.copy(speed = it)) }, valueRange = 0.15f..4f)
                     }
                     item {
-                        Text("SCALE  ${"%.2f".format(spec.scale)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text("SCALE  ${String.format(java.util.Locale.US, "%.2f", spec.scale)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = spec.scale, onValueChange = { updateSpec(spec.copy(scale = it)) }, valueRange = 0.45f..2.2f)
                     }
                     item {
@@ -260,7 +263,7 @@ fun ProceduralEditorScreen(
                         Text("Metaballs are generated live, so changing the controls changes the motion itself — not a stored loop.", color = Muted, fontSize = 12.sp)
                     }
                     item {
-                        Text("FLOW SPEED  ${"%.2f".format(spec.speed)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text("FLOW SPEED  ${String.format(java.util.Locale.US, "%.2f", spec.speed)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = spec.speed, onValueChange = { updateSpec(spec.copy(speed = it)) }, valueRange = 0.15f..4f)
                     }
                     item {
