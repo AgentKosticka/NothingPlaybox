@@ -84,7 +84,6 @@ fun ProceduralEditorScreen(
     fun refreshPreview() {
         previewPixels = ProceduralEffectRuntime(draft).frameAt(0).pixels
         conwayGeneration = 0
-        if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(previewPixels)
     }
 
     fun updateSpec(next: ProceduralSpec) {
@@ -224,7 +223,6 @@ fun ProceduralEditorScreen(
                             OutlinedButton(enabled = !playing, onClick = {
                                 previewPixels = ProceduralEffects.lifeStep(previewPixels)
                                 conwayGeneration++
-                                if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(previewPixels)
                             }) { Text("STEP") }
                             OutlinedButton(enabled = !playing, onClick = { refreshPreview() }) {
                                 Icon(Icons.Default.Refresh, null)
