@@ -120,9 +120,11 @@ fun ProceduralEditorScreen(
         }
     }
 
-    LaunchedEffect(live, connection, previewPixels) {
-        if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(previewPixels)
-        else if (!live) glyphClient.stopDisplay()
+    LaunchedEffect(live, playing, connection, if (playing) 0 else previewPixels.contentHashCode()) {
+        when {
+            live && !playing && connection == GlyphConnectionState.Ready -> glyphClient.showFrame(previewPixels)
+            !live -> glyphClient.stopDisplay()
+        }
     }
 
     Scaffold(
