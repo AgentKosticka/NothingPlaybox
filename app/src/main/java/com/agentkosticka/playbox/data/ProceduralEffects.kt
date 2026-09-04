@@ -239,7 +239,7 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
 
     private companion object {
         const val NOISE_GRID = 8
-        const val TAU = Math.PI * 2.0
+        const val TAU = 6.283185307179586
     }
 }
 
