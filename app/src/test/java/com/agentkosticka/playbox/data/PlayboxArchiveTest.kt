@@ -38,6 +38,19 @@ class PlayboxArchiveTest {
         }
     }
 
+    @Test
+    fun rejectsArchivesWithTooManyEntries() {
+        val archive = archiveOf(
+            "ignored-1.bin" to byteArrayOf(),
+            "ignored-2.bin" to byteArrayOf(),
+            "manifest.json" to "{}".toByteArray(),
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            readPlayboxManifest(ByteArrayInputStream(archive), maxEntries = 2)
+        }
+    }
+
     private fun archiveOf(vararg entries: Pair<String, ByteArray>): ByteArray {
         val output = ByteArrayOutputStream()
         ZipOutputStream(output).use { zip ->
