@@ -108,11 +108,13 @@ object VideoImporter {
             MediaMetadataRetriever.OPTION_PREVIOUS_SYNC,
             MediaMetadataRetriever.OPTION_NEXT_SYNC,
         )
-        for (option in options) {
-            if (size != null) {
+        if (size != null) {
+            for (option in options) {
                 decodeRuntimeFailure { getScaledFrameAtTime(timeUs, option, size.width, size.height) }
                     ?.let { return it }
             }
+        }
+        for (option in options) {
             decodeRuntimeFailure { getFrameAtTime(timeUs, option) }
                 ?.let { return it }
         }
