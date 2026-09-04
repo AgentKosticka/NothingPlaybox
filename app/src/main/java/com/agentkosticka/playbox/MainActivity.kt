@@ -456,8 +456,11 @@ private fun EditorScreen(
 
     BackHandler { finish() }
     DisposableEffect(Unit) { onDispose { glyphClient.stopDisplay() } }
-    LaunchedEffect(playing, live) {
-        if (!playing && live) glyphClient.stopDisplay()
+    LaunchedEffect(live, playing, connection, frameIndex, draft.frames[frameIndex].pixels.contentHashCode()) {
+        when {
+            live && !playing && connection == GlyphConnectionState.Ready -> glyphClient.showFrame(draft.frames[frameIndex].pixels)
+            !live && !playing -> glyphClient.stopDisplay()
+        }
     }
     LaunchedEffect(playing, live, connection, draft.id, draft.updatedAt) {
         if (!playing) return@LaunchedEffect
@@ -508,7 +511,6 @@ private fun EditorScreen(
                             val next = draft.frames[frameIndex].pixels.copyOf()
                             next[index] = intensity
                             commitPixels(next, recordUndo = false)
-                            if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(next)
                         },
                         onStrokeStart = ::beginStroke,
                         onStrokeEnd = ::endStroke,
