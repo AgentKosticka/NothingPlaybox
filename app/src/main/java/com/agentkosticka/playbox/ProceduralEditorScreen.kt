@@ -293,6 +293,38 @@ fun ProceduralEditorScreen(
                         }
                     }
                 }
+                is ProceduralSpec.OrganicBloom -> {
+                    item {
+                        Text("ORGANIC BLOOM CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                        Text("Reaction-diffusion evolves live. Growth refills space; split controls how aggressively structures break apart.", color = Muted, fontSize = 12.sp)
+                    }
+                    item {
+                        val updatesPerSecond = 1_000f / spec.frameDurationMs
+                        Text("EVOLUTION  ${String.format(java.util.Locale.US, "%.1f", updatesPerSecond)} updates/s", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Slider(
+                            value = updatesPerSecond,
+                            onValueChange = { speed ->
+                                updateSpec(spec.copy(frameDurationMs = (1_000f / speed.coerceAtLeast(2f)).roundToInt().coerceIn(67, 500)))
+                            },
+                            valueRange = 2f..15f,
+                        )
+                    }
+                    item {
+                        val growth = ((spec.feed - 0.035f) / 0.04f).coerceIn(0f, 1f)
+                        Text("GROWTH  ${(growth * 100).roundToInt()}%", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Slider(value = growth, onValueChange = { updateSpec(spec.copy(feed = 0.035f + it * 0.04f)) })
+                    }
+                    item {
+                        val split = ((spec.kill - 0.045f) / 0.03f).coerceIn(0f, 1f)
+                        Text("SPLIT  ${(split * 100).roundToInt()}%", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Slider(value = split, onValueChange = { updateSpec(spec.copy(kill = 0.045f + it * 0.03f)) })
+                    }
+                    item {
+                        OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }, modifier = Modifier.fillMaxWidth()) {
+                            Text("NEW BLOOM SEED")
+                        }
+                    }
+                }
                 null -> Unit
             }
         }
@@ -303,4 +335,5 @@ private fun proceduralTypeLabel(spec: ProceduralSpec): String = when (spec) {
     is ProceduralSpec.ConwayLife -> "CONWAY LIFE • LIVE SIMULATION"
     is ProceduralSpec.ShiftingNoise -> "SHIFTING NOISE • LIVE FIELD"
     is ProceduralSpec.LavaLamp -> "LAVA LAMP • LIVE METABALLS"
+    is ProceduralSpec.OrganicBloom -> "ORGANIC BLOOM • LIVE REACTION-DIFFUSION"
 }
