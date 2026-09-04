@@ -2,6 +2,7 @@ package com.agentkosticka.playbox.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ImageImporterTest {
@@ -28,5 +29,22 @@ class ImageImporterTest {
             ImageDecodeSize(width = 1_024, height = 1),
             boundedImageDecodeSize(100_000, 1),
         )
+    }
+
+    @Test
+    fun transparentPixelsStayOffRegardlessOfRgb() {
+        assertEquals(0, colorToMatrixIntensity(0x00FFFFFF))
+        assertEquals(0, colorToMatrixIntensity(0x00FF0000))
+    }
+
+    @Test
+    fun alphaScalesVisibleLuminanceOverBlack() {
+        val transparent = colorToMatrixIntensity(0x00FFFFFF)
+        val half = colorToMatrixIntensity(0x80FFFFFF.toInt())
+        val opaque = colorToMatrixIntensity(0xFFFFFFFF.toInt())
+
+        assertEquals(0, transparent)
+        assertEquals(255, opaque)
+        assertTrue(half in 1 until opaque)
     }
 }

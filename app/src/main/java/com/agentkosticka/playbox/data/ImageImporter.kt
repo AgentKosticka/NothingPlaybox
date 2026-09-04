@@ -32,6 +32,17 @@ internal fun boundedImageDecodeSize(width: Int, height: Int, maxEdge: Int = 1_02
     )
 }
 
+internal fun colorToMatrixIntensity(color: Int): Int {
+    val alpha = ((color ushr 24) and 0xff) / 255.0
+    if (alpha == 0.0) return 0
+    val r = ((color ushr 16) and 0xff) / 255.0
+    val g = ((color ushr 8) and 0xff) / 255.0
+    val b = (color and 0xff) / 255.0
+    fun linear(value: Double) = if (value <= .04045) value / 12.92 else ((value + .055) / 1.055).pow(2.4)
+    val luminance = alpha * (.2126 * linear(r) + .7152 * linear(g) + .0722 * linear(b))
+    return (luminance.pow(1.0 / 2.2) * 255).toInt().coerceIn(0, 255)
+}
+
 object ImageImporter {
     suspend fun import(resolver: ContentResolver, uris: List<Uri>): PlayboxEffect = withContext(Dispatchers.IO) {
         require(uris.isNotEmpty())
@@ -71,15 +82,8 @@ object ImageImporter {
         val scaled = square.scale(MATRIX_SIZE, MATRIX_SIZE)
         return try {
             IntArray(PIXEL_COUNT) { index ->
-                if (!PHONE_4A_PRO_MASK[index]) 0 else {
-                    val color = scaled[index % MATRIX_SIZE, index / MATRIX_SIZE]
-                    val r = ((color shr 16) and 0xff) / 255.0
-                    val g = ((color shr 8) and 0xff) / 255.0
-                    val b = (color and 0xff) / 255.0
-                    fun linear(value: Double) = if (value <= .04045) value / 12.92 else ((value + .055) / 1.055).pow(2.4)
-                    val luminance = .2126 * linear(r) + .7152 * linear(g) + .0722 * linear(b)
-                    (luminance.pow(1.0 / 2.2) * 255).toInt().coerceIn(0, 255)
-                }
+                if (!PHONE_4A_PRO_MASK[index]) 0
+                else colorToMatrixIntensity(scaled[index % MATRIX_SIZE, index / MATRIX_SIZE])
             }
         } finally {
             if (scaled !== square) scaled.recycle()
