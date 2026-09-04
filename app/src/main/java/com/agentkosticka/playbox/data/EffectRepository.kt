@@ -162,6 +162,12 @@ class EffectRepository(context: Context) {
             .put("speed", spec.speed.toDouble())
             .put("blobCount", spec.blobCount)
             .put("softness", spec.softness.toDouble())
+        is ProceduralSpec.OrganicBloom -> JSONObject()
+            .put("type", "organic-bloom")
+            .put("frameDurationMs", spec.frameDurationMs)
+            .put("seed", spec.seed)
+            .put("feed", spec.feed.toDouble())
+            .put("kill", spec.kill.toDouble())
     }
 
     private fun proceduralFromJson(json: JSONObject?): ProceduralSpec? {
@@ -188,6 +194,12 @@ class EffectRepository(context: Context) {
                 speed = json.optDouble("speed", 1.0).toFloat(),
                 blobCount = json.optInt("blobCount", 4),
                 softness = json.optDouble("softness", 0.18).toFloat(),
+            ).normalized()
+            "organic-bloom" -> ProceduralSpec.OrganicBloom(
+                frameDurationMs = json.optInt("frameDurationMs", 75).coerceIn(67, 500),
+                seed = json.optLong("seed", 0xB1005L),
+                feed = json.optDouble("feed", 0.055).toFloat(),
+                kill = json.optDouble("kill", 0.062).toFloat(),
             ).normalized()
             else -> error("Unknown procedural effect type")
         }
