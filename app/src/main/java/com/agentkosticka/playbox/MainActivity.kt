@@ -196,7 +196,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
             onEdit = { effect -> editingId = repository.save(if (effect.builtIn) effect.editableCopy() else effect).id },
             onActivate = { effect ->
                 repository.setActiveEffect(effect.id)
-                glyphClient.openToyManager().onFailure {
+                glyphClient.openAodToyManager().onFailure {
                     message = "Selected ${effect.name}. Enable Nothing Playbox in Settings → Glyph Interface → Flip to Glyph → Always-on Glyph Toy."
                 }
             },
