@@ -20,6 +20,7 @@ object VideoImporter {
     private const val FRAME_DURATION_MS = 100
     private const val MAX_DURATION_MS = 60_000L
     private const val MAX_DECODE_EDGE = 256
+    private const val NEARBY_RETRY_OFFSET_US = 33_000L
 
     suspend fun import(
         context: Context,
@@ -47,7 +48,7 @@ object VideoImporter {
             repeat(sampleCount) { index ->
                 currentCoroutineContext().ensureActive()
                 val sampleDurationMs = sampleDurations[index]
-                val decoded = retriever.decodeFrame(sampleTimesUs[index], decodeSize)
+                val decoded = retriever.decodeFrame(sampleTimesUs[index], decodeSize, duration)
                 if (decoded == null) {
                     accumulator.addMissing(sampleDurationMs)
                 } else {
@@ -103,13 +104,26 @@ object VideoImporter {
         )
     }
 
-    private fun MediaMetadataRetriever.decodeFrame(timeUs: Long, size: DecodeSize?): Bitmap? {
+    private fun MediaMetadataRetriever.decodeFrame(timeUs: Long, size: DecodeSize?, sourceDurationMs: Long): Bitmap? {
         val options = intArrayOf(
             MediaMetadataRetriever.OPTION_CLOSEST,
             MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
             MediaMetadataRetriever.OPTION_PREVIOUS_SYNC,
             MediaMetadataRetriever.OPTION_NEXT_SYNC,
         )
+        decodeFrameAt(timeUs, size, options)?.let { return it }
+
+        val nearbyOptions = intArrayOf(
+            MediaMetadataRetriever.OPTION_CLOSEST,
+            MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+        )
+        for (candidateTimeUs in videoNearbyDecodeTimesUs(timeUs, sourceDurationMs, NEARBY_RETRY_OFFSET_US)) {
+            decodeFrameAt(candidateTimeUs, size, nearbyOptions)?.let { return it }
+        }
+        return null
+    }
+
+    private fun MediaMetadataRetriever.decodeFrameAt(timeUs: Long, size: DecodeSize?, options: IntArray): Bitmap? {
         if (size != null) {
             for (option in options) {
                 decodeRuntimeFailure { getScaledFrameAtTime(timeUs, option, size.width, size.height) }
@@ -188,4 +202,18 @@ internal fun videoSampleTimesUs(sampleDurationsMs: IntArray, sourceDurationMs: L
         elapsedMs += durationMs
         midpointUs.coerceAtMost(lastValidUs)
     }
+}
+
+internal fun videoNearbyDecodeTimesUs(timeUs: Long, sourceDurationMs: Long, offsetUs: Long): LongArray {
+    require(timeUs >= 0)
+    require(sourceDurationMs > 0)
+    require(offsetUs > 0)
+
+    val lastValidUs = (sourceDurationMs * 1_000L - 1L).coerceAtLeast(0L)
+    val candidates = linkedSetOf<Long>()
+    val before = (timeUs - offsetUs).coerceAtLeast(0L)
+    val after = (timeUs + offsetUs).coerceAtMost(lastValidUs)
+    if (before != timeUs) candidates += before
+    if (after != timeUs) candidates += after
+    return candidates.toLongArray()
 }
