@@ -74,14 +74,18 @@ class VideoFrameAccumulatorTest {
     fun sampleTimesUseIntervalMidpointsIncludingVariableTail() {
         assertEquals(
             listOf(50_000L, 134_000L, 184_500L),
-            videoSampleTimesUs(intArrayOf(100, 68, 33)).toList(),
+            videoSampleTimesUs(intArrayOf(100, 68, 33), 201).toList(),
         )
-        assertEquals(listOf(50_000L, 150_000L, 225_000L), videoSampleTimesUs(intArrayOf(100, 100, 50)).toList())
+        assertEquals(
+            listOf(50_000L, 150_000L, 225_000L),
+            videoSampleTimesUs(intArrayOf(100, 100, 50), 250).toList(),
+        )
     }
 
     @Test
-    fun subMinimumClipUsesMinimumRepresentableFrameTime() {
+    fun subMinimumClipUsesMinimumRepresentableFrameTimeWithoutSamplingPastSource() {
         assertEquals(listOf(33), videoSampleDurations(20, 100, 600).toList())
-        assertEquals(listOf(16_500L), videoSampleTimesUs(intArrayOf(33)).toList())
+        assertEquals(listOf(16_500L), videoSampleTimesUs(intArrayOf(33), 20).toList())
+        assertEquals(listOf(9_999L), videoSampleTimesUs(intArrayOf(33), 10).toList())
     }
 }
