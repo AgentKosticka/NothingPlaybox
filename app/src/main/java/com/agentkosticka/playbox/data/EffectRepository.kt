@@ -91,7 +91,15 @@ class EffectRepository(context: Context) {
         val root = storage.openRead().bufferedReader().use { JSONObject(it.readText()) }
         require(root.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION)
         val array = root.getJSONArray("effects")
-        buildList { for (index in 0 until array.length()) add(effectFromJson(array.getJSONObject(index))) }
+        buildList {
+            for (index in 0 until array.length()) {
+                try {
+                    add(effectFromJson(array.getJSONObject(index)))
+                } catch (_: Exception) {
+                    // Preserve the rest of the library when a single stored effect is malformed.
+                }
+            }
+        }
     }.getOrDefault(emptyList())
 
     private fun persistUsers() {
