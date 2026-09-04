@@ -35,6 +35,7 @@ object VideoImporter {
 
             val duration = sourceDuration.coerceAtMost(MAX_DURATION_MS)
             val sampleDurations = videoSampleDurations(duration, FRAME_DURATION_MS, MAX_EFFECT_FRAMES)
+            val sampleTimesUs = videoSampleTimesUs(sampleDurations)
             val sampleCount = sampleDurations.size
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
             val decodeSize = scaledDecodeSize(
@@ -45,9 +46,8 @@ object VideoImporter {
 
             repeat(sampleCount) { index ->
                 currentCoroutineContext().ensureActive()
-                val timeUs = index.toLong() * FRAME_DURATION_MS * 1_000L
                 val sampleDurationMs = sampleDurations[index]
-                val decoded = retriever.decodeFrame(timeUs, decodeSize)
+                val decoded = retriever.decodeFrame(sampleTimesUs[index], decodeSize)
                 if (decoded == null) {
                     accumulator.addMissing(sampleDurationMs)
                 } else {
@@ -173,4 +173,17 @@ internal fun videoSampleDurations(durationMs: Long, sampleDurationMs: Int, maxSa
         durations[durations.lastIndex] = 33
     }
     return durations
+}
+
+internal fun videoSampleTimesUs(sampleDurationsMs: IntArray): LongArray {
+    require(sampleDurationsMs.isNotEmpty())
+    require(sampleDurationsMs.all { it >= 33 })
+
+    var elapsedMs = 0L
+    return LongArray(sampleDurationsMs.size) { index ->
+        val durationMs = sampleDurationsMs[index]
+        val midpointUs = (elapsedMs * 1_000L) + (durationMs * 1_000L / 2L)
+        elapsedMs += durationMs
+        midpointUs
+    }
 }
