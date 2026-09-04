@@ -93,9 +93,11 @@ class EffectRepository(context: Context) {
         val array = root.getJSONArray("effects")
         buildList {
             for (index in 0 until array.length()) {
-                runCatching { effectFromJson(array.getJSONObject(index)) }
-                    .getOrNull()
-                    ?.let(::add)
+                try {
+                    add(effectFromJson(array.getJSONObject(index)))
+                } catch (_: Exception) {
+                    // Preserve the rest of the library when a single stored effect is malformed.
+                }
             }
         }
     }.getOrDefault(emptyList())
