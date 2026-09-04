@@ -59,6 +59,7 @@ class PlayboxToyService : Service() {
     }
 
     private fun startPlayback() {
+        val currentManager = manager ?: return
         playback?.cancel()
         val repository = (application as PlayboxApplication).repository
         val effect = repository.activeEffectId?.let(repository::find) ?: EffectCatalog.builtIns.first()
@@ -70,7 +71,7 @@ class PlayboxToyService : Service() {
                 val frame = proceduralRuntime?.frameAt(elapsed)
                     ?: effect.frames[effect.frameIndexAt(elapsed)]
                 withContext(Dispatchers.Main.immediate) {
-                    runCatching { manager?.setMatrixFrame(HardwareFrameEncoder.encode(frame.pixels)) }
+                    runCatching { currentManager.setMatrixFrame(HardwareFrameEncoder.encode(frame.pixels)) }
                 }
                 delay(frame.durationMs.coerceAtLeast(67).toLong())
                 if (proceduralRuntime == null &&
