@@ -54,16 +54,31 @@ sealed interface ProceduralSpec {
             softness = softness.coerceIn(0.08f, 0.45f),
         )
     }
+
+    data class OrganicBloom(
+        override val frameDurationMs: Int = 75,
+        val seed: Long = 0xB1005L,
+        val feed: Float = 0.055f,
+        val kill: Float = 0.062f,
+    ) : ProceduralSpec {
+        fun normalized() = copy(
+            frameDurationMs = frameDurationMs.coerceIn(67, 500),
+            feed = feed.coerceIn(0.035f, 0.075f),
+            kill = kill.coerceIn(0.045f, 0.075f),
+        )
+    }
 }
 
 fun ProceduralSpec.normalized(): ProceduralSpec = when (this) {
     is ProceduralSpec.ConwayLife -> normalized()
     is ProceduralSpec.ShiftingNoise -> normalized()
     is ProceduralSpec.LavaLamp -> normalized()
+    is ProceduralSpec.OrganicBloom -> normalized()
 }
 
 fun ProceduralSpec.deepCopy(): ProceduralSpec = when (this) {
     is ProceduralSpec.ConwayLife -> copy(initialState = initialState.copyOf())
     is ProceduralSpec.ShiftingNoise -> copy()
     is ProceduralSpec.LavaLamp -> copy()
+    is ProceduralSpec.OrganicBloom -> copy()
 }
