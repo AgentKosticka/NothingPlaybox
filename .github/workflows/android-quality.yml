@@ -45,13 +45,19 @@ jobs:
           set -euo pipefail
           echo "be00ee9cd7115f6b11984c6e31fe98e298fb726940d1555063610685ef3bbf29  app/libs/glyph-matrix-sdk-2.0.aar" | sha256sum --check --strict
 
-      - name: Unit tests, lint and build variants
+      - name: Unit tests
+        shell: bash
+        run: ./gradlew --build-cache --parallel testDebugUnitTest
+
+      - name: Android lint
+        shell: bash
+        run: ./gradlew --build-cache --parallel lintDebug
+
+      - name: Build app variants
         shell: bash
         run: |
           set -euo pipefail
           ./gradlew --build-cache --parallel \
-            testDebugUnitTest \
-            lintDebug \
             assembleDebug \
             assembleDebugAndroidTest \
             assembleRelease
