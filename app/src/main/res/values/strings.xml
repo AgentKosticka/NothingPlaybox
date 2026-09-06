@@ -153,4 +153,11 @@
     <string name="aod_effect_title">AOD EFFECT</string>
     <string name="close">CLOSE</string>
     <string name="hour_picker_format">%1$s %2$s:00</string>
+
+    <string name="matrix_preview_cd">13 by 13 Glyph Matrix preview</string>
+    <string name="matrix_editable_cd">Editable Glyph Matrix. Use accessibility actions to move between active LEDs and edit the selected cell.</string>
+    <string name="matrix_selected_state">Selected row %1$d, column %2$d, intensity %3$d of 255</string>
+    <string name="matrix_edit_selected_led">Edit selected LED</string>
+    <string name="matrix_previous_led">Previous active LED</string>
+    <string name="matrix_next_led">Next active LED</string>
 </resources>
