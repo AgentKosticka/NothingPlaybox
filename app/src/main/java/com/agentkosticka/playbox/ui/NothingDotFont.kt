@@ -2,17 +2,24 @@ package com.agentkosticka.playbox.ui
 
 import android.graphics.Typeface
 import androidx.compose.ui.text.font.FontFamily
+import java.io.File
 
 /** Uses Nothing OS NDot57 only when Android actually resolves that family. */
 object NothingDotFont {
-    private val candidate: Typeface by lazy { Typeface.create("NDot57", Typeface.NORMAL) }
-
-    // Typeface.familyName is hidden from the SDK stubs. Vendor builds include the
-    // resolved family in toString(); unlike a brand check this does not mislabel fallback fonts.
-    val available: Boolean by lazy {
-        candidate.toString().contains("NDot", ignoreCase = true)
+    private val candidate: Typeface? by lazy {
+        // Unknown family names resolve to DEFAULT. toString() is not a font-name API.
+        val named = Typeface.create("NDot57", Typeface.NORMAL)
+        if (named != Typeface.DEFAULT) named else {
+            // Some Nothing OS versions ship the font without exposing a named family.
+            sequenceOf("NDot57Caps.otf", "Ndot-57.otf", "Ndot-57-Aligned.otf")
+                .map { File("/system/fonts", it) }
+                .filter { it.isFile && it.canRead() }
+                .mapNotNull { runCatching { Typeface.createFromFile(it) }.getOrNull() }
+                .firstOrNull()
+        }
     }
 
-    val typeface: Typeface get() = if (available) candidate else Typeface.MONOSPACE
+    val available: Boolean get() = candidate != null
+    val typeface: Typeface get() = candidate ?: Typeface.MONOSPACE
     val family: FontFamily by lazy { FontFamily(typeface) }
 }

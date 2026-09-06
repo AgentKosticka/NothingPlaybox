@@ -14,15 +14,23 @@ object TimeBarsRenderer {
     private val dotTypeface get() = NothingDotFont.typeface
     private val dotFontAvailable get() = NothingDotFont.available
 
-    private fun labelThatFits(value: String, step: Float, availableWidth: Float = 238f): String {
+    internal fun textWidth(value: String, step: Float): Float {
+        if (value.isEmpty()) return 0f
+        if (!dotFontAvailable) return ((value.length - 1) * 6 + 4.72f) * step
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             typeface = dotTypeface
             textSize = step * 7.2f
         }
-        if (paint.measureText(value) <= availableWidth) return value
+        val bounds = android.graphics.Rect()
+        paint.getTextBounds(value, 0, value.length, bounds)
+        return maxOf(paint.measureText(value), bounds.right.toFloat())
+    }
+
+    internal fun labelThatFits(value: String, step: Float, availableWidth: Float = 238f): String {
+        if (textWidth(value, step) <= availableWidth) return value
         for (length in value.length - 1 downTo 1) {
             val candidate = value.take(length) + "..."
-            if (paint.measureText(candidate) <= availableWidth) return candidate
+            if (textWidth(candidate, step) <= availableWidth) return candidate
         }
         return "..."
     }
@@ -84,7 +92,7 @@ object TimeBarsRenderer {
             val label = labelThatFits(bar.label, 5.2f)
             text(label, 36f, y, 5.2f, Color.WHITE)
             val percent = "${floor(bar.fraction * 100).toInt()}%"
-            text(percent, 690f - percent.length * 31f, y, 5.2f, Color.WHITE)
+            text(percent, 684f - textWidth(percent, 5.2f), y, 5.2f, Color.WHITE)
             val dots = filledDots(48, bar.fraction, settings.fill, index)
             dots.forEachIndexed { dot, filled ->
                 paint.color = if (filled) Color.WHITE else Color.rgb(57, 57, 57)
