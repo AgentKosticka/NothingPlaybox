@@ -15,6 +15,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.customActions
@@ -22,6 +23,7 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.unit.IntSize
+import com.agentkosticka.playbox.R
 import com.agentkosticka.playbox.model.MATRIX_SIZE
 import com.agentkosticka.playbox.model.PHONE_4A_PRO_MASK
 import kotlin.math.min
@@ -53,11 +55,13 @@ fun MatrixDisplay(
     val currentOnStrokeStart = rememberUpdatedState(onStrokeStart)
     val currentOnStrokeEnd = rememberUpdatedState(onStrokeEnd)
     val currentPixels = rememberUpdatedState(pixels)
-    val matrixDescription = if (onPixel == null) {
-        "13 by 13 Glyph Matrix preview"
-    } else {
-        "Editable Glyph Matrix. Use accessibility actions to move between active LEDs and edit the selected cell."
-    }
+    val previewDescription = stringResource(R.string.matrix_preview_cd)
+    val editableDescription = stringResource(R.string.matrix_editable_cd)
+    val editSelectedLabel = stringResource(R.string.matrix_edit_selected_led)
+    val previousLabel = stringResource(R.string.matrix_previous_led)
+    val nextLabel = stringResource(R.string.matrix_next_led)
+    val matrixDescription = if (onPixel == null) previewDescription else editableDescription
+
     var canvasModifier = modifier.semantics {
         contentDescription = matrixDescription
         if (onPixel != null && activeIndices.isNotEmpty()) {
@@ -66,24 +70,24 @@ fun MatrixDisplay(
             val column = selected % MATRIX_SIZE + 1
             val intensity = currentPixels.value.getOrElse(selected) { 0 }.coerceIn(0, 255)
             stateDescription = "Selected row $row, column $column, intensity $intensity of 255"
-            onClick("Edit selected LED") {
+            onClick(editSelectedLabel) {
                 currentOnStrokeStart.value?.invoke()
                 currentOnPixel.value?.invoke(selected)
                 currentOnStrokeEnd.value?.invoke()
                 true
             }
             customActions = listOf(
-                CustomAccessibilityAction("Previous active LED") {
+                CustomAccessibilityAction(previousLabel) {
                     accessibilityPosition = if (accessibilityPosition <= 0) activeIndices.lastIndex else accessibilityPosition - 1
                     true
                 },
-                CustomAccessibilityAction("Edit selected LED") {
+                CustomAccessibilityAction(editSelectedLabel) {
                     currentOnStrokeStart.value?.invoke()
                     currentOnPixel.value?.invoke(selected)
                     currentOnStrokeEnd.value?.invoke()
                     true
                 },
-                CustomAccessibilityAction("Next active LED") {
+                CustomAccessibilityAction(nextLabel) {
                     accessibilityPosition = if (accessibilityPosition >= activeIndices.lastIndex) 0 else accessibilityPosition + 1
                     true
                 },
