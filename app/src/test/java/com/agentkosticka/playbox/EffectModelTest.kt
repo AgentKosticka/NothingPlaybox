@@ -78,7 +78,7 @@ class EffectModelTest {
 
     @Test
     fun allBuiltInsAreHardwareSafe() {
-        assertEquals(19, EffectCatalog.builtIns.size)
+        assertEquals(24, EffectCatalog.builtIns.size)
         assertTrue(EffectCatalog.builtIns.any { it.name.contains("EYE") })
         assertTrue(EffectCatalog.builtIns.any { it.name.contains("BEER") })
         assertTrue(EffectCatalog.builtIns.any { it.name.contains("BLACK HOLE") })

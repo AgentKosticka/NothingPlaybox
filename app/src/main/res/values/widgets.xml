@@ -1,0 +1,8 @@
+<resources>
+    <string name="day_dial_name">Day dial</string>
+    <string name="day_dial_description">A dotted ring of today’s progress, with weekday and date. Refreshes about every 15 minutes.</string>
+    <string name="battery_dots_name">Battery dots</string>
+    <string name="battery_dots_description">One dot per battery percent, plus charging status. Refreshes about every 15 minutes.</string>
+    <string name="time_bars_name">Time bars</string>
+    <string name="time_bars_description">Four dotted bars tracking your day, week, month and year. Choose your week start and fill style in Playbox. Refreshes about every 15 minutes.</string>
+</resources>

@@ -54,6 +54,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -100,6 +105,7 @@ import com.agentkosticka.playbox.model.frameIndexAt
 import com.agentkosticka.playbox.ui.MatrixDisplay
 import com.agentkosticka.playbox.ui.Muted
 import com.agentkosticka.playbox.ui.NothingRed
+import com.agentkosticka.playbox.ui.NothingDotFont
 import com.agentkosticka.playbox.ui.PlayboxTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -131,6 +137,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
     val snackbar = remember { SnackbarHostState() }
     val resolver = androidx.compose.ui.platform.LocalContext.current.contentResolver
     val context = androidx.compose.ui.platform.LocalContext.current
+    var section by rememberSaveable { mutableStateOf(if ((context as? MainActivity)?.intent?.getBooleanExtra("open_widgets", false) == true) "Widgets" else "Matrix") }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
 
     val photos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(100)) { uris ->
@@ -188,17 +195,19 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
         )
     } else {
         HomeScreen(
+            repository = repository,
+            section = section,
+            onSection = { section = it },
             effects = effects,
             connection = connection,
             glyphClient = glyphClient,
             snackbar = snackbar,
             onCreate = { createDialog = true },
             onEdit = { effect -> editingId = repository.save(if (effect.builtIn) effect.editableCopy() else effect).id },
+            onNewProfile = { effect -> editingId = repository.save(effect.editableCopy("${effect.name} profile")).id },
             onActivate = { effect ->
                 repository.setActiveEffect(effect.id)
-                glyphClient.openAodToyManager().onFailure {
-                    message = "Selected ${effect.name}. Enable Nothing Playbox in Settings → Glyph Interface → Flip to Glyph → Always-on Glyph Toy."
-                }
+                section = "AOD"
             },
             onDelete = repository::delete,
             onImport = { importFile.launch(arrayOf("application/zip", "application/octet-stream")) },
@@ -259,18 +268,34 @@ private fun safeFileName(name: String) = name.replace(Regex("[^A-Za-z0-9._-]"), 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreen(
+    repository: EffectRepository,
+    section: String,
+    onSection: (String) -> Unit,
     effects: List<PlayboxEffect>,
     connection: GlyphConnectionState,
     glyphClient: GlyphMatrixClient,
     snackbar: SnackbarHostState,
     onCreate: () -> Unit,
     onEdit: (PlayboxEffect) -> Unit,
+    onNewProfile: (PlayboxEffect) -> Unit,
     onActivate: (PlayboxEffect) -> Unit,
     onDelete: (String) -> Unit,
     onImport: () -> Unit,
 ) {
+    var engine by rememberSaveable { mutableStateOf<String?>(null) }
+    val engines = effects.filter { it.builtIn && it.procedural != null }
+    val selectedEngine = engines.firstOrNull { it.id == engine }
+    val visibleEffects = when (section) {
+        "Matrix" -> effects.filter { it.procedural == null }
+        "Procedural" -> if (selectedEngine == null) emptyList() else effects.filter {
+            it.procedural != null && it.procedural::class == selectedEngine.procedural!!::class
+        }.sortedByDescending { it.builtIn }
+        else -> emptyList()
+    }
+    BackHandler(enabled = section == "Procedural" && engine != null) { engine = null }
     var playingId by remember { mutableStateOf<String?>(null) }
     var playingPixels by remember { mutableStateOf<IntArray?>(null) }
+    LaunchedEffect(section) { playingId = null; playingPixels = null; glyphClient.stopDisplay() }
     val playingEffect = playingId?.let { id -> effects.firstOrNull { it.id == id } }
 
     LaunchedEffect(playingEffect, connection) {
@@ -302,18 +327,29 @@ private fun HomeScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
                 title = {
                     Column {
-                        Text("NOTHING PLAYBOX", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text(connectionLabel(connection), color = connectionColor(connection), fontSize = 11.sp)
+                        Text("NOTHING PLAYBOX", fontFamily = NothingDotFont.family, fontWeight = FontWeight.Bold)
                     }
                 },
                 actions = {
-                    IconButton(onClick = onImport) { Icon(Icons.Default.Upload, "Import effect") }
+                    if (section == "Matrix" || section == "Procedural") IconButton(onClick = onImport) { Icon(Icons.Default.Upload, "Import effect") }
                 },
             )
         },
         floatingActionButton = {
+            if (section == "Matrix") {
             FloatingActionButton(onClick = onCreate, containerColor = NothingRed, contentColor = Color.White) {
                 Icon(Icons.Default.Add, "Create effect")
+            }
+            }
+        },
+        bottomBar = {
+            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+                listOf("Matrix" to Icons.Default.GridView, "Procedural" to Icons.Default.AutoAwesome, "Widgets" to Icons.Default.Widgets, "AOD" to Icons.Default.Lightbulb).forEach { (name, icon) ->
+                    NavigationBarItem(selected = section == name, onClick = {
+                        playingId = null
+                        onSection(name)
+                    }, icon = { Icon(icon, null) }, label = { Text(name) })
+                }
             }
         },
     ) { padding ->
@@ -323,11 +359,38 @@ private fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             item {
-                Text("WHAT CAN THE PHONE DO?", fontFamily = FontFamily.Monospace, fontSize = 25.sp, lineHeight = 29.sp)
+                Text(when (section) { "Procedural" -> selectedEngine?.name ?: "LIVING LIGHT"; "Widgets" -> "AT A GLANCE"; "AOD" -> "ALWAYS YOURS"; else -> "MATRIX STUDIO" }, fontFamily = NothingDotFont.family, fontSize = 25.sp, lineHeight = 29.sp)
                 Spacer(Modifier.height(4.dp))
-                Text("137 lights. Every one under your control.", color = Muted)
+                Text(when (section) { "Procedural" -> "One engine. Your own profiles."; "Widgets" -> "Small windows onto your day."; "AOD" -> "Your Glyph, on your schedule."; else -> "Static artwork, frame animations and imports." }, color = Muted)
             }
-            items(effects, key = { it.id }) { effect ->
+            if (section == "Widgets") item { WidgetsScreen() }
+            if (section == "AOD") item { AodScreen(repository, glyphClient) }
+            if (section == "Procedural" && selectedEngine == null) {
+                items(engines, key = { "engine-${it.id}" }) { effect ->
+                    Card(onClick = { engine = effect.id }, shape = RoundedCornerShape(24.dp)) {
+                        Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Box(Modifier.size(104.dp).clip(CircleShape).background(Color.Black).padding(7.dp)) {
+                                MatrixDisplay(effect.frames.first().pixels, Modifier.fillMaxSize())
+                            }
+                            Column(Modifier.padding(start = 20.dp).weight(1f), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                                Text(effect.name, fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                                Text(effect.description, color = Muted, fontSize = 12.sp)
+                                val count = effects.count { !it.builtIn && it.procedural != null && it.procedural::class == effect.procedural!!::class }
+                                Text("1 BUILT-IN / $count SAVED", color = NothingRed, fontSize = 11.sp)
+                                Text("OPEN PROFILES →", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+            }
+            if (section == "Procedural" && selectedEngine != null) item {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    TextButton(onClick = { playingId = null; engine = null }) { Text("← ENGINES") }
+                    Button(onClick = { onNewProfile(selectedEngine) }) { Icon(Icons.Default.Add, null); Text("NEW PROFILE") }
+                }
+                Text("Start with the built-in settings, or edit a saved profile. Every profile uses this same live engine.", color = Muted, fontSize = 12.sp)
+            }
+            items(visibleEffects, key = { it.id }) { effect ->
                 EffectCard(
                     effect = effect,
                     previewPixels = if (effect.id == playingId) playingPixels else null,
@@ -342,7 +405,7 @@ private fun HomeScreen(
                             playingId = effect.id
                         }
                     },
-                    onEdit = onEdit,
+                    onEdit = if (effect.procedural != null && effect.builtIn) onNewProfile else onEdit,
                     onActivate = onActivate,
                     onDelete = onDelete,
                 )
@@ -383,7 +446,7 @@ private fun EffectCard(
                         Icon(if (isPlaying) Icons.Default.Stop else Icons.Default.PlayArrow, null)
                         Text(if (isPlaying) " STOP" else " PLAY")
                     }
-                    TextButton(onClick = { onEdit(effect) }) { Text(if (effect.builtIn) "COPY & EDIT" else "EDIT") }
+                    TextButton(onClick = { onEdit(effect) }) { Text(if (effect.procedural != null && effect.builtIn) "NEW PROFILE" else if (effect.builtIn) "COPY & EDIT" else "EDIT") }
                 }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     TextButton(onClick = { onActivate(effect) }) {
@@ -677,19 +740,4 @@ private fun EditorScreen(
             }
         }
     }
-}
-
-private fun connectionLabel(state: GlyphConnectionState) = when (state) {
-    GlyphConnectionState.Simulator -> "● SIMULATOR — hardware unavailable or disconnected"
-    GlyphConnectionState.Connecting -> "● CONNECTING TO GLYPH MATRIX"
-    GlyphConnectionState.Ready -> "● PHONE (4a) PRO MATRIX READY"
-    is GlyphConnectionState.Error -> "● ${state.message.uppercase()}"
-}
-
-@Composable
-private fun connectionColor(state: GlyphConnectionState) = when (state) {
-    GlyphConnectionState.Ready -> Color(0xFF62D783)
-    is GlyphConnectionState.Error -> MaterialTheme.colorScheme.error
-    GlyphConnectionState.Connecting -> Color(0xFFFFC857)
-    GlyphConnectionState.Simulator -> Muted
 }

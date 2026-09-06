@@ -22,6 +22,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.combine
+import com.agentkosticka.playbox.data.AodPlayback
+import java.time.LocalTime
 import kotlinx.coroutines.withContext
 
 class PlayboxToyService : Service() {
@@ -64,26 +67,20 @@ class PlayboxToyService : Service() {
         val currentConnection = connection ?: return
         if (currentConnection.state.value != GlyphConnectionState.Ready) return
         playback?.cancel()
-        val repository = (application as PlayboxApplication).repository
-        val effect = repository.activeEffectId?.let(repository::find) ?: EffectCatalog.builtIns.first()
-        val proceduralRuntime = effect.procedural?.let { ProceduralEffectRuntime(effect) }
+        val app = application as PlayboxApplication
         playback = scope.launch {
-            val started = android.os.SystemClock.elapsedRealtime()
-            while (isActive) {
-                val elapsed = android.os.SystemClock.elapsedRealtime() - started
-                val frame = proceduralRuntime?.frameAt(elapsed)
-                    ?: effect.frames[effect.frameIndexAt(elapsed)]
-                withContext(Dispatchers.Main.immediate) {
-                    currentConnection.setToyFrame(frame.pixels)
+            combine(app.repository.effects, app.repository.activeId, app.aodSettings.settings) { effects, selected, settings ->
+                AodPlayback(effects, selected, settings)
+            }.collectLatest { renderer ->
+                val started = android.os.SystemClock.elapsedRealtime()
+                while (isActive) {
+                    val frame = renderer.frameAt(android.os.SystemClock.elapsedRealtime() - started, LocalTime.now().hour)
+                    withContext(Dispatchers.Main.immediate) { currentConnection.setToyFrame(frame.pixels) }
+                    delay(frame.durationMs.coerceAtLeast(67).toLong())
                 }
-                delay(frame.durationMs.coerceAtLeast(67).toLong())
-                if (proceduralRuntime == null &&
-                    effect.loopMode == com.agentkosticka.playbox.model.LoopMode.HOLD &&
-                    elapsed >= effect.totalDurationMs) break
             }
         }
     }
-
     override fun onUnbind(intent: Intent?): Boolean {
         playbackRequested = false
         playback?.cancel()

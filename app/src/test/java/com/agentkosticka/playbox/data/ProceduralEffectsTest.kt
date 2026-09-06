@@ -28,9 +28,9 @@ class ProceduralEffectsTest {
 
     @Test
     fun proceduralBuiltInsStoreSettingsNotBakedAnimations() {
-        val procedural = ProceduralEffects.all + OrganicEffects.all
+        val procedural = ProceduralEffects.all + OrganicEffects.all + ExpandedEffects.engines
 
-        assertEquals(4, procedural.size)
+        assertEquals(6, procedural.size)
         procedural.forEach { effect ->
             assertTrue(effect.procedural != null)
             assertEquals("Procedural effects should only keep one static compatibility thumbnail", 1, effect.frames.size)

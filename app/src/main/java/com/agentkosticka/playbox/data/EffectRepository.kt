@@ -31,6 +31,8 @@ class EffectRepository(context: Context) {
     private val _effects = MutableStateFlow(mergedEffects())
 
     val effects: StateFlow<List<PlayboxEffect>> = _effects.asStateFlow()
+    private val _activeId = MutableStateFlow(preferences.getString(KEY_ACTIVE_EFFECT, null))
+    val activeId = _activeId.asStateFlow()
     val activeEffectId: String?
         get() = preferences.getString(KEY_ACTIVE_EFFECT, null)
 
@@ -64,6 +66,7 @@ class EffectRepository(context: Context) {
 
     fun setActiveEffect(id: String) {
         preferences.edit { putString(KEY_ACTIVE_EFFECT, id) }
+        _activeId.value = id
     }
 
     suspend fun exportEffect(effect: PlayboxEffect, resolver: ContentResolver, uri: Uri) = withContext(Dispatchers.IO) {
@@ -141,6 +144,12 @@ class EffectRepository(context: Context) {
         })
 
     private fun proceduralToJson(spec: ProceduralSpec): JSONObject = when (spec) {
+        is ProceduralSpec.RippleField -> JSONObject().put("type", "ripple-field")
+            .put("frameDurationMs", spec.frameDurationMs).put("speed", spec.speed.toDouble())
+            .put("wavelength", spec.wavelength.toDouble()).put("sources", spec.sources)
+        is ProceduralSpec.Starfield -> JSONObject().put("type", "starfield")
+            .put("frameDurationMs", spec.frameDurationMs).put("speed", spec.speed.toDouble())
+            .put("seed", spec.seed).put("stars", spec.stars).put("trails", spec.trails.toDouble())
         is ProceduralSpec.ConwayLife -> {
             val bytes = ByteArray(PIXEL_COUNT) { if (spec.initialState[it] > 0) 1 else 0 }
             JSONObject()
@@ -173,6 +182,14 @@ class EffectRepository(context: Context) {
     private fun proceduralFromJson(json: JSONObject?): ProceduralSpec? {
         json ?: return null
         return when (json.getString("type")) {
+            "ripple-field" -> ProceduralSpec.RippleField(
+                frameDurationMs = json.optInt("frameDurationMs", 67), speed = json.optDouble("speed", 1.0).toFloat(),
+                wavelength = json.optDouble("wavelength", 3.0).toFloat(), sources = json.optInt("sources", 3),
+            ).normalized()
+            "starfield" -> ProceduralSpec.Starfield(
+                frameDurationMs = json.optInt("frameDurationMs", 67), speed = json.optDouble("speed", 1.0).toFloat(),
+                seed = json.optLong("seed", 731L), stars = json.optInt("stars", 24), trails = json.optDouble("trails", .35).toFloat(),
+            ).normalized()
             "conway" -> {
                 val bytes = Base64.decode(json.getString("initialState"), Base64.DEFAULT)
                 require(bytes.size == PIXEL_COUNT) { "Invalid Conway seed dimensions" }

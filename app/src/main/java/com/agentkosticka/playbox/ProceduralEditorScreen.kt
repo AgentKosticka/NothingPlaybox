@@ -132,7 +132,7 @@ fun ProceduralEditorScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
                 title = {
                     Column {
-                        Text("PROCEDURAL LAB", fontFamily = FontFamily.Monospace)
+                        Text("PROFILE LAB", fontFamily = FontFamily.Monospace)
                         Text(proceduralTypeLabel(requireNotNull(draft.procedural)), color = Muted, fontSize = 10.sp)
                     }
                 },
@@ -157,7 +157,7 @@ fun ProceduralEditorScreen(
                 OutlinedTextField(
                     value = draft.name,
                     onValueChange = { draft = draft.copy(name = it.take(60)) },
-                    label = { Text("Effect name") },
+                    label = { Text("Profile name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -196,6 +196,37 @@ fun ProceduralEditorScreen(
                 if (connection is GlyphConnectionState.Connecting) LinearProgressIndicator(Modifier.fillMaxWidth())
             }
             when (val spec = draft.procedural) {
+                is ProceduralSpec.RippleField -> {
+                    item { Text("RIPPLE CONTROLS", fontFamily = FontFamily.Monospace) }
+                    item {
+                        Text("WAVE SPEED  ${String.format(java.util.Locale.US, "%.1f", spec.speed)}×")
+                        Slider(spec.speed, { updateSpec(spec.copy(speed = it)) }, valueRange = .15f..4f)
+                    }
+                    item {
+                        Text("WAVELENGTH  ${String.format(java.util.Locale.US, "%.1f", spec.wavelength)}")
+                        Slider(spec.wavelength, { updateSpec(spec.copy(wavelength = it)) }, valueRange = 1.5f..6f)
+                    }
+                    item {
+                        Text("SOURCES  ${spec.sources}")
+                        Slider(spec.sources.toFloat(), { updateSpec(spec.copy(sources = it.roundToInt())) }, valueRange = 1f..5f, steps = 3)
+                    }
+                }
+                is ProceduralSpec.Starfield -> {
+                    item { Text("STARFIELD CONTROLS", fontFamily = FontFamily.Monospace) }
+                    item {
+                        Text("FLIGHT SPEED  ${String.format(java.util.Locale.US, "%.1f", spec.speed)}×")
+                        Slider(spec.speed, { updateSpec(spec.copy(speed = it)) }, valueRange = .15f..4f)
+                    }
+                    item {
+                        Text("STARS  ${spec.stars}")
+                        Slider(spec.stars.toFloat(), { updateSpec(spec.copy(stars = it.roundToInt())) }, valueRange = 8f..60f)
+                    }
+                    item {
+                        Text("TRAILS  ${(spec.trails * 100).roundToInt()}%")
+                        Slider(spec.trails, { updateSpec(spec.copy(trails = it)) })
+                    }
+                    item { OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }) { Text("NEW CONSTELLATION") } }
+                }
                 is ProceduralSpec.ConwayLife -> {
                     item {
                         Text("CONWAY CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
@@ -296,7 +327,7 @@ fun ProceduralEditorScreen(
                 is ProceduralSpec.OrganicBloom -> {
                     item {
                         Text("ORGANIC BLOOM CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text("Reaction-diffusion evolves live. Growth refills space; split controls how aggressively structures break apart.", color = Muted, fontSize = 12.sp)
+                        Text("Living reaction-diffusion with fresh growth every few seconds. Growth refills space; split changes how structures break apart. Press PLAY to watch it evolve.", color = Muted, fontSize = 12.sp)
                     }
                     item {
                         val updatesPerSecond = 1_000f / spec.frameDurationMs
@@ -332,6 +363,8 @@ fun ProceduralEditorScreen(
 }
 
 private fun proceduralTypeLabel(spec: ProceduralSpec): String = when (spec) {
+    is ProceduralSpec.RippleField -> "RIPPLE FIELD • LIVE WAVES"
+    is ProceduralSpec.Starfield -> "STARFIELD • LIVE DEPTH"
     is ProceduralSpec.ConwayLife -> "CONWAY LIFE • LIVE SIMULATION"
     is ProceduralSpec.ShiftingNoise -> "SHIFTING NOISE • LIVE FIELD"
     is ProceduralSpec.LavaLamp -> "LAVA LAMP • LIVE METABALLS"

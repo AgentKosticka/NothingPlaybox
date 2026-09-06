@@ -1,10 +1,23 @@
 # Nothing Playbox
 
-Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It includes 19 built-in effects, a 137-pixel intensity editor, multi-frame animation, image and video import, a simulator, live Matrix output, portable `.playbox` files, and one dynamic Always-on Glyph Toy.
+Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It includes 24 built-in effects and engines, a 137-pixel intensity editor, multi-frame animation, image and video import, a simulator, live Matrix output, portable `.playbox` files, and configurable Always-on Glyph playback.
 
-The showcase library includes Eye, Drinking Beer, Neon Vortex, Black Hole, Lightning Storm, Lava Lamp, Hyperspace, Wave Collider, Cyber Skull, Last Invader, Orbital Comet, Liquid Metal, Pulse, Scanner, Digital Rain, Fireworks, Conway Life, Shifting Noise, and Organic Bloom. Conway Life, Shifting Noise, Lava Lamp, and Organic Bloom are generated at runtime from persisted settings rather than stored animation loops.
+The showcase library includes the original static and imported effect families plus Radar Sweep, Breathing Orbit, Woven Light, Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Procedural effects are generated at runtime from persisted settings rather than stored animation loops.
 
-## Build
+## App sections
+
+- **Matrix** — static artwork, frame animations, Pixel Lab, and image/video imports.
+- **Procedural** — Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Open an engine to play its built-in profile or create named profiles with independent settings. Saved profiles use the same procedural runtime, remain editable, and support `.playbox` import/export and AOD selection. Existing saved effects are grouped automatically; no migration is required.
+- **Widgets** — Time Bars, Day Dial, and Battery Dots, each with a live preview and an **Add to home screen** button.
+- **AOD** — choose the active effect, preview on the Glyph Matrix, adjust brightness and speed, rotate a selected playlist, and set quiet hours. The system Always-on Glyph Toy reads the same settings live.
+
+Time Bars occupies four columns × two rows and shows weekday, week number, month, and year in four spacious rows with compact dotted bars. Each dot fills independently. Widget settings offer any day as the start of the week and left-to-right, right-to-left, or density fill. Density uses a stable scattered order, so progress adds dots without reshuffling; settings persist and immediately refresh all installed Time Bars widgets. All fractions are recalculated together by a unique WorkManager task every 15 minutes, including within-day progress for week/month/year. Android may defer work during Doze or battery saving. Time-zone and clock changes, reboot, and app replacement also refresh installed widgets. The last widget's removal cancels periodic work. No exact alarms or persistent foreground service are used.
+
+On Nothing phones, widgets and selected app headings resolve the system NDot57 font directly. Other Android devices use a safe monospace fallback for headings and the built-in dotted renderer for widget labels.
+
+Calculations use the device time zone, the selected week start (Monday by default), actual month/year lengths and daylight-saving-aware boundaries. Week numbering uses the four-day rule for week 1, matching ISO numbering when Monday is selected. Tap a widget to open the Widgets section. Widgets work without Glyph hardware.
+
+## Build and verification
 
 ```powershell
 .\gradlew.bat :app:assembleDebug

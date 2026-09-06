@@ -3,6 +3,25 @@ package com.agentkosticka.playbox.model
 sealed interface ProceduralSpec {
     val frameDurationMs: Int
 
+    data class RippleField(
+        override val frameDurationMs: Int = 67,
+        val speed: Float = 1f,
+        val wavelength: Float = 3f,
+        val sources: Int = 3,
+    ) : ProceduralSpec {
+        fun normalized() = copy(frameDurationMs = frameDurationMs.coerceIn(67, 500), speed = speed.coerceIn(.15f, 4f), wavelength = wavelength.coerceIn(1.5f, 6f), sources = sources.coerceIn(1, 5))
+    }
+
+    data class Starfield(
+        override val frameDurationMs: Int = 67,
+        val seed: Long = 731L,
+        val speed: Float = 1f,
+        val stars: Int = 24,
+        val trails: Float = .35f,
+    ) : ProceduralSpec {
+        fun normalized() = copy(frameDurationMs = frameDurationMs.coerceIn(67, 500), speed = speed.coerceIn(.15f, 4f), stars = stars.coerceIn(8, 60), trails = trails.coerceIn(0f, 1f))
+    }
+
     data class ConwayLife(
         override val frameDurationMs: Int = 140,
         val initialState: IntArray,
@@ -70,6 +89,8 @@ sealed interface ProceduralSpec {
 }
 
 fun ProceduralSpec.normalized(): ProceduralSpec = when (this) {
+    is ProceduralSpec.RippleField -> normalized()
+    is ProceduralSpec.Starfield -> normalized()
     is ProceduralSpec.ConwayLife -> normalized()
     is ProceduralSpec.ShiftingNoise -> normalized()
     is ProceduralSpec.LavaLamp -> normalized()
@@ -77,6 +98,8 @@ fun ProceduralSpec.normalized(): ProceduralSpec = when (this) {
 }
 
 fun ProceduralSpec.deepCopy(): ProceduralSpec = when (this) {
+    is ProceduralSpec.RippleField -> copy()
+    is ProceduralSpec.Starfield -> copy()
     is ProceduralSpec.ConwayLife -> copy(initialState = initialState.copyOf())
     is ProceduralSpec.ShiftingNoise -> copy()
     is ProceduralSpec.LavaLamp -> copy()
