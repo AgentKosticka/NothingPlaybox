@@ -2,4 +2,85 @@
     <string name="app_name">Nothing Playbox</string>
     <string name="toy_name">Nothing Playbox</string>
     <string name="toy_summary">Play the effect selected in Nothing Playbox</string>
+
+    <string name="error_import_images">Unable to import images</string>
+    <string name="error_invalid_playbox_effect">Invalid Playbox effect</string>
+    <string name="error_import_video">Unable to import video</string>
+    <string name="error_export">Export failed</string>
+    <string name="error_save_effect">Unable to save effect</string>
+    <string name="error_delete_effect">Unable to delete effect</string>
+    <string name="message_exported">Exported %1$s</string>
+    <string name="effect_filename_fallback">effect</string>
+    <string name="profile_name_format">%1$s profile</string>
+
+    <string name="create_effect_title">CREATE EFFECT</string>
+    <string name="blank_static">Blank static</string>
+    <string name="blank_animation">Blank animation</string>
+    <string name="images">Image(s)</string>
+    <string name="video_up_to_seconds">Video (up to 60 seconds)</string>
+    <string name="cancel">Cancel</string>
+    <string name="importing_video_title">IMPORTING VIDEO</string>
+    <string name="importing_video_description">Turning video into 13×13 intensity frames…</string>
+    <string name="percent_format">%1$d%%</string>
+
+    <string name="section_matrix">Matrix</string>
+    <string name="section_procedural">Procedural</string>
+    <string name="section_widgets">Widgets</string>
+    <string name="section_aod">AOD</string>
+    <string name="home_title_matrix">MATRIX STUDIO</string>
+    <string name="home_title_procedural">LIVING LIGHT</string>
+    <string name="home_title_widgets">AT A GLANCE</string>
+    <string name="home_title_aod">ALWAYS YOURS</string>
+    <string name="home_subtitle_matrix">Static artwork, frame animations and imports.</string>
+    <string name="home_subtitle_procedural">One engine. Your own profiles.</string>
+    <string name="home_subtitle_widgets">Small windows onto your day.</string>
+    <string name="home_subtitle_aod">Your Glyph, on your schedule.</string>
+    <string name="import_effect_cd">Import effect</string>
+    <string name="create_effect_cd">Create effect</string>
+    <string name="profiles_count">1 BUILT-IN / %1$d SAVED</string>
+    <string name="open_profiles">OPEN PROFILES →</string>
+    <string name="back_to_engines">← ENGINES</string>
+    <string name="new_profile">NEW PROFILE</string>
+    <string name="profile_intro">Start with the built-in settings, or edit a saved profile. Every profile uses this same live engine.</string>
+
+    <string name="built_in">BUILT-IN</string>
+    <string name="live_procedural">LIVE • PROCEDURAL</string>
+    <plurals name="frame_count">
+        <item quantity="one">%1$d frame</item>
+        <item quantity="other">%1$d frames</item>
+    </plurals>
+    <string name="stop">STOP</string>
+    <string name="play">PLAY</string>
+    <string name="copy_and_edit">COPY &amp; EDIT</string>
+    <string name="edit">EDIT</string>
+    <string name="use_as_aod">USE AS AOD</string>
+    <string name="delete_cd">Delete</string>
+
+    <string name="pixel_lab_title">PIXEL LAB</string>
+    <string name="save_and_back_cd">Save and back</string>
+    <string name="export_cd">Export</string>
+    <string name="discard">DISCARD</string>
+    <string name="save">SAVE</string>
+    <string name="effect_name">Effect name</string>
+    <string name="stop_cd">Stop</string>
+    <string name="play_cd">Play</string>
+    <string name="live_matrix">LIVE MATRIX</string>
+    <string name="simulator">SIMULATOR</string>
+    <string name="pixel_intensity">PIXEL INTENSITY  %1$d / 255</string>
+    <string name="frames_count_max">FRAMES  %1$d / %2$d</string>
+    <string name="blank_frame">Blank</string>
+    <string name="duplicate_frame">Duplicate</string>
+    <string name="delete_frame_cd">Delete frame</string>
+    <string name="frame_time">FRAME TIME  %1$d ms  •  %2$s</string>
+    <string name="fps_integer">%1$d FPS</string>
+    <string name="fps_decimal">%1$d.%2$d FPS</string>
+    <string name="fast">FAST</string>
+    <string name="slow">SLOW</string>
+    <string name="clear">CLEAR</string>
+    <string name="invert">INVERT</string>
+    <string name="fill">FILL</string>
+    <string name="loop">LOOP</string>
+    <string name="loop_mode_loop">Loop</string>
+    <string name="loop_mode_ping_pong">Ping pong</string>
+    <string name="loop_mode_hold">Hold</string>
 </resources>
