@@ -33,14 +33,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -56,9 +59,6 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Widgets
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -73,6 +73,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -90,6 +91,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModelProvider
 import com.agentkosticka.playbox.data.EffectRepository
 import com.agentkosticka.playbox.data.ImageImporter
 import com.agentkosticka.playbox.data.ProceduralEffectRuntime
@@ -104,31 +106,45 @@ import com.agentkosticka.playbox.model.blankEffect
 import com.agentkosticka.playbox.model.frameIndexAt
 import com.agentkosticka.playbox.ui.MatrixDisplay
 import com.agentkosticka.playbox.ui.Muted
-import com.agentkosticka.playbox.ui.NothingRed
 import com.agentkosticka.playbox.ui.NothingDotFont
+import com.agentkosticka.playbox.ui.NothingRed
 import com.agentkosticka.playbox.ui.PlayboxTheme
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
+    private lateinit var playboxApplication: PlayboxApplication
+    private lateinit var playboxViewModel: PlayboxViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        val app = application as PlayboxApplication
+        playboxApplication = application as PlayboxApplication
+        playboxViewModel = ViewModelProvider(this)[PlayboxViewModel::class.java]
         setContent {
             PlayboxTheme {
-                PlayboxApp(app.repository, app.glyphClient)
+                PlayboxApp(playboxApplication.repository, playboxApplication.glyphClient, playboxViewModel)
             }
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        playboxApplication.glyphClient.connect()
+    }
+
+    override fun onStop() {
+        playboxApplication.glyphClient.close()
+        super.onStop()
     }
 }
 
 @Composable
-private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixClient) {
+private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixClient, viewModel: PlayboxViewModel) {
     val effects by repository.effects.collectAsState()
     val connection by glyphClient.state.collectAsState()
-    var editingId by rememberSaveable { mutableStateOf<String?>(null) }
+    val editing = viewModel.editorDraft
     var createDialog by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf<String?>(null) }
     var exportEffect by remember { mutableStateOf<PlayboxEffect?>(null) }
@@ -143,14 +159,14 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
     val photos = rememberLauncherForActivityResult(ActivityResultContracts.PickMultipleVisualMedia(100)) { uris ->
         if (uris.isNotEmpty()) scope.launch {
             runCatching { ImageImporter.import(resolver, uris) }
-                .onSuccess { editingId = repository.save(it).id }
+                .onSuccess(viewModel::beginEdit)
                 .onFailure { message = it.message ?: "Unable to import images" }
         }
     }
     val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             runCatching { repository.importEffect(resolver, uri) }
-                .onSuccess { editingId = it.id }
+                .onSuccess(viewModel::beginEdit)
                 .onFailure { message = it.message ?: "Invalid Playbox effect" }
         }
     }
@@ -161,7 +177,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
                 val effect = VideoImporter.import(context, uri) { progress ->
                     mainHandler.post { importProgress = progress }
                 }
-                editingId = repository.save(effect).id
+                viewModel.beginEdit(effect)
             } catch (error: Throwable) {
                 message = error.message ?: "Unable to import video"
             } finally {
@@ -178,19 +194,25 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
         }
     }
 
-    LaunchedEffect(Unit) { glyphClient.connect() }
-    DisposableEffect(Unit) { onDispose { glyphClient.close() } }
     LaunchedEffect(message) {
         message?.let { snackbar.showSnackbar(it); message = null }
     }
 
-    val editing = editingId?.let(repository::find)
     if (editing != null) {
         EditorScreen(
             initial = editing,
             connection = connection,
             glyphClient = glyphClient,
-            onBack = { saved -> repository.save(saved); editingId = null },
+            onDraftChanged = viewModel::updateDraft,
+            onBack = { saved ->
+                viewModel.updateDraft(saved)
+                scope.launch {
+                    runCatching { repository.save(saved) }
+                        .onSuccess { viewModel.clearEditor() }
+                        .onFailure { message = it.message ?: "Unable to save effect" }
+                }
+            },
+            onDiscard = viewModel::clearEditor,
             onExport = { effect -> exportEffect = effect; exportFile.launch("${safeFileName(effect.name)}.playbox") },
         )
     } else {
@@ -203,8 +225,8 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
             glyphClient = glyphClient,
             snackbar = snackbar,
             onCreate = { createDialog = true },
-            onEdit = { effect -> editingId = repository.save(if (effect.builtIn) effect.editableCopy() else effect).id },
-            onNewProfile = { effect -> editingId = repository.save(effect.editableCopy("${effect.name} profile")).id },
+            onEdit = { effect -> viewModel.beginEdit(if (effect.builtIn) effect.editableCopy() else effect) },
+            onNewProfile = { effect -> viewModel.beginEdit(effect.editableCopy("${effect.name} profile")) },
             onActivate = { effect ->
                 repository.setActiveEffect(effect.id)
                 section = "AOD"
@@ -222,11 +244,11 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = {
                         createDialog = false
-                        editingId = repository.save(blankEffect()).id
+                        viewModel.beginEdit(blankEffect())
                     }, modifier = Modifier.fillMaxWidth()) { Text("Blank static") }
                     OutlinedButton(onClick = {
                         createDialog = false
-                        editingId = repository.save(blankEffect(animated = true)).id
+                        viewModel.beginEdit(blankEffect(animated = true))
                     }, modifier = Modifier.fillMaxWidth()) { Text("Blank animation") }
                     OutlinedButton(onClick = {
                         createDialog = false
@@ -337,9 +359,9 @@ private fun HomeScreen(
         },
         floatingActionButton = {
             if (section == "Matrix") {
-            FloatingActionButton(onClick = onCreate, containerColor = NothingRed, contentColor = Color.White) {
-                Icon(Icons.Default.Add, "Create effect")
-            }
+                FloatingActionButton(onClick = onCreate, containerColor = NothingRed, contentColor = Color.White) {
+                    Icon(Icons.Default.Add, "Create effect")
+                }
             }
         },
         bottomBar = {
@@ -466,11 +488,13 @@ private fun EditorScreen(
     initial: PlayboxEffect,
     connection: GlyphConnectionState,
     glyphClient: GlyphMatrixClient,
+    onDraftChanged: (PlayboxEffect) -> Unit,
     onBack: (PlayboxEffect) -> Unit,
+    onDiscard: () -> Unit,
     onExport: (PlayboxEffect) -> Unit,
 ) {
     if (initial.procedural != null) {
-        ProceduralEditorScreen(initial, connection, glyphClient, onBack, onExport)
+        ProceduralEditorScreen(initial, connection, glyphClient, onDraftChanged, onBack, onDiscard, onExport)
         return
     }
 
@@ -483,6 +507,8 @@ private fun EditorScreen(
     val redoByFrame = remember(initial.id) { mutableMapOf<Int, MutableList<IntArray>>() }
     var historyVersion by remember(initial.id) { mutableIntStateOf(0) }
     var strokeStart by remember(frameIndex) { mutableStateOf<IntArray?>(null) }
+
+    SideEffect { onDraftChanged(draft) }
 
     fun undoStack(): MutableList<IntArray> = undoByFrame.getOrPut(frameIndex) { mutableListOf() }
     fun redoStack(): MutableList<IntArray> = redoByFrame.getOrPut(frameIndex) { mutableListOf() }
@@ -516,6 +542,7 @@ private fun EditorScreen(
         if (!snapshot.contentEquals(draft.frames[frameIndex].pixels)) pushUndo(snapshot)
     }
     fun finish() { glyphClient.stopDisplay(); onBack(draft) }
+    fun discard() { glyphClient.stopDisplay(); onDiscard() }
 
     BackHandler { finish() }
     DisposableEffect(Unit) { onDispose { glyphClient.stopDisplay() } }
@@ -546,6 +573,7 @@ private fun EditorScreen(
                 navigationIcon = { IconButton(onClick = ::finish) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Save and back") } },
                 actions = {
                     IconButton(onClick = { onExport(draft) }) { Icon(Icons.Default.Download, "Export") }
+                    TextButton(onClick = ::discard) { Text("DISCARD") }
                     TextButton(onClick = ::finish) { Text("SAVE") }
                 },
             )
@@ -591,7 +619,7 @@ private fun EditorScreen(
                         selected = live,
                         onClick = {
                             live = !live
-                            if (live) glyphClient.connect() else glyphClient.stopDisplay()
+                            if (!live) glyphClient.stopDisplay()
                         },
                         label = { Text(if (live) "LIVE MATRIX" else "SIMULATOR") },
                         leadingIcon = { Icon(Icons.Default.Lightbulb, null) },
