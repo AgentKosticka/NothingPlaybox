@@ -47,8 +47,17 @@ open class DashboardWidget : AppWidgetProvider() {
                     val battery = batteryStatus(context)
                     val bitmap = if (provider == DayDialWidget::class.java) DashboardRenderer.dayDial(now) else DashboardRenderer.battery(battery.first, battery.second)
                     val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
-                    views.setImageViewBitmap(R.id.time_bars_image, bitmap)
-                    views.setContentDescription(R.id.time_bars_image, if (provider == DayDialWidget::class.java) "${(timeProgress(now)[0].fraction * 100).toInt()} percent of today elapsed" else "Battery ${battery.first?.toString() ?: "unknown"} percent, ${if (battery.second) "charging" else "on battery"}")
+                    val contentDescription = if (provider == DayDialWidget::class.java) {
+                        context.getString(R.string.widget_day_progress_cd, (timeProgress(now)[0].fraction * 100).toInt())
+                    } else {
+                        val status = context.getString(
+                            if (battery.second) R.string.widget_battery_charging else R.string.widget_battery_on_battery,
+                        )
+                        battery.first?.let { percent ->
+                            context.getString(R.string.widget_battery_percent_cd, percent, status)
+                        } ?: context.getString(R.string.widget_battery_unknown_cd, status)
+                    }
+                    views.setContentDescription(R.id.time_bars_image, contentDescription)
                     views.setOnClickPendingIntent(R.id.time_bars_image, PendingIntent.getActivity(context, 0,
                         Intent(context, MainActivity::class.java).putExtra("open_widgets", true), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
                     manager.updateAppWidget(ids, views)
