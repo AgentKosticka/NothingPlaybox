@@ -7,6 +7,7 @@
     android:minResizeWidth="110dp"
     android:minResizeHeight="55dp"
     android:initialLayout="@layout/widget_time_bars"
+    android:previewLayout="@layout/widget_preview_next_alarm"
     android:description="@string/next_alarm_description"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
