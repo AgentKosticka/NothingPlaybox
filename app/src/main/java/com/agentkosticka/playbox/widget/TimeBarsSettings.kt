@@ -18,7 +18,7 @@ data class TimeBarsSettings(
             putString("week-start", weekStart.name)
             putString("fill", fill.name)
         }
-        TimeBarsWidget.updateAll(context)
+        TimeBarsWidget.requestImmediateUpdate(context)
     }
 
     companion object {

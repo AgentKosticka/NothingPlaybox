@@ -20,25 +20,25 @@ jobs:
   quality:
     name: Build, test and lint
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
 
       - name: Set up Java 17
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
         with:
           distribution: temurin
           java-version: "17"
 
       - name: Validate Gradle wrapper
-        uses: gradle/actions/wrapper-validation@v6
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v6
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           cache-read-only: ${{ github.event_name == 'pull_request' }}
 
@@ -48,15 +48,16 @@ jobs:
           set -euo pipefail
           echo "be00ee9cd7115f6b11984c6e31fe98e298fb726940d1555063610685ef3bbf29  app/libs/glyph-matrix-sdk-2.0.aar" | sha256sum --check --strict
 
-      - name: Unit tests, lint, and APKs
+      - name: Unit tests, lint, debug and release APKs
         shell: bash
         run: |
           set -euo pipefail
-          tasks=(testDebugUnitTest lintDebug assembleDebug assembleDebugAndroidTest)
-          if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
-            tasks+=(assembleRelease)
-          fi
-          ./gradlew --build-cache --parallel "${tasks[@]}"
+          ./gradlew --build-cache --parallel \
+            testDebugUnitTest \
+            lintDebug \
+            assembleDebug \
+            assembleDebugAndroidTest \
+            assembleRelease
 
       - name: Add build summary
         if: always()
@@ -68,18 +69,14 @@ jobs:
             echo "- Android lint"
             echo "- Debug APK"
             echo "- Android test APK"
-            if [[ "$GITHUB_REF" == "refs/heads/master" ]]; then
-              echo "- Release APK"
-            else
-              echo "- Release APK deferred to master"
-            fi
+            echo "- Release APK"
             echo "- Gradle wrapper validation"
             echo "- Bundled Nothing SDK checksum verification"
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload APKs
         if: success()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: nothing-playbox-apks
           path: |
@@ -87,14 +84,62 @@ jobs:
             app/build/outputs/apk/androidTest/debug/*.apk
             app/build/outputs/apk/release/*.apk
           if-no-files-found: error
-          retention-days: 7
+          retention-days: 30
           compression-level: 0
 
       - name: Upload reports on failure
         if: failure()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: android-quality-reports
           path: app/build/reports/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 30
+
+  instrumentation:
+    name: Android instrumentation tests
+    # Hosted Linux runners do not expose KVM here; the API 35 emulator can take >12 minutes
+    # to boot under TCG and become unstable before the test command starts. The Intel macOS
+    # runner gives the x86_64 emulator native VM acceleration instead of pretending patience
+    # is a virtualization technology.
+    runs-on: macos-15-intel
+    timeout-minutes: 35
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          cache-read-only: ${{ github.event_name == 'pull_request' }}
+
+      - name: Run instrumentation tests on API 35
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2
+        with:
+          api-level: 35
+          arch: x86_64
+          target: google_apis
+          profile: pixel_2
+          disable-animations: true
+          emulator-options: -no-window -no-audio -no-boot-anim -no-snapshot -gpu swiftshader_indirect
+          script: ./gradlew --build-cache connectedDebugAndroidTest
+
+      - name: Upload instrumentation reports on failure
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: android-instrumentation-reports
+          path: |
+            app/build/reports/androidTests/
+            app/build/outputs/androidTest-results/
+          if-no-files-found: ignore
+          retention-days: 30

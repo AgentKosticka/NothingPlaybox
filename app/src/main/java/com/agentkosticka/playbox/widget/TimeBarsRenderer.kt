@@ -4,21 +4,19 @@ import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
-import android.graphics.Typeface
-import android.os.Build
 import androidx.core.graphics.createBitmap
+import com.agentkosticka.playbox.ui.NothingDotFont
 import java.time.ZonedDateTime
 import kotlin.math.floor
 
 /** Shared by the launcher and in-app preview. A tiny original dot alphabet needs no font asset. */
 object TimeBarsRenderer {
-    private val dotTypeface = Typeface.create("NDot57", Typeface.NORMAL)
-    private val dotFontAvailable = dotTypeface.toString().contains("NDot", ignoreCase = true) ||
-        Build.MANUFACTURER.equals("Nothing", true) || Build.BRAND.equals("Nothing", true)
+    private val dotTypeface get() = NothingDotFont.typeface
+    private val dotFontAvailable get() = NothingDotFont.available
 
     private fun labelThatFits(value: String, step: Float, availableWidth: Float = 238f): String {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            typeface = if (dotFontAvailable) dotTypeface else Typeface.MONOSPACE
+            typeface = dotTypeface
             textSize = step * 7.2f
         }
         if (paint.measureText(value) <= availableWidth) return value
@@ -28,14 +26,28 @@ object TimeBarsRenderer {
         }
         return "..."
     }
+
     internal fun dotText(canvas: Canvas, value: String, x: Float, y: Float, step: Float, color: Int = Color.WHITE) {
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; typeface = if (dotFontAvailable) dotTypeface else Typeface.MONOSPACE; textSize = step * 7.2f; isSubpixelText = true }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            this.color = color
+            typeface = dotTypeface
+            textSize = step * 7.2f
+            isSubpixelText = true
+        }
         if (dotFontAvailable) {
             canvas.drawText(value, x, y + step * 4.8f, paint)
         } else value.forEachIndexed { index, char ->
-            glyphs[char]?.forEachIndexed { cell, bit -> if (bit == '1') canvas.drawCircle(x + index * step * 6 + cell % 5 * step, y + cell / 5 * step, step * .36f, paint) }
+            glyphs[char]?.forEachIndexed { cell, bit ->
+                if (bit == '1') canvas.drawCircle(
+                    x + index * step * 6 + cell % 5 * step,
+                    y + cell / 5 * step,
+                    step * .36f,
+                    paint,
+                )
+            }
         }
     }
+
     private val glyphs = mapOf(
         'A' to "01110100011000111111100011000110001", 'B' to "11110100011000111110100011000111110",
         'C' to "01111100001000010000100001000001111", 'D' to "11110100011000110001100011000111110",
@@ -56,6 +68,7 @@ object TimeBarsRenderer {
         '6' to "01110100001000011110100011000101110", '7' to "11111000010001000100010000100001000",
         '8' to "01110100011000101110100011000101110", '9' to "01110100011000101111000010000101110",
         '%' to "11001110100001000100010000101110011",
+        '.' to "00000000000000000000000000000000100",
     )
 
     fun render(now: ZonedDateTime, settings: TimeBarsSettings = TimeBarsSettings(), width: Int = 720, height: Int = 360): Bitmap {

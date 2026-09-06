@@ -19,7 +19,7 @@ import kotlin.math.roundToInt
 object VideoImporter {
     private const val FRAME_DURATION_MS = 100
     private const val MAX_DURATION_MS = 60_000L
-    private const val MAX_DECODE_EDGE = 256
+    internal const val MAX_DECODE_EDGE = 256
     private const val NEARBY_RETRY_OFFSET_US = 33_000L
 
     suspend fun import(
@@ -34,15 +34,18 @@ object VideoImporter {
                 ?: error("This video does not report a duration")
             require(sourceDuration > 0) { "The selected video is empty" }
 
+            val sourceWidth = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull()
+            val sourceHeight = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull()
+            require(sourceWidth != null && sourceHeight != null && sourceWidth > 0 && sourceHeight > 0) {
+                "This video does not report valid dimensions"
+            }
+
             val duration = sourceDuration.coerceAtMost(MAX_DURATION_MS)
             val sampleDurations = videoSampleDurations(duration, FRAME_DURATION_MS, MAX_EFFECT_FRAMES)
             val sampleTimesUs = videoSampleTimesUs(sampleDurations, duration)
             val sampleCount = sampleDurations.size
             val rotation = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)?.toFloatOrNull() ?: 0f
-            val decodeSize = scaledDecodeSize(
-                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toIntOrNull(),
-                retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toIntOrNull(),
-            )
+            val decodeSize = scaledDecodeSize(sourceWidth, sourceHeight)
             val accumulator = VideoFrameAccumulator(FRAME_DURATION_MS)
 
             repeat(sampleCount) { index ->
@@ -91,10 +94,10 @@ object VideoImporter {
         }
     }
 
-    private data class DecodeSize(val width: Int, val height: Int)
+    internal data class DecodeSize(val width: Int, val height: Int)
 
-    private fun scaledDecodeSize(width: Int?, height: Int?): DecodeSize? {
-        if (width == null || height == null || width <= 0 || height <= 0) return null
+    internal fun scaledDecodeSize(width: Int, height: Int): DecodeSize? {
+        require(width > 0 && height > 0)
         val longestEdge = maxOf(width, height)
         if (longestEdge <= MAX_DECODE_EDGE) return null
         val scale = MAX_DECODE_EDGE.toDouble() / longestEdge
@@ -131,11 +134,17 @@ object VideoImporter {
 
     private fun MediaMetadataRetriever.decodeFrameAt(timeUs: Long, size: DecodeSize?, options: IntArray): Bitmap? {
         if (size != null) {
+            // Never fall back to getFrameAtTime() for a large source. The fallback would decode the
+            // original 4K/8K frame and defeat the memory cap this importer promises.
             for (option in options) {
                 decodeRuntimeFailure { getScaledFrameAtTime(timeUs, option, size.width, size.height) }
                     ?.let { return it }
             }
+            return null
         }
+
+        // A null size is only possible after validated metadata proves both source dimensions are
+        // already <= MAX_DECODE_EDGE, so the platform's full-resolution decode remains bounded.
         for (option in options) {
             decodeRuntimeFailure { getFrameAtTime(timeUs, option) }
                 ?.let { return it }

@@ -82,4 +82,15 @@ class ProceduralEffectsTest {
         assertEquals(255, vertical[7 * MATRIX_SIZE + 6])
         assertTrue("Conway frames should contain only dead/off or alive/full-brightness cells", vertical.all { it == 0 || it == 255 })
     }
+
+    @Test(timeout = 1_000)
+    fun conwayHugeElapsedJumpDoesNotReplayEveryMissedGeneration() {
+        val template = ProceduralEffects.all.single { it.name == "CONWAY LIFE" }
+        val runtime = ProceduralEffectRuntime(template)
+
+        val frame = runtime.frameAt(7L * 24 * 60 * 60 * 1_000)
+
+        assertEquals(PIXEL_COUNT, frame.pixels.size)
+        assertTrue(frame.pixels.all { it == 0 || it == 255 })
+    }
 }

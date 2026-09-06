@@ -2,16 +2,19 @@ package com.agentkosticka.playbox
 
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.test.platform.app.InstrumentationRegistry
+import android.util.Base64
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.agentkosticka.playbox.data.*
 import com.agentkosticka.playbox.widget.*
+import java.time.DayOfWeek
+import java.time.ZonedDateTime
 import kotlinx.coroutines.runBlocking
+import org.json.JSONArray
+import org.json.JSONObject
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.DayOfWeek
-import java.time.ZonedDateTime
 
 @RunWith(AndroidJUnit4::class)
 class FeatureExpansionTest {
@@ -30,6 +33,61 @@ class FeatureExpansionTest {
                 assertNotEquals(saved.id, imported.id)
                 repository.delete(imported.id)
             } finally { repository.delete(saved.id); file.delete() }
+        }
+    }
+
+    @Test fun incompleteLegacyMigrationIsResumableAndLossless() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val v2Directory = context.filesDir.resolve("effects-v2")
+        val legacyFile = context.filesDir.resolve("effects-v1.json")
+        v2Directory.deleteRecursively()
+        legacyFile.delete()
+
+        val valid = JSONObject()
+            .put("id", "legacy-resumable")
+            .put("name", "Legacy resumable")
+            .put("description", "Migration regression fixture")
+            .put("loopMode", "LOOP")
+            .put("createdAt", 1L)
+            .put("updatedAt", 2L)
+            .put("frames", JSONArray().put(
+                JSONObject()
+                    .put("durationMs", 100)
+                    .put("pixels", Base64.encodeToString(ByteArray(169), Base64.NO_WRAP)),
+            ))
+        val invalid = JSONObject().put("id", "broken-entry")
+
+        fun writeLegacy(vararg entries: JSONObject) {
+            legacyFile.writeText(
+                JSONObject()
+                    .put("schema", PLAYBOX_SCHEMA_VERSION)
+                    .put("effects", JSONArray().apply { entries.forEach(::put) })
+                    .toString(),
+            )
+        }
+
+        try {
+            writeLegacy(valid, invalid)
+            val first = EffectRepository(context)
+            assertNotNull(first.find("legacy-resumable"))
+            assertTrue("Incomplete migration must preserve the v1 source", legacyFile.exists())
+            val migratedFiles = v2Directory.listFiles().orEmpty().map { it.name }.sorted()
+            assertTrue(migratedFiles.isNotEmpty())
+
+            val second = EffectRepository(context)
+            assertNotNull(second.find("legacy-resumable"))
+            assertTrue("Retry must still preserve an incomplete v1 source", legacyFile.exists())
+            assertEquals(migratedFiles, v2Directory.listFiles().orEmpty().map { it.name }.sorted())
+
+            // Once the legacy source is fully parseable, the already-migrated effect satisfies the
+            // migration and the legacy file can finally be retired.
+            writeLegacy(valid)
+            val third = EffectRepository(context)
+            assertNotNull(third.find("legacy-resumable"))
+            assertFalse("Complete migration should retire v1 storage", legacyFile.exists())
+        } finally {
+            v2Directory.deleteRecursively()
+            legacyFile.delete()
         }
     }
 

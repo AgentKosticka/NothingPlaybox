@@ -25,23 +25,32 @@ body:
     attributes:
       label: Where does it happen?
       options:
-        - Glyph Matrix hardware output
+        - Matrix editor / frame animation
+        - Procedural engine / profile
+        - Home-screen widget
+        - Glyph Matrix live hardware output
         - Always-on Glyph Toy
-        - Pixel Lab editor
         - Video import
         - Image import
-        - Effect import/export
-        - Simulator / app UI
+        - Effect import / export
+        - Storage / saved library
+        - Simulator / general app UI
+        - Build / CI / repository tooling
         - Other
     validations:
       required: true
   - type: input
+    id: app_version
+    attributes:
+      label: Playbox version or commit
+      placeholder: e.g. 1.1.0 or commit SHA
+  - type: input
     id: os
     attributes:
-      label: Nothing OS version
+      label: Nothing OS / Android version
       placeholder: e.g. Nothing OS build / Android version
   - type: textarea
     id: extra
     attributes:
       label: Extra context
-      description: Logs, media details, screenshots, or anything else useful.
+      description: Logs, media details, screenshots, widget launcher, or anything else useful.

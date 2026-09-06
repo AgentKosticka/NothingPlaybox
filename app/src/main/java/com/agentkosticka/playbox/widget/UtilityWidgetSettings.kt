@@ -32,7 +32,7 @@ data class UtilityWidgetSettings(
             putString("year-display", yearDisplay.name)
             putString("milestone-target", milestoneTarget.name)
         }
-        TimeBarsWidget.updateAll(context)
+        TimeBarsWidget.requestImmediateUpdate(context)
     }
 
     companion object {

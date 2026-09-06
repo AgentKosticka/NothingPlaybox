@@ -1,0 +1,45 @@
+name: Branch hygiene
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    types:
+      - closed
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    if: >-
+      github.event_name == 'push' ||
+      (github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Delete merged and legacy stale branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+          MERGED_HEAD: ${{ github.event.pull_request.head.ref }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          branches=("feature/nothing-widget-pack" "tmp-unused")
+          if [[ "${{ github.event_name }}" == "pull_request" && -n "${MERGED_HEAD:-}" ]]; then
+            branches+=("$MERGED_HEAD")
+          elif [[ "${{ github.event_name }}" == "push" ]]; then
+            branches+=("audit/fix-all-p0-p4")
+          fi
+
+          for branch in "${branches[@]}"; do
+            if gh api "repos/$REPOSITORY/git/ref/heads/$branch" >/dev/null 2>&1; then
+              echo "Deleting merged/stale branch: $branch"
+              gh api --method DELETE "repos/$REPOSITORY/git/refs/heads/$branch"
+            else
+              echo "Already absent: $branch"
+            fi
+          done

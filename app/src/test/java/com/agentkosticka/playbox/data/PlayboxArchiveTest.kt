@@ -34,7 +34,7 @@ class PlayboxArchiveTest {
         val archive = archiveOf("manifest.json" to ByteArray(6) { 7 })
 
         assertThrows(IllegalArgumentException::class.java) {
-            readPlayboxManifest(ByteArrayInputStream(archive), maxBytes = 5)
+            readPlayboxManifest(ByteArrayInputStream(archive), maxBytes = 5, maxArchiveBytes = 6)
         }
     }
 
@@ -48,6 +48,22 @@ class PlayboxArchiveTest {
 
         assertThrows(IllegalArgumentException::class.java) {
             readPlayboxManifest(ByteArrayInputStream(archive), maxEntries = 2)
+        }
+    }
+
+    @Test
+    fun rejectsZipBombStyleIgnoredPayloadBeforeManifest() {
+        val archive = archiveOf(
+            "ignored.bin" to ByteArray(5_000) { 0 },
+            "manifest.json" to "{}".toByteArray(),
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            readPlayboxManifest(
+                ByteArrayInputStream(archive),
+                maxBytes = 100,
+                maxArchiveBytes = 1_000,
+            )
         }
     }
 

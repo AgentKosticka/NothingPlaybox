@@ -9,22 +9,19 @@ import android.os.Looper
 import android.os.Message
 import android.os.Messenger
 import com.agentkosticka.playbox.PlayboxApplication
-import com.agentkosticka.playbox.data.EffectCatalog
-import com.agentkosticka.playbox.data.ProceduralEffectRuntime
-import com.agentkosticka.playbox.model.frameIndexAt
+import com.agentkosticka.playbox.data.AodPlayback
 import com.nothing.ketchum.GlyphToy
+import java.time.LocalTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
-import com.agentkosticka.playbox.data.AodPlayback
-import java.time.LocalTime
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class PlayboxToyService : Service() {
@@ -55,7 +52,7 @@ class PlayboxToyService : Service() {
             readiness = scope.launch {
                 it.state.collectLatest { state ->
                     if (state == GlyphConnectionState.Ready && playbackRequested) startPlayback()
-                    else if (state is GlyphConnectionState.Error) playback?.cancel()
+                    else if (state is GlyphConnectionState.Error || state == GlyphConnectionState.Simulator) playback?.cancel()
                 }
             }
             it.acquire(GlyphMatrixConnection.User.TOY)
@@ -75,12 +72,18 @@ class PlayboxToyService : Service() {
                 val started = android.os.SystemClock.elapsedRealtime()
                 while (isActive) {
                     val frame = renderer.frameAt(android.os.SystemClock.elapsedRealtime() - started, LocalTime.now().hour)
-                    withContext(Dispatchers.Main.immediate) { currentConnection.setToyFrame(frame.pixels) }
+                    val result = withContext(Dispatchers.Main.immediate) { currentConnection.setToyFrame(frame.pixels) }
+                    if (result.isFailure) {
+                        // The shared connection moves into reconnecting state for real SDK failures.
+                        // Stop this loop and let the readiness collector restart playback once Ready.
+                        break
+                    }
                     delay(frame.durationMs.coerceAtLeast(67).toLong())
                 }
             }
         }
     }
+
     override fun onUnbind(intent: Intent?): Boolean {
         playbackRequested = false
         playback?.cancel()

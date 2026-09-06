@@ -7,6 +7,7 @@
     android:minResizeWidth="110dp"
     android:minResizeHeight="110dp"
     android:initialLayout="@layout/widget_time_bars"
+    android:previewLayout="@layout/widget_preview_milestone"
     android:description="@string/milestone_description"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal"

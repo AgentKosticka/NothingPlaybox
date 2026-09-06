@@ -21,6 +21,7 @@ import android.widget.RemoteViews
 import androidx.core.graphics.createBitmap
 import com.agentkosticka.playbox.MainActivity
 import com.agentkosticka.playbox.R
+import com.agentkosticka.playbox.ui.NOTHING_RED_ARGB
 import com.agentkosticka.playbox.ui.NothingDotFont
 import java.time.DayOfWeek
 import java.time.Duration
@@ -216,7 +217,9 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
             alarm: ZonedDateTime?,
             settings: UtilityWidgetSettings,
         ): String = when (provider) {
-            BatteryGlyphWidget::class.java -> "Battery ${battery.percent ?: 0} percent, ${if (battery.charging) "charging" else "on battery"}"
+            BatteryGlyphWidget::class.java -> battery.percent?.let {
+                "Battery $it percent, ${if (battery.charging) "charging" else "on battery"}"
+            } ?: "Battery level unavailable, ${if (battery.charging) "charging" else "on battery"}"
             NextAlarmWidget::class.java -> alarm?.let { "Next alarm ${formatAlarmTime(context, it)} ${alarmDayLabel(now, it)}" } ?: "No alarm set"
             StorageMatrixWidget::class.java -> storage?.let {
                 val fraction = if (settings.storageDisplay == StorageDisplay.FREE) it.freeFraction else 1.0 - it.freeFraction
@@ -284,7 +287,7 @@ object UtilityWidgetRenderer {
     private const val BG = 0xFF111111.toInt()
     private const val MID = 0xFF393939.toInt()
     private const val DIM = 0xFF242424.toInt()
-    private const val RED = 0xFFD71920.toInt()
+    private const val RED = NOTHING_RED_ARGB
 
     fun bitmapSize(widthDp: Int, heightDp: Int): Pair<Int, Int> {
         val ratio = (widthDp.coerceAtLeast(55).toFloat() / heightDp.coerceAtLeast(55)).coerceIn(.75f, 3f)
@@ -532,7 +535,7 @@ object UtilityWidgetRenderer {
             text(canvas, first.month.name.take(3), labelX, y + radius * 1.6f, min(width, height) * .035f, Color.LTGRAY, Paint.Align.CENTER)
             repeat(first.lengthOfMonth()) { dayIndex ->
                 val date = first.plusDays(dayIndex.toLong())
-                val filled = if (display == YearDisplay.ELAPSED) !date.isAfter(today) else !date.isBefore(today)
+                val filled = if (display == YearDisplay.ELAPSED) !date.isAfter(today) else date.isAfter(today)
                 dot(canvas, left + dayIndex * colStep, y, radius, filled, date == today)
             }
         }

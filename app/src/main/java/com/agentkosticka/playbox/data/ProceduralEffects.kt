@@ -48,7 +48,6 @@ object ProceduralEffects {
         val cells = IntArray(PIXEL_COUNT) { index ->
             if (PHONE_4A_PRO_MASK[index] && random.nextFloat() < density.coerceIn(0.05f, 0.75f)) 255 else 0
         }
-        // Always include a small oscillator so a sparse random seed cannot start completely dead.
         listOf(5 to 6, 6 to 6, 7 to 6).forEach { (x, y) -> cells[y * MATRIX_SIZE + x] = 255 }
         return cells
     }
@@ -164,6 +163,14 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
             lifeState = spec.initialState.copyOf()
             lifeGeneration = 0
         }
+
+        val remaining = targetGeneration - lifeGeneration
+        if (remaining > MAX_LIFE_CATCHUP_GENERATIONS) {
+            // Resuming after hours/days must stay O(1) with respect to the pause length. Keep a
+            // deterministic recent evolution window instead of replaying every missed generation.
+            lifeState = spec.initialState.copyOf()
+            lifeGeneration = (targetGeneration - MAX_LIFE_CATCHUP_GENERATIONS).coerceAtLeast(0)
+        }
         while (lifeGeneration < targetGeneration) {
             lifeState = ProceduralEffects.lifeStep(requireNotNull(lifeState))
             lifeGeneration++
@@ -229,10 +236,10 @@ class ProceduralEffectRuntime(private val effect: PlayboxEffect) {
         val speed: Double,
     )
 
-
     private companion object {
         const val NOISE_GRID = 8
         const val TAU = 6.283185307179586
+        const val MAX_LIFE_CATCHUP_GENERATIONS = 256L
     }
 }
 
