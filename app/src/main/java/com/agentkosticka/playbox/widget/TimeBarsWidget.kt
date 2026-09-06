@@ -10,6 +10,8 @@ import android.os.Bundle
 import android.os.SystemClock
 import android.widget.RemoteViews
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
@@ -26,7 +28,7 @@ class TimeBarsWidget : AppWidgetProvider() {
     }
 
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
-        updateAll(context)
+        requestImmediateUpdate(context)
     }
 
     override fun onDisabled(context: Context) {
@@ -44,7 +46,7 @@ class TimeBarsWidget : AppWidgetProvider() {
             )
         ) {
             if (widgetIds(context).isNotEmpty() || DashboardWidget.hasWidgets(context) || UtilityDashboardWidget.hasWidgets(context)) {
-                updateAll(context)
+                requestImmediateUpdate(context)
                 schedule(context)
             }
         }
@@ -52,6 +54,7 @@ class TimeBarsWidget : AppWidgetProvider() {
 
     companion object {
         private const val WORK_NAME = "time-bars-quarter-hour"
+        private const val IMMEDIATE_WORK_NAME = "time-bars-immediate"
         private const val UTILITY_BURST_WINDOW_MS = 2_000L
         private var lastUtilityRefreshMs = -UTILITY_BURST_WINDOW_MS
         private var lastUtilityStateHash = 0
@@ -60,6 +63,7 @@ class TimeBarsWidget : AppWidgetProvider() {
         fun cancelIfUnused(context: Context) {
             if (widgetIds(context).isEmpty() && !DashboardWidget.hasWidgets(context) && !UtilityDashboardWidget.hasWidgets(context)) {
                 WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
+                WorkManager.getInstance(context).cancelUniqueWork(IMMEDIATE_WORK_NAME)
             }
         }
 
@@ -71,6 +75,17 @@ class TimeBarsWidget : AppWidgetProvider() {
                 WORK_NAME,
                 ExistingPeriodicWorkPolicy.KEEP,
                 PeriodicWorkRequestBuilder<TimeBarsWorker>(15, TimeUnit.MINUTES).build(),
+            )
+        }
+
+        /** Coalesces UI/broadcast bursts and renders on WorkManager's background executor. */
+        fun requestImmediateUpdate(context: Context) {
+            WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
+                IMMEDIATE_WORK_NAME,
+                ExistingWorkPolicy.REPLACE,
+                OneTimeWorkRequestBuilder<TimeBarsWorker>()
+                    .setInitialDelay(150, TimeUnit.MILLISECONDS)
+                    .build(),
             )
         }
 
