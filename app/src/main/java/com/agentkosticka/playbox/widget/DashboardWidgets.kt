@@ -31,7 +31,9 @@ open class DashboardWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action in listOf(Intent.ACTION_POWER_CONNECTED, Intent.ACTION_POWER_DISCONNECTED, Intent.ACTION_BATTERY_LOW, Intent.ACTION_BATTERY_OKAY)) {
-            TimeBarsWidget.updateAll(context)
+            val now = ZonedDateTime.now()
+            updateAll(context, now)
+            UtilityDashboardWidget.updateBatteryWidgets(context, now)
         }
     }
     companion object {
