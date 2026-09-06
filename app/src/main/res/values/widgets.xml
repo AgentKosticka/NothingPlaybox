@@ -64,4 +64,10 @@
     <string name="pin_widget_fallback">Long-press your home screen → Widgets → Nothing Playbox → %1$s.</string>
     <string name="pin_widget_finish">Finish adding the widget in your launcher.</string>
     <string name="add_to_home_screen">ADD TO HOME SCREEN</string>
+
+    <string name="widget_day_progress_cd">%1$d percent of today elapsed</string>
+    <string name="widget_battery_percent_cd">Battery %1$d percent, %2$s</string>
+    <string name="widget_battery_unknown_cd">Battery level unavailable, %1$s</string>
+    <string name="widget_battery_charging">charging</string>
+    <string name="widget_battery_on_battery">on battery</string>
 </resources>
