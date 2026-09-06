@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.asStateFlow
  */
 class GlyphMatrixConnection(context: Context) {
     private val appContext = context.applicationContext
-    private val userCounts = mutableMapOf<User, Int>()
+    private val leases = LeaseCounter<User>()
     private var manager: GlyphMatrixManager? = null
     private val _state = MutableStateFlow<GlyphConnectionState>(GlyphConnectionState.Simulator)
     val state: StateFlow<GlyphConnectionState> = _state.asStateFlow()
@@ -39,7 +39,7 @@ class GlyphMatrixConnection(context: Context) {
         override fun onServiceDisconnected(componentName: ComponentName?) {
             synchronized(this@GlyphMatrixConnection) {
                 _state.value = GlyphConnectionState.Error("Glyph Matrix service disconnected")
-                if (leaseCountLocked() > 0) initializeLocked()
+                if (leases.total > 0) initializeLocked()
             }
         }
     }
@@ -50,26 +50,25 @@ class GlyphMatrixConnection(context: Context) {
             _state.value = GlyphConnectionState.Simulator
             return
         }
-        userCounts[user] = (userCounts[user] ?: 0) + 1
-        if (leaseCountLocked() == 1 || manager == null || _state.value is GlyphConnectionState.Error) {
+        val total = leases.acquire(user)
+        if (total == 1 || manager == null || _state.value is GlyphConnectionState.Error) {
             initializeLocked()
         }
     }
 
     @Synchronized
     fun release(user: User) {
-        val current = userCounts[user] ?: return
-        val lastForUser = current == 1
-        if (lastForUser) userCounts.remove(user) else userCounts[user] = current - 1
+        val release = leases.release(user)
+        if (!release.released) return
 
-        if (user == User.TOY && lastForUser && leaseCountLocked() > 0) {
+        if (user == User.TOY && release.lastForOwner && release.total > 0) {
             // Keep the SDK connection for APP, but do not leave the last AOD/toy frame resident.
             if (_state.value == GlyphConnectionState.Ready) {
                 runCatching { manager?.setMatrixFrame(HardwareFrameEncoder.encode(IntArray(PIXEL_COUNT))) }
             }
         }
 
-        if (leaseCountLocked() == 0) shutdownLocked()
+        if (release.total == 0) shutdownLocked()
     }
 
     fun setAppFrame(pixels: IntArray): Result<Unit> = setFrame(
@@ -94,7 +93,7 @@ class GlyphMatrixConnection(context: Context) {
             .onFailure { failure ->
                 synchronized(this) {
                     _state.value = GlyphConnectionState.Error(failure.message ?: "Unable to display frame")
-                    if (leaseCountLocked() > 0) initializeLocked()
+                    if (leases.total > 0) initializeLocked()
                 }
             }
     }
@@ -105,7 +104,7 @@ class GlyphMatrixConnection(context: Context) {
     }
 
     @Synchronized
-    internal fun leaseCount(user: User): Int = userCounts[user] ?: 0
+    internal fun leaseCount(user: User): Int = leases.count(user)
 
     private fun initializeLocked() {
         runCatching { manager?.unInit() }
@@ -128,8 +127,6 @@ class GlyphMatrixConnection(context: Context) {
         manager = null
         _state.value = GlyphConnectionState.Simulator
     }
-
-    private fun leaseCountLocked(): Int = userCounts.values.sum()
 
     enum class User { APP, TOY }
 }
