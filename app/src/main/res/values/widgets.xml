@@ -5,4 +5,25 @@
     <string name="battery_dots_description">One dot per battery percent, plus charging status. Refreshes about every 15 minutes.</string>
     <string name="time_bars_name">Time bars</string>
     <string name="time_bars_description">Four dotted bars tracking your day, week, month and year. Choose your week start and fill style in Playbox. Refreshes about every 15 minutes.</string>
+
+    <string name="battery_glyph_name">Battery glyph</string>
+    <string name="battery_glyph_description">Responsive Nothing-style battery meter with ring, dot or bar modes and charging time when Android can estimate it.</string>
+    <string name="next_alarm_name">Next alarm</string>
+    <string name="next_alarm_description">Your next system alarm, day and time-until, rendered in the Nothing visual language.</string>
+    <string name="storage_matrix_name">Storage matrix</string>
+    <string name="storage_matrix_description">A 100-dot internal-storage meter. Choose whether it shows free or used space.</string>
+    <string name="month_matrix_name">Month matrix</string>
+    <string name="month_matrix_description">A compact monthly calendar with today highlighted and the same configurable week start as Time Bars.</string>
+    <string name="week_strip_name">Week strip</string>
+    <string name="week_strip_description">A slim seven-day strip for the current week with today highlighted. Resizes from compact to wide.</string>
+    <string name="year_dots_name">Year dots</string>
+    <string name="year_dots_description">Every day of the year in a 12-row dot matrix. Switch between elapsed and remaining days.</string>
+    <string name="device_panel_name">Device panel</string>
+    <string name="device_panel_description">Battery, free storage, next alarm and today’s progress in one Nothing-style dashboard.</string>
+    <string name="milestone_name">Milestone</string>
+    <string name="milestone_description">Countdown to the weekend, next month or next year with a dotted progress track.</string>
+    <string name="ndot_clock_name">NDot clock</string>
+    <string name="ndot_clock_description">A live home-screen clock using Nothing OS NDot57 on Nothing phones, with automatic system-time updates.</string>
+    <string name="playbox_shortcuts_name">Playbox shortcuts</string>
+    <string name="playbox_shortcuts_description">One-tap access to the Matrix studio, widget gallery and Nothing OS Always-on Glyph Toy selector.</string>
 </resources>

@@ -10,6 +10,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.Assert.*
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.time.DayOfWeek
 import java.time.ZonedDateTime
 
 @RunWith(AndroidJUnit4::class)
@@ -55,5 +56,33 @@ class FeatureExpansionTest {
             }
         }
         directory.resolve("bloom-evolution.png").outputStream().use { sheet.compress(Bitmap.CompressFormat.PNG, 100, it) }
+    }
+
+    @Test fun renderUtilityWidgetPackAcrossSizesAndModes() {
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        val now = ZonedDateTime.parse("2026-09-06T12:00:00+02:00[Europe/Prague]")
+        val battery = BatteryInfo(percent = 67, charging = true, chargeRemainingMs = 4_500_000L)
+        val storage = StorageInfo(totalBytes = 256_000_000_000L, freeBytes = 96_000_000_000L)
+        val alarm = now.plusHours(7).plusMinutes(30)
+
+        val ring = UtilityWidgetRenderer.batteryGlyph(battery, BatteryVisual.RING, 720, 320)
+        val dots = UtilityWidgetRenderer.batteryGlyph(battery, BatteryVisual.DOTS, 720, 320)
+        assertEquals(720, ring.width)
+        assertEquals(320, ring.height)
+        assertFalse(ring.sameAs(dots))
+
+        val previews = listOf(
+            UtilityWidgetRenderer.nextAlarm(context, now, alarm, 720, 320),
+            UtilityWidgetRenderer.storage(storage, StorageDisplay.FREE, 360, 360),
+            UtilityWidgetRenderer.month(now, DayOfWeek.MONDAY, 720, 360),
+            UtilityWidgetRenderer.weekStrip(now, DayOfWeek.SUNDAY, 800, 300),
+            UtilityWidgetRenderer.year(now, YearDisplay.REMAINING, 720, 360),
+            UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, 720, 360),
+            UtilityWidgetRenderer.milestone(now, MilestoneTarget.MONTH_END, 360, 360),
+            UtilityWidgetRenderer.clockPreview(context, now, 720, 320),
+            UtilityWidgetRenderer.shortcutsPreview(900, 300),
+        )
+        assertTrue(previews.all { it.width > 0 && it.height > 0 })
+        assertTrue(previews.zipWithNext().all { (first, second) -> !first.sameAs(second) })
     }
 }
