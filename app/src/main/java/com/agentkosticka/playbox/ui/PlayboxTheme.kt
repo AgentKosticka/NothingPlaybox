@@ -5,7 +5,9 @@ import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-val NothingRed = Color(0xFFD71921)
+/** Shared ARGB token used by Compose and bitmap widget renderers. */
+const val NOTHING_RED_ARGB: Int = -2680543
+val NothingRed = Color(NOTHING_RED_ARGB)
 val Ink = Color(0xFF080808)
 val Panel = Color(0xFF151515)
 val Muted = Color(0xFF9A9A9A)
