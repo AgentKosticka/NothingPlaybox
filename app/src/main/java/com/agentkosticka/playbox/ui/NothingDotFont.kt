@@ -1,18 +1,18 @@
 package com.agentkosticka.playbox.ui
 
 import android.graphics.Typeface
-import android.os.Build
 import androidx.compose.ui.text.font.FontFamily
 
-/** Nothing OS exposes NDot57 on Nothing devices. Other phones safely use the existing mono face. */
+/** Uses Nothing OS NDot57 only when Android actually resolves that family. */
 object NothingDotFont {
     private val candidate: Typeface by lazy { Typeface.create("NDot57", Typeface.NORMAL) }
-    // Typeface.familyName is hidden from the Kotlin SDK stubs; Android includes the
-    // resolved family in Typeface.toString(), which also works on vendor builds.
+
+    // Typeface.familyName is hidden from the SDK stubs. Vendor builds include the
+    // resolved family in toString(); unlike a brand check this does not mislabel fallback fonts.
     val available: Boolean by lazy {
-        candidate.toString().contains("NDot", ignoreCase = true) ||
-            (Build.MANUFACTURER.equals("Nothing", true) || Build.BRAND.equals("Nothing", true))
+        candidate.toString().contains("NDot", ignoreCase = true)
     }
+
     val typeface: Typeface get() = if (available) candidate else Typeface.MONOSPACE
     val family: FontFamily by lazy { FontFamily(typeface) }
 }
