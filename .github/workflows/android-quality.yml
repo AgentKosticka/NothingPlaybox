@@ -98,7 +98,11 @@ jobs:
 
   instrumentation:
     name: Android instrumentation tests
-    runs-on: ubuntu-latest
+    # Hosted Linux runners do not expose KVM here; the API 35 emulator can take >12 minutes
+    # to boot under TCG and become unstable before the test command starts. The Intel macOS
+    # runner gives the x86_64 emulator native VM acceleration instead of pretending patience
+    # is a virtualization technology.
+    runs-on: macos-15-intel
     timeout-minutes: 35
 
     steps:
