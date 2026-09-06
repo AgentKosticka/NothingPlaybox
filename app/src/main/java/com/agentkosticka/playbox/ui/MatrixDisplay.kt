@@ -61,15 +61,21 @@ fun MatrixDisplay(
     val previousLabel = stringResource(R.string.matrix_previous_led)
     val nextLabel = stringResource(R.string.matrix_next_led)
     val matrixDescription = if (onPixel == null) previewDescription else editableDescription
+    val selected = if (activeIndices.isEmpty()) 0 else activeIndices[accessibilityPosition.coerceIn(activeIndices.indices)]
+    val selectedRow = selected / MATRIX_SIZE + 1
+    val selectedColumn = selected % MATRIX_SIZE + 1
+    val selectedIntensity = currentPixels.value.getOrElse(selected) { 0 }.coerceIn(0, 255)
+    val selectedStateDescription = stringResource(
+        R.string.matrix_selected_state,
+        selectedRow,
+        selectedColumn,
+        selectedIntensity,
+    )
 
     var canvasModifier = modifier.semantics {
         contentDescription = matrixDescription
         if (onPixel != null && activeIndices.isNotEmpty()) {
-            val selected = activeIndices[accessibilityPosition.coerceIn(activeIndices.indices)]
-            val row = selected / MATRIX_SIZE + 1
-            val column = selected % MATRIX_SIZE + 1
-            val intensity = currentPixels.value.getOrElse(selected) { 0 }.coerceIn(0, 255)
-            stateDescription = "Selected row $row, column $column, intensity $intensity of 255"
+            stateDescription = selectedStateDescription
             onClick(editSelectedLabel) {
                 currentOnStrokeStart.value?.invoke()
                 currentOnPixel.value?.invoke(selected)
