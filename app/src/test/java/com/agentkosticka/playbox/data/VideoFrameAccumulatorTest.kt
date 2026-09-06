@@ -2,6 +2,7 @@ package com.agentkosticka.playbox.data
 
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -103,5 +104,13 @@ class VideoFrameAccumulatorTest {
             listOf(216_999L),
             videoNearbyDecodeTimesUs(timeUs = 249_999L, sourceDurationMs = 250L, offsetUs = 33_000L).toList(),
         )
+    }
+
+    @Test
+    fun largeVideoDecodeSizeIsStrictlyBounded() {
+        assertEquals(VideoImporter.DecodeSize(256, 144), VideoImporter.scaledDecodeSize(7680, 4320))
+        assertEquals(VideoImporter.DecodeSize(144, 256), VideoImporter.scaledDecodeSize(4320, 7680))
+        assertNull(VideoImporter.scaledDecodeSize(256, 144))
+        assertNull(VideoImporter.scaledDecodeSize(120, 120))
     }
 }
