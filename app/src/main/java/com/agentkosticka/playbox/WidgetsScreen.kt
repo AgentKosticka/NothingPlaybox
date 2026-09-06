@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.agentkosticka.playbox.ui.Muted
@@ -360,15 +361,16 @@ private fun milestoneTargetLabel(value: MilestoneTarget): String = stringResourc
 @Composable
 private fun AddWidgetButton(provider: Class<*>, name: String, onStatus: (String) -> Unit) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     Button(
         onClick = {
             val manager = AppWidgetManager.getInstance(context)
-            val fallback = context.getString(R.string.pin_widget_fallback, name)
+            val fallback = resources.getString(R.string.pin_widget_fallback, name)
             onStatus(
                 if (manager.isRequestPinAppWidgetSupported) {
                     runCatching {
                         if (manager.requestPinAppWidget(ComponentName(context, provider), null, null)) {
-                            context.getString(R.string.pin_widget_finish)
+                            resources.getString(R.string.pin_widget_finish)
                         } else fallback
                     }.getOrDefault(fallback)
                 } else fallback,

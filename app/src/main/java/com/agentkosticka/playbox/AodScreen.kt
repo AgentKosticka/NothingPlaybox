@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
@@ -30,6 +31,7 @@ import kotlin.math.roundToInt
 @Composable
 fun AodScreen(repository: EffectRepository, glyphClient: GlyphMatrixClient) {
     val context = LocalContext.current
+    val resources = LocalResources.current
     val store = (context.applicationContext as PlayboxApplication).aodSettings
     val settings by store.settings.collectAsState()
     val effects by repository.effects.collectAsState()
@@ -91,7 +93,7 @@ fun AodScreen(repository: EffectRepository, glyphClient: GlyphMatrixClient) {
                 Button(
                     onClick = {
                         glyphClient.openAodToyManager().onFailure {
-                            message = context.getString(R.string.open_aod_settings_fallback)
+                            message = resources.getString(R.string.open_aod_settings_fallback)
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),

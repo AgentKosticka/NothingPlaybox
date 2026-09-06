@@ -86,6 +86,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
@@ -154,6 +155,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
     val scope = rememberCoroutineScope()
     val snackbar = remember { SnackbarHostState() }
     val context = androidx.compose.ui.platform.LocalContext.current
+    val resources = LocalResources.current
     val resolver = context.contentResolver
     val filenameFallback = stringResource(R.string.effect_filename_fallback)
     var section by rememberSaveable {
@@ -165,14 +167,14 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
         if (uris.isNotEmpty()) scope.launch {
             runCatching { ImageImporter.import(resolver, uris) }
                 .onSuccess(viewModel::beginEdit)
-                .onFailure { message = it.message ?: context.getString(R.string.error_import_images) }
+                .onFailure { message = it.message ?: resources.getString(R.string.error_import_images) }
         }
     }
     val importFile = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) scope.launch {
             runCatching { repository.importEffect(resolver, uri) }
                 .onSuccess(viewModel::beginEdit)
-                .onFailure { message = it.message ?: context.getString(R.string.error_invalid_playbox_effect) }
+                .onFailure { message = it.message ?: resources.getString(R.string.error_invalid_playbox_effect) }
         }
     }
     val video = rememberLauncherForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
@@ -184,7 +186,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
                 }
                 viewModel.beginEdit(effect)
             } catch (error: Throwable) {
-                message = error.message ?: context.getString(R.string.error_import_video)
+                message = error.message ?: resources.getString(R.string.error_import_video)
             } finally {
                 importProgress = null
             }
@@ -194,8 +196,8 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
         val effect = exportEffect
         if (uri != null && effect != null) scope.launch {
             runCatching { repository.exportEffect(effect, resolver, uri) }
-                .onSuccess { message = context.getString(R.string.message_exported, effect.name) }
-                .onFailure { message = it.message ?: context.getString(R.string.error_export) }
+                .onSuccess { message = resources.getString(R.string.message_exported, effect.name) }
+                .onFailure { message = it.message ?: resources.getString(R.string.error_export) }
         }
     }
 
@@ -214,7 +216,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
                 scope.launch {
                     runCatching { repository.save(saved) }
                         .onSuccess { viewModel.clearEditor() }
-                        .onFailure { message = it.message ?: context.getString(R.string.error_save_effect) }
+                        .onFailure { message = it.message ?: resources.getString(R.string.error_save_effect) }
                 }
             },
             onDiscard = viewModel::clearEditor,
@@ -234,7 +236,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
             snackbar = snackbar,
             onCreate = { createDialog = true },
             onEdit = { effect -> viewModel.beginEdit(if (effect.builtIn) effect.editableCopy() else effect) },
-            onNewProfile = { effect -> viewModel.beginEdit(effect.editableCopy(context.getString(R.string.profile_name_format, effect.name))) },
+            onNewProfile = { effect -> viewModel.beginEdit(effect.editableCopy(resources.getString(R.string.profile_name_format, effect.name))) },
             onActivate = { effect ->
                 repository.setActiveEffect(effect.id)
                 section = "AOD"
@@ -242,7 +244,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
             onDelete = { id ->
                 scope.launch {
                     runCatching { repository.delete(id) }
-                        .onFailure { message = it.message ?: context.getString(R.string.error_delete_effect) }
+                        .onFailure { message = it.message ?: resources.getString(R.string.error_delete_effect) }
                 }
             },
             onImport = { importFile.launch(arrayOf("application/zip", "application/octet-stream")) },
