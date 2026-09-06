@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.agentkosticka.playbox.data.AodPlayback
 import com.agentkosticka.playbox.data.EffectRepository
+import com.agentkosticka.playbox.matrix.GlyphConnectionState
 import com.agentkosticka.playbox.matrix.GlyphMatrixClient
 import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.ui.MatrixDisplay
@@ -30,20 +31,21 @@ fun AodScreen(repository: EffectRepository, glyphClient: GlyphMatrixClient) {
     val settings by store.settings.collectAsState()
     val effects by repository.effects.collectAsState()
     val selectedId by repository.activeId.collectAsState()
+    val connection by glyphClient.state.collectAsState()
     var showPicker by remember { mutableStateOf(false) }
     var live by remember { mutableStateOf(false) }
     var pixels by remember { mutableStateOf(IntArray(PIXEL_COUNT)) }
     var message by remember { mutableStateOf<String?>(null) }
     var hour by remember { mutableIntStateOf(LocalTime.now().hour) }
     val selected = effects.firstOrNull { it.id == selectedId } ?: effects.firstOrNull()
-    LaunchedEffect(settings, effects, selectedId, live) {
+    LaunchedEffect(settings, effects, selectedId, live, connection) {
         val renderer = AodPlayback(effects, selectedId, settings)
         val start = android.os.SystemClock.elapsedRealtime()
         while (true) {
             hour = LocalTime.now().hour
             val frame = renderer.frameAt(android.os.SystemClock.elapsedRealtime() - start, hour)
             pixels = frame.pixels
-            if (live) glyphClient.showFrame(frame.pixels)
+            if (live && connection == GlyphConnectionState.Ready) glyphClient.showFrame(frame.pixels)
             delay(frame.durationMs.toLong())
         }
     }
@@ -64,8 +66,12 @@ fun AodScreen(repository: EffectRepository, glyphClient: GlyphMatrixClient) {
                 AodToggle("AOD playback", settings.enabled) { store.save(settings.copy(enabled = it)) }
                 OutlinedButton(onClick = {
                     live = !live
-                    if (live) glyphClient.connect() else glyphClient.stopDisplay()
+                    if (!live) glyphClient.stopDisplay()
                 }, enabled = glyphClient.isProbablySupported) { Text(if (live) "STOP MATRIX PREVIEW" else "PREVIEW ON MATRIX") }
+                if (live && connection is GlyphConnectionState.Connecting) LinearProgressIndicator(Modifier.fillMaxWidth())
+                if (live && connection is GlyphConnectionState.Error) {
+                    Text((connection as GlyphConnectionState.Error).message, color = MaterialTheme.colorScheme.error)
+                }
                 Button(onClick = {
                     glyphClient.openAodToyManager().onFailure { message = "Open Settings → Glyph Interface → Flip to Glyph → Always-on Glyph Toy, then select Nothing Playbox." }
                 }, modifier = Modifier.fillMaxWidth()) { Text("ENABLE IN NOTHING SETTINGS") }
