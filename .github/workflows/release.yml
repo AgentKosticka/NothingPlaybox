@@ -1,0 +1,69 @@
+name: Signed Android release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Java 17
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+
+      - name: Verify release secrets
+        env:
+          KEYSTORE_B64: ${{ secrets.PLAYBOX_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.PLAYBOX_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.PLAYBOX_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.PLAYBOX_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for value in "$KEYSTORE_B64" "$STORE_PASSWORD" "$KEY_ALIAS" "$KEY_PASSWORD"; do
+            test -n "$value" || { echo "Release signing secrets are not fully configured" >&2; exit 1; }
+          done
+          printf '%s' "$KEYSTORE_B64" | base64 --decode > "$RUNNER_TEMP/playbox-release.jks"
+
+      - name: Build signed optimized release
+        env:
+          PLAYBOX_KEYSTORE_PATH: ${{ runner.temp }}/playbox-release.jks
+          PLAYBOX_KEYSTORE_PASSWORD: ${{ secrets.PLAYBOX_KEYSTORE_PASSWORD }}
+          PLAYBOX_KEY_ALIAS: ${{ secrets.PLAYBOX_KEY_ALIAS }}
+          PLAYBOX_KEY_PASSWORD: ${{ secrets.PLAYBOX_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon testDebugUnitTest lintRelease assembleRelease
+
+      - name: Verify APK signature
+        run: |
+          set -euo pipefail
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs app/build/outputs/apk/release/app-release.apk
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            app/build/outputs/apk/release/app-release.apk#NothingPlaybox-${GITHUB_REF_NAME}.apk \
+            --verify-tag \
+            --generate-notes \
+            --title "Nothing Playbox ${GITHUB_REF_NAME}"
