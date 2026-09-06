@@ -138,7 +138,7 @@
     <string name="preview_on_matrix">PREVIEW ON MATRIX</string>
     <string name="open_aod_settings_fallback">Open Settings → Glyph Interface → Flip to Glyph → Always-on Glyph Toy, then select Nothing Playbox.</string>
     <string name="enable_in_nothing_settings">ENABLE IN NOTHING SETTINGS</string>
-    <string name="aod_settings_help">Select Nothing Playbox as the system&apos;s Always-on Glyph Toy. These controls apply when Nothing OS runs the toy.</string>
+    <string name="aod_settings_help">Select Nothing Playbox as the system\'s Always-on Glyph Toy. These controls apply when Nothing OS runs the toy.</string>
     <string name="output">OUTPUT</string>
     <string name="brightness">BRIGHTNESS  %1$d%%</string>
     <string name="speed_multiplier">SPEED  %1$s×</string>
@@ -146,7 +146,7 @@
     <string name="from">From</string>
     <string name="until">Until</string>
     <string name="equal_hours_mute">Equal hours mute the entire day.</string>
-    <string name="quiet_hours_help">Matrix stays dark during these hours in your phone&apos;s time zone.</string>
+    <string name="quiet_hours_help">Matrix stays dark during these hours in your phone\'s time zone.</string>
     <string name="rotate_effects">Rotate effects</string>
     <string name="change_every_seconds">CHANGE EVERY %1$d SECONDS</string>
     <string name="rotation_help">Choose effects and profiles to rotate. An empty selection uses your chosen effect.</string>
