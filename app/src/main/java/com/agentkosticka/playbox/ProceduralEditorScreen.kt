@@ -38,6 +38,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -68,7 +69,9 @@ fun ProceduralEditorScreen(
     initial: PlayboxEffect,
     connection: GlyphConnectionState,
     glyphClient: GlyphMatrixClient,
+    onDraftChanged: (PlayboxEffect) -> Unit,
     onBack: (PlayboxEffect) -> Unit,
+    onDiscard: () -> Unit,
     onExport: (PlayboxEffect) -> Unit,
 ) {
     var draft by remember(initial.id) {
@@ -80,6 +83,8 @@ fun ProceduralEditorScreen(
     var playing by remember { mutableStateOf(false) }
     var live by remember { mutableStateOf(false) }
     var conwayGeneration by remember { mutableIntStateOf(0) }
+
+    SideEffect { onDraftChanged(draft) }
 
     fun refreshPreview() {
         previewPixels = ProceduralEffectRuntime(draft).frameAt(0).pixels
@@ -98,6 +103,11 @@ fun ProceduralEditorScreen(
     fun finish() {
         glyphClient.stopDisplay()
         onBack(draft)
+    }
+
+    fun discard() {
+        glyphClient.stopDisplay()
+        onDiscard()
     }
 
     BackHandler { finish() }
@@ -143,6 +153,7 @@ fun ProceduralEditorScreen(
                 },
                 actions = {
                     IconButton(onClick = { onExport(exportableDraft()) }) { Icon(Icons.Default.Download, "Export") }
+                    TextButton(onClick = ::discard) { Text("DISCARD") }
                     TextButton(onClick = ::finish) { Text("SAVE") }
                 },
             )
@@ -187,7 +198,7 @@ fun ProceduralEditorScreen(
                         selected = live,
                         onClick = {
                             live = !live
-                            if (live) glyphClient.connect() else glyphClient.stopDisplay()
+                            if (!live) glyphClient.stopDisplay()
                         },
                         label = { Text(if (live) "LIVE MATRIX" else "SIMULATOR") },
                         leadingIcon = { Icon(Icons.Default.Lightbulb, null) },
