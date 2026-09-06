@@ -109,43 +109,61 @@ class EffectRepository(context: Context) {
     private fun mergedEffects() = userEffects.sortedByDescending { it.updatedAt } + EffectCatalog.builtIns
 
     private fun loadUsers(): List<PlayboxEffect> {
-        val current = loadV2Users()
-        if (current.isNotEmpty() || !legacyStorage.baseFile.exists()) return current
+        val current = loadV2Users().toMutableList()
+        if (!legacyStorage.baseFile.exists()) return current
 
-        // One-time bounded migration from the original monolithic file.
-        val legacy = loadLegacyUsers().take(MAX_USER_EFFECTS)
-        val migrated = mutableListOf<PlayboxEffect>()
-        legacy.forEach { effect ->
-            runCatching {
-                persistEffect(effect)
-                migrated += effect
+        // Migration is deliberately resumable. A partially migrated v1 file remains the source of
+        // truth for anything that has not made it safely into v2 yet; it is deleted only after every
+        // legacy entry was parsed and represented in v2.
+        val legacy = loadLegacyUsers() ?: return current
+        var complete = legacy.complete
+        val migratedById = current.associateByTo(linkedMapOf()) { it.id }
+
+        legacy.effects.forEach { effect ->
+            if (effect.id in migratedById) return@forEach
+            if (migratedById.size >= MAX_USER_EFFECTS) {
+                complete = false
+                return@forEach
+            }
+            if (runCatching { persistEffect(effect) }.isSuccess) {
+                migratedById[effect.id] = effect
+            } else {
+                complete = false
             }
         }
-        if (migrated.size == legacy.size) legacyStorage.delete()
-        return migrated
+
+        if (complete) legacyStorage.delete()
+        return migratedById.values.sortedByDescending { it.updatedAt }.take(MAX_USER_EFFECTS)
     }
 
     private fun loadV2Users(): List<PlayboxEffect> = directory.listFiles()
         .orEmpty()
         .asSequence()
         .filter { it.isFile && it.extension == "json" && it.length() in 1..MAX_EFFECT_FILE_BYTES.toLong() }
-        .take(MAX_USER_EFFECTS)
         .mapNotNull { file ->
             runCatching { effectFromJson(JSONObject(file.readText(Charsets.UTF_8))) }.getOrNull()
         }
+        .sortedByDescending { it.updatedAt }
+        .take(MAX_USER_EFFECTS)
         .toList()
 
-    private fun loadLegacyUsers(): List<PlayboxEffect> = runCatching {
-        require(legacyStorage.baseFile.length() <= MAX_LIBRARY_BYTES) { "Legacy effect library is too large" }
+    private data class LegacyLoad(val effects: List<PlayboxEffect>, val complete: Boolean)
+
+    private fun loadLegacyUsers(): LegacyLoad? = runCatching {
+        val legacySize = legacyStorage.baseFile.length()
+        require(legacySize in 1..MAX_LIBRARY_BYTES) { "Legacy effect library is too large" }
         val root = legacyStorage.openRead().bufferedReader().use { JSONObject(it.readText()) }
-        require(root.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION)
+        require(root.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION) { "Unsupported legacy effect schema" }
         val array = root.getJSONArray("effects")
-        buildList {
+        var complete = array.length() <= MAX_USER_EFFECTS
+        val effects = buildList {
             for (index in 0 until minOf(array.length(), MAX_USER_EFFECTS)) {
-                runCatching { effectFromJson(array.getJSONObject(index)) }.getOrNull()?.let(::add)
+                val parsed = runCatching { effectFromJson(array.getJSONObject(index)) }.getOrNull()
+                if (parsed == null) complete = false else add(parsed)
             }
         }
-    }.getOrDefault(emptyList())
+        LegacyLoad(effects, complete)
+    }.getOrNull()
 
     private fun persistEffect(effect: PlayboxEffect) {
         val payload = effectToJson(effect).toString().toByteArray(Charsets.UTF_8)
