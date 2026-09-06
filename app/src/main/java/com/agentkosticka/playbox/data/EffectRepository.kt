@@ -13,20 +13,26 @@ import com.agentkosticka.playbox.model.PIXEL_COUNT
 import com.agentkosticka.playbox.model.PlayboxEffect
 import com.agentkosticka.playbox.model.ProceduralSpec
 import com.agentkosticka.playbox.model.normalized
+import java.io.File
+import java.security.MessageDigest
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import org.json.JSONObject
-import java.util.zip.ZipEntry
-import java.util.zip.ZipOutputStream
 
 class EffectRepository(context: Context) {
     private val appContext = context.applicationContext
-    private val storage = AtomicFile(appContext.filesDir.resolve("effects-v1.json"))
+    private val directory = appContext.filesDir.resolve("effects-v2").apply { mkdirs() }
+    private val legacyStorage = AtomicFile(appContext.filesDir.resolve("effects-v1.json"))
     private val preferences = appContext.getSharedPreferences("playbox", Context.MODE_PRIVATE)
+    private val mutationMutex = Mutex()
     private var userEffects: MutableList<PlayboxEffect> = loadUsers().toMutableList()
     private val _effects = MutableStateFlow(mergedEffects())
 
@@ -38,30 +44,37 @@ class EffectRepository(context: Context) {
 
     fun find(id: String): PlayboxEffect? = _effects.value.firstOrNull { it.id == id }
 
-    @Synchronized
-    fun save(effect: PlayboxEffect): PlayboxEffect {
-        var normalized = effect.copy(
-            frames = effect.frames.map(EffectFrame::normalized),
-            procedural = effect.procedural?.normalized(),
-            builtIn = false,
-            updatedAt = System.currentTimeMillis(),
-        )
-        if (normalized.procedural != null) {
-            normalized = normalized.copy(frames = listOf(ProceduralEffectRuntime(normalized).frameAt(0)))
+    suspend fun save(effect: PlayboxEffect): PlayboxEffect = withContext(Dispatchers.IO) {
+        mutationMutex.withLock {
+            var normalized = effect.copy(
+                frames = effect.frames.map(EffectFrame::normalized),
+                procedural = effect.procedural?.normalized(),
+                builtIn = false,
+                updatedAt = System.currentTimeMillis(),
+            )
+            if (normalized.procedural != null) {
+                normalized = normalized.copy(frames = listOf(ProceduralEffectRuntime(normalized).frameAt(0)))
+            }
+
+            val index = userEffects.indexOfFirst { it.id == normalized.id }
+            require(index >= 0 || userEffects.size < MAX_USER_EFFECTS) {
+                "Your library can contain at most $MAX_USER_EFFECTS saved effects"
+            }
+            persistEffect(normalized)
+            if (index >= 0) userEffects[index] = normalized else userEffects.add(0, normalized)
+            _effects.value = mergedEffects()
+            normalized
         }
-        val index = userEffects.indexOfFirst { it.id == normalized.id }
-        if (index >= 0) userEffects[index] = normalized else userEffects.add(0, normalized)
-        persistUsers()
-        _effects.value = mergedEffects()
-        return normalized
     }
 
-    @Synchronized
-    fun delete(id: String) {
-        userEffects.removeAll { it.id == id }
-        if (activeEffectId == id) setActiveEffect(EffectCatalog.builtIns.first().id)
-        persistUsers()
-        _effects.value = mergedEffects()
+    suspend fun delete(id: String) = withContext(Dispatchers.IO) {
+        mutationMutex.withLock {
+            val removed = userEffects.removeAll { it.id == id }
+            if (!removed) return@withLock
+            effectFile(id).delete()
+            if (activeEffectId == id) setActiveEffect(EffectCatalog.builtIns.first().id)
+            _effects.value = mergedEffects()
+        }
     }
 
     fun setActiveEffect(id: String) {
@@ -84,46 +97,86 @@ class EffectRepository(context: Context) {
         } ?: error("Unable to open export destination")
     }
 
+    /** Decode into a transient draft. Importing no longer mutates the library until the user saves. */
     suspend fun importEffect(resolver: ContentResolver, uri: Uri): PlayboxEffect = withContext(Dispatchers.IO) {
         val bytes = resolver.openInputStream(uri)?.use(::readPlayboxManifest)
             ?: error("Unable to read effect")
         val manifest = JSONObject(String(bytes, Charsets.UTF_8))
         require(manifest.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION) { "Unsupported Playbox effect version" }
-        val decoded = effectFromJson(manifest)
-        save(decoded.editableCopy(decoded.name))
+        effectFromJson(manifest).editableCopy(manifest.optString("name", "Imported effect").take(60))
     }
 
     private fun mergedEffects() = userEffects.sortedByDescending { it.updatedAt } + EffectCatalog.builtIns
 
-    private fun loadUsers(): List<PlayboxEffect> = runCatching {
-        if (!storage.baseFile.exists()) return@runCatching emptyList()
-        val root = storage.openRead().bufferedReader().use { JSONObject(it.readText()) }
+    private fun loadUsers(): List<PlayboxEffect> {
+        val current = loadV2Users()
+        if (current.isNotEmpty() || !legacyStorage.baseFile.exists()) return current
+
+        // One-time bounded migration from the original monolithic file.
+        val legacy = loadLegacyUsers().take(MAX_USER_EFFECTS)
+        val migrated = mutableListOf<PlayboxEffect>()
+        legacy.forEach { effect ->
+            runCatching {
+                persistEffect(effect)
+                migrated += effect
+            }
+        }
+        if (migrated.size == legacy.size) legacyStorage.delete()
+        return migrated
+    }
+
+    private fun loadV2Users(): List<PlayboxEffect> = directory.listFiles()
+        .orEmpty()
+        .asSequence()
+        .filter { it.isFile && it.extension == "json" && it.length() in 1..MAX_EFFECT_FILE_BYTES.toLong() }
+        .take(MAX_USER_EFFECTS)
+        .mapNotNull { file ->
+            runCatching { effectFromJson(JSONObject(file.readText(Charsets.UTF_8))) }.getOrNull()
+        }
+        .toList()
+
+    private fun loadLegacyUsers(): List<PlayboxEffect> = runCatching {
+        require(legacyStorage.baseFile.length() <= MAX_LIBRARY_BYTES) { "Legacy effect library is too large" }
+        val root = legacyStorage.openRead().bufferedReader().use { JSONObject(it.readText()) }
         require(root.optInt("schema", 0) == PLAYBOX_SCHEMA_VERSION)
         val array = root.getJSONArray("effects")
         buildList {
-            for (index in 0 until array.length()) {
-                try {
-                    add(effectFromJson(array.getJSONObject(index)))
-                } catch (_: Exception) {
-                    // Preserve the rest of the library when a single stored effect is malformed.
-                }
+            for (index in 0 until minOf(array.length(), MAX_USER_EFFECTS)) {
+                runCatching { effectFromJson(array.getJSONObject(index)) }.getOrNull()?.let(::add)
             }
         }
     }.getOrDefault(emptyList())
 
-    private fun persistUsers() {
-        val root = JSONObject().put("schema", PLAYBOX_SCHEMA_VERSION).put("effects", JSONArray().apply {
-            userEffects.forEach { put(effectToJson(it)) }
-        })
+    private fun persistEffect(effect: PlayboxEffect) {
+        val payload = effectToJson(effect).toString().toByteArray(Charsets.UTF_8)
+        require(payload.size <= MAX_EFFECT_FILE_BYTES) {
+            "This effect is too large to save (${payload.size / 1024} KiB; max ${MAX_EFFECT_FILE_BYTES / 1024} KiB)"
+        }
+
+        val target = effectFile(effect.id)
+        val currentTotal = directory.listFiles().orEmpty().sumOf { file ->
+            if (file.absolutePath == target.absolutePath) 0L else file.length()
+        }
+        require(currentTotal + payload.size <= MAX_LIBRARY_BYTES) {
+            "Saved effects have reached the ${MAX_LIBRARY_BYTES / 1_000_000} MB library limit"
+        }
+
+        val storage = AtomicFile(target)
         val output = storage.startWrite()
         try {
-            output.write(root.toString().toByteArray(Charsets.UTF_8))
+            output.write(payload)
             output.flush()
             storage.finishWrite(output)
         } catch (error: Throwable) {
             storage.failWrite(output)
             throw error
         }
+    }
+
+    private fun effectFile(id: String): File {
+        val digest = MessageDigest.getInstance("SHA-256").digest(id.toByteArray(Charsets.UTF_8))
+        val name = digest.joinToString("") { byte -> "%02x".format(byte.toInt() and 0xff) }
+        return directory.resolve("$name.json")
     }
 
     private fun effectToJson(effect: PlayboxEffect) = JSONObject()
@@ -249,7 +302,10 @@ class EffectRepository(context: Context) {
         )
     }
 
-    private companion object {
-        const val KEY_ACTIVE_EFFECT = "active_effect"
+    internal companion object {
+        const val MAX_USER_EFFECTS = 100
+        const val MAX_EFFECT_FILE_BYTES = 512_000
+        const val MAX_LIBRARY_BYTES = 16_000_000L
+        private const val KEY_ACTIVE_EFFECT = "active_effect"
     }
 }
