@@ -46,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -61,6 +62,7 @@ import com.agentkosticka.playbox.model.deepCopy
 import com.agentkosticka.playbox.ui.MatrixDisplay
 import com.agentkosticka.playbox.ui.Muted
 import kotlinx.coroutines.delay
+import java.util.Locale
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,19 +144,21 @@ fun ProceduralEditorScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Black),
                 title = {
                     Column {
-                        Text("PROFILE LAB", fontFamily = FontFamily.Monospace)
+                        Text(stringResource(R.string.profile_lab_title), fontFamily = FontFamily.Monospace)
                         Text(proceduralTypeLabel(requireNotNull(draft.procedural)), color = Muted, fontSize = 10.sp)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = ::finish) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Save and back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, stringResource(R.string.save_and_back_cd))
                     }
                 },
                 actions = {
-                    IconButton(onClick = { onExport(exportableDraft()) }) { Icon(Icons.Default.Download, "Export") }
-                    TextButton(onClick = ::discard) { Text("DISCARD") }
-                    TextButton(onClick = ::finish) { Text("SAVE") }
+                    IconButton(onClick = { onExport(exportableDraft()) }) {
+                        Icon(Icons.Default.Download, stringResource(R.string.export_cd))
+                    }
+                    TextButton(onClick = ::discard) { Text(stringResource(R.string.discard)) }
+                    TextButton(onClick = ::finish) { Text(stringResource(R.string.save)) }
                 },
             )
         },
@@ -168,7 +172,7 @@ fun ProceduralEditorScreen(
                 OutlinedTextField(
                     value = draft.name,
                     onValueChange = { draft = draft.copy(name = it.take(60)) },
-                    label = { Text("Profile name") },
+                    label = { Text(stringResource(R.string.profile_name)) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -191,7 +195,7 @@ fun ProceduralEditorScreen(
                 Row(modifier = Modifier.fillMaxWidth()) {
                     Button(onClick = { playing = !playing }) {
                         Icon(if (playing) Icons.Default.Stop else Icons.Default.PlayArrow, null)
-                        Text(if (playing) " STOP" else " PLAY")
+                        Text(stringResource(if (playing) R.string.stop else R.string.play))
                     }
                     Spacer(Modifier.width(8.dp))
                     FilterChip(
@@ -200,7 +204,7 @@ fun ProceduralEditorScreen(
                             live = !live
                             if (!live) glyphClient.stopDisplay()
                         },
-                        label = { Text(if (live) "LIVE MATRIX" else "SIMULATOR") },
+                        label = { Text(stringResource(if (live) R.string.live_matrix else R.string.simulator)) },
                         leadingIcon = { Icon(Icons.Default.Lightbulb, null) },
                     )
                 }
@@ -208,45 +212,49 @@ fun ProceduralEditorScreen(
             }
             when (val spec = draft.procedural) {
                 is ProceduralSpec.RippleField -> {
-                    item { Text("RIPPLE CONTROLS", fontFamily = FontFamily.Monospace) }
+                    item { Text(stringResource(R.string.ripple_controls), fontFamily = FontFamily.Monospace) }
                     item {
-                        Text("WAVE SPEED  ${String.format(java.util.Locale.US, "%.1f", spec.speed)}×")
+                        Text(stringResource(R.string.wave_speed, String.format(Locale.US, "%.1f", spec.speed)))
                         Slider(spec.speed, { updateSpec(spec.copy(speed = it)) }, valueRange = .15f..4f)
                     }
                     item {
-                        Text("WAVELENGTH  ${String.format(java.util.Locale.US, "%.1f", spec.wavelength)}")
+                        Text(stringResource(R.string.wavelength, String.format(Locale.US, "%.1f", spec.wavelength)))
                         Slider(spec.wavelength, { updateSpec(spec.copy(wavelength = it)) }, valueRange = 1.5f..6f)
                     }
                     item {
-                        Text("SOURCES  ${spec.sources}")
+                        Text(stringResource(R.string.sources, spec.sources))
                         Slider(spec.sources.toFloat(), { updateSpec(spec.copy(sources = it.roundToInt())) }, valueRange = 1f..5f, steps = 3)
                     }
                 }
                 is ProceduralSpec.Starfield -> {
-                    item { Text("STARFIELD CONTROLS", fontFamily = FontFamily.Monospace) }
+                    item { Text(stringResource(R.string.starfield_controls), fontFamily = FontFamily.Monospace) }
                     item {
-                        Text("FLIGHT SPEED  ${String.format(java.util.Locale.US, "%.1f", spec.speed)}×")
+                        Text(stringResource(R.string.flight_speed, String.format(Locale.US, "%.1f", spec.speed)))
                         Slider(spec.speed, { updateSpec(spec.copy(speed = it)) }, valueRange = .15f..4f)
                     }
                     item {
-                        Text("STARS  ${spec.stars}")
+                        Text(stringResource(R.string.stars, spec.stars))
                         Slider(spec.stars.toFloat(), { updateSpec(spec.copy(stars = it.roundToInt())) }, valueRange = 8f..60f)
                     }
                     item {
-                        Text("TRAILS  ${(spec.trails * 100).roundToInt()}%")
+                        Text(stringResource(R.string.trails, (spec.trails * 100).roundToInt()))
                         Slider(spec.trails, { updateSpec(spec.copy(trails = it)) })
                     }
-                    item { OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }) { Text("NEW CONSTELLATION") } }
+                    item {
+                        OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }) {
+                            Text(stringResource(R.string.new_constellation))
+                        }
+                    }
                 }
                 is ProceduralSpec.ConwayLife -> {
                     item {
-                        Text("CONWAY CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text("Tap or drag the matrix to define generation 0. Playback always starts from this seed.", color = Muted, fontSize = 12.sp)
+                        Text(stringResource(R.string.conway_controls), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.conway_seed_help), color = Muted, fontSize = 12.sp)
                     }
                     item {
                         val stepsPerSecond = 1_000f / spec.frameDurationMs
                         Text(
-                            "SPEED  ${String.format(java.util.Locale.US, "%.1f", stepsPerSecond)} steps/s",
+                            stringResource(R.string.conway_speed, String.format(Locale.US, "%.1f", stepsPerSecond)),
                             fontFamily = FontFamily.Monospace,
                             fontSize = 12.sp,
                         )
@@ -260,19 +268,19 @@ fun ProceduralEditorScreen(
                         )
                     }
                     item {
-                        Text("PREVIEW GENERATION  $conwayGeneration", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(stringResource(R.string.preview_generation, conwayGeneration), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             OutlinedButton(enabled = !playing, onClick = {
                                 previewPixels = ProceduralEffects.lifeStep(previewPixels)
                                 conwayGeneration++
-                            }) { Text("STEP") }
+                            }) { Text(stringResource(R.string.step)) }
                             OutlinedButton(enabled = !playing, onClick = { refreshPreview() }) {
                                 Icon(Icons.Default.Refresh, null)
-                                Text(" RESET")
+                                Text(stringResource(R.string.reset))
                             }
                             OutlinedButton(enabled = !playing, onClick = {
                                 updateSpec(spec.copy(initialState = IntArray(PIXEL_COUNT)))
-                            }) { Text("CLEAR") }
+                            }) { Text(stringResource(R.string.clear)) }
                         }
                     }
                     item {
@@ -280,44 +288,56 @@ fun ProceduralEditorScreen(
                             val seed = System.nanoTime()
                             updateSpec(spec.copy(initialState = ProceduralEffects.randomLifeSeed(seed)))
                         }, modifier = Modifier.fillMaxWidth()) {
-                            Text("RANDOMIZE STARTING CELLS")
+                            Text(stringResource(R.string.randomize_starting_cells))
                         }
                     }
                 }
                 is ProceduralSpec.ShiftingNoise -> {
                     item {
-                        Text("NOISE CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text("Nothing is pre-rendered: the field is sampled continuously while the effect runs.", color = Muted, fontSize = 12.sp)
+                        Text(stringResource(R.string.noise_controls), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.noise_help), color = Muted, fontSize = 12.sp)
                     }
                     item {
-                        Text("DRIFT SPEED  ${String.format(java.util.Locale.US, "%.2f", spec.speed)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(
+                            stringResource(R.string.drift_speed, String.format(Locale.US, "%.2f", spec.speed)),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                        )
                         Slider(value = spec.speed, onValueChange = { updateSpec(spec.copy(speed = it)) }, valueRange = 0.15f..4f)
                     }
                     item {
-                        Text("SCALE  ${String.format(java.util.Locale.US, "%.2f", spec.scale)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(
+                            stringResource(R.string.scale, String.format(Locale.US, "%.2f", spec.scale)),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                        )
                         Slider(value = spec.scale, onValueChange = { updateSpec(spec.copy(scale = it)) }, valueRange = 0.45f..2.2f)
                     }
                     item {
-                        Text("DETAIL  ${(spec.detail * 100).roundToInt()}%", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(stringResource(R.string.detail, (spec.detail * 100).roundToInt()), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = spec.detail, onValueChange = { updateSpec(spec.copy(detail = it)) }, valueRange = 0f..1f)
                     }
                     item {
                         OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }, modifier = Modifier.fillMaxWidth()) {
-                            Text("NEW NOISE SEED")
+                            Text(stringResource(R.string.new_noise_seed))
                         }
                     }
                 }
                 is ProceduralSpec.LavaLamp -> {
                     item {
-                        Text("LAVA CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text("Metaballs are generated live, so changing the controls changes the motion itself — not a stored loop.", color = Muted, fontSize = 12.sp)
+                        Text(stringResource(R.string.lava_controls), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.lava_help), color = Muted, fontSize = 12.sp)
                     }
                     item {
-                        Text("FLOW SPEED  ${String.format(java.util.Locale.US, "%.2f", spec.speed)}×", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(
+                            stringResource(R.string.flow_speed, String.format(Locale.US, "%.2f", spec.speed)),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                        )
                         Slider(value = spec.speed, onValueChange = { updateSpec(spec.copy(speed = it)) }, valueRange = 0.15f..4f)
                     }
                     item {
-                        Text("BLOBS  ${spec.blobCount}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(stringResource(R.string.blobs, spec.blobCount), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(
                             value = spec.blobCount.toFloat(),
                             onValueChange = { updateSpec(spec.copy(blobCount = it.roundToInt())) },
@@ -326,23 +346,27 @@ fun ProceduralEditorScreen(
                         )
                     }
                     item {
-                        Text("SOFTNESS  ${(spec.softness * 100).roundToInt()}", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(stringResource(R.string.softness, (spec.softness * 100).roundToInt()), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = spec.softness, onValueChange = { updateSpec(spec.copy(softness = it)) }, valueRange = 0.08f..0.45f)
                     }
                     item {
                         OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }, modifier = Modifier.fillMaxWidth()) {
-                            Text("NEW LAVA SEED")
+                            Text(stringResource(R.string.new_lava_seed))
                         }
                     }
                 }
                 is ProceduralSpec.OrganicBloom -> {
                     item {
-                        Text("ORGANIC BLOOM CONTROLS", fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
-                        Text("Living reaction-diffusion with fresh growth every few seconds. Growth refills space; split changes how structures break apart. Press PLAY to watch it evolve.", color = Muted, fontSize = 12.sp)
+                        Text(stringResource(R.string.organic_bloom_controls), fontFamily = FontFamily.Monospace, fontWeight = FontWeight.Bold)
+                        Text(stringResource(R.string.organic_bloom_help), color = Muted, fontSize = 12.sp)
                     }
                     item {
                         val updatesPerSecond = 1_000f / spec.frameDurationMs
-                        Text("EVOLUTION  ${String.format(java.util.Locale.US, "%.1f", updatesPerSecond)} updates/s", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(
+                            stringResource(R.string.evolution, String.format(Locale.US, "%.1f", updatesPerSecond)),
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 12.sp,
+                        )
                         Slider(
                             value = updatesPerSecond,
                             onValueChange = { speed ->
@@ -353,17 +377,17 @@ fun ProceduralEditorScreen(
                     }
                     item {
                         val growth = ((spec.feed - 0.035f) / 0.04f).coerceIn(0f, 1f)
-                        Text("GROWTH  ${(growth * 100).roundToInt()}%", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(stringResource(R.string.growth, (growth * 100).roundToInt()), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = growth, onValueChange = { updateSpec(spec.copy(feed = 0.035f + it * 0.04f)) })
                     }
                     item {
                         val split = ((spec.kill - 0.045f) / 0.03f).coerceIn(0f, 1f)
-                        Text("SPLIT  ${(split * 100).roundToInt()}%", fontFamily = FontFamily.Monospace, fontSize = 12.sp)
+                        Text(stringResource(R.string.split, (split * 100).roundToInt()), fontFamily = FontFamily.Monospace, fontSize = 12.sp)
                         Slider(value = split, onValueChange = { updateSpec(spec.copy(kill = 0.045f + it * 0.03f)) })
                     }
                     item {
                         OutlinedButton(onClick = { updateSpec(spec.copy(seed = System.nanoTime())) }, modifier = Modifier.fillMaxWidth()) {
-                            Text("NEW BLOOM SEED")
+                            Text(stringResource(R.string.new_bloom_seed))
                         }
                     }
                 }
@@ -373,11 +397,14 @@ fun ProceduralEditorScreen(
     }
 }
 
-private fun proceduralTypeLabel(spec: ProceduralSpec): String = when (spec) {
-    is ProceduralSpec.RippleField -> "RIPPLE FIELD • LIVE WAVES"
-    is ProceduralSpec.Starfield -> "STARFIELD • LIVE DEPTH"
-    is ProceduralSpec.ConwayLife -> "CONWAY LIFE • LIVE SIMULATION"
-    is ProceduralSpec.ShiftingNoise -> "SHIFTING NOISE • LIVE FIELD"
-    is ProceduralSpec.LavaLamp -> "LAVA LAMP • LIVE METABALLS"
-    is ProceduralSpec.OrganicBloom -> "ORGANIC BLOOM • LIVE REACTION-DIFFUSION"
-}
+@Composable
+private fun proceduralTypeLabel(spec: ProceduralSpec): String = stringResource(
+    when (spec) {
+        is ProceduralSpec.RippleField -> R.string.type_ripple
+        is ProceduralSpec.Starfield -> R.string.type_starfield
+        is ProceduralSpec.ConwayLife -> R.string.type_conway
+        is ProceduralSpec.ShiftingNoise -> R.string.type_noise
+        is ProceduralSpec.LavaLamp -> R.string.type_lava
+        is ProceduralSpec.OrganicBloom -> R.string.type_bloom
+    },
+)
