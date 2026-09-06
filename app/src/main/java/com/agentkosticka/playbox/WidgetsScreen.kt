@@ -2,6 +2,7 @@ package com.agentkosticka.playbox
 
 import android.appwidget.AppWidgetManager
 import android.content.ComponentName
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -27,11 +28,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.agentkosticka.playbox.ui.Muted
 import com.agentkosticka.playbox.ui.NothingDotFont
@@ -46,15 +47,15 @@ import com.agentkosticka.playbox.widget.MilestoneTarget
 import com.agentkosticka.playbox.widget.MilestoneWidget
 import com.agentkosticka.playbox.widget.MonthMatrixWidget
 import com.agentkosticka.playbox.widget.NDotClockWidget
-import com.agentkosticka.playbox.widget.PlayboxShortcutsWidget
 import com.agentkosticka.playbox.widget.NextAlarmWidget
+import com.agentkosticka.playbox.widget.PlayboxShortcutsWidget
 import com.agentkosticka.playbox.widget.StorageDisplay
 import com.agentkosticka.playbox.widget.StorageMatrixWidget
 import com.agentkosticka.playbox.widget.TimeBarsRenderer
 import com.agentkosticka.playbox.widget.TimeBarsSettings
 import com.agentkosticka.playbox.widget.TimeBarsWidget
-import com.agentkosticka.playbox.widget.UtilityWidgetSettings
 import com.agentkosticka.playbox.widget.UtilityWidgetRenderer
+import com.agentkosticka.playbox.widget.UtilityWidgetSettings
 import com.agentkosticka.playbox.widget.WeekStripWidget
 import com.agentkosticka.playbox.widget.YearDisplay
 import com.agentkosticka.playbox.widget.YearDotsWidget
@@ -68,9 +69,10 @@ import java.util.Locale
 import kotlinx.coroutines.delay
 
 private data class WidgetSpec(
-    val name: String,
-    val size: String,
-    val description: String,
+    val key: String,
+    @StringRes val nameRes: Int,
+    @StringRes val sizeRes: Int,
+    @StringRes val descriptionRes: Int,
     val provider: Class<*>,
     val previewAspect: Float,
 )
@@ -84,22 +86,22 @@ fun WidgetsScreen() {
     var timeSettings by remember { mutableStateOf(TimeBarsSettings.load(context)) }
     var utilitySettings by remember { mutableStateOf(UtilityWidgetSettings.load(context)) }
     var weekMenu by remember { mutableStateOf(false) }
-    var widgetType by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("Time Bars") }
+    var widgetType by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("time-bars") }
 
     val specs = remember {
         listOf(
-            WidgetSpec("Day Dial", "2 × 2", "Today as a 60-dot ring, with weekday, date and elapsed percentage.", DayDialWidget::class.java, 1f),
-            WidgetSpec("Battery Dots", "2 × 2", "One dot per battery percent. Minimal, dense and immediately readable.", BatteryDotsWidget::class.java, 1f),
-            WidgetSpec("Battery Glyph", "2 × 1 → 4 × 2", "Responsive battery meter with ring, dots or bar modes and charging ETA when Android can estimate it.", BatteryGlyphWidget::class.java, 2f),
-            WidgetSpec("Next Alarm", "2 × 1 → 4 × 2", "Your next system alarm with day and time remaining. No calendar permission needed.", NextAlarmWidget::class.java, 2f),
-            WidgetSpec("Storage Matrix", "2 × 2 → 4 × 2", "A 100-dot internal-storage meter that can show either free or used space.", StorageMatrixWidget::class.java, 1f),
-            WidgetSpec("Month Matrix", "4 × 2", "Compact monthly calendar with today highlighted and configurable week start.", MonthMatrixWidget::class.java, 2f),
-            WidgetSpec("Week Strip", "4 × 1 → 4 × 2", "Seven-day glance strip for the current week, with today picked out in Nothing red.", WeekStripWidget::class.java, 2.6f),
-            WidgetSpec("Year Dots", "4 × 2", "Every valid day of the year in a 12-row matrix. Show elapsed or remaining days.", YearDotsWidget::class.java, 2f),
-            WidgetSpec("Device Panel", "4 × 2", "Battery, free storage, next alarm and today progress in one dashboard.", DevicePanelWidget::class.java, 2f),
-            WidgetSpec("Milestone", "2 × 2 → 4 × 2", "Countdown to the weekend, next month or next year with a dotted progress track.", MilestoneWidget::class.java, 1f),
-            WidgetSpec("NDot Clock", "2 × 1 → 4 × 2", "Live TextClock using Nothing OS NDot57. Android updates it every minute without background polling.", NDotClockWidget::class.java, 2f),
-            WidgetSpec("Playbox Shortcuts", "4 × 1", "Jump straight to the Matrix studio, widget gallery or Nothing OS Always-on Glyph Toy selector.", PlayboxShortcutsWidget::class.java, 3f),
+            WidgetSpec("day-dial", R.string.day_dial_name, R.string.widget_size_2x2, R.string.day_dial_description, DayDialWidget::class.java, 1f),
+            WidgetSpec("battery-dots", R.string.battery_dots_name, R.string.widget_size_2x2, R.string.battery_dots_description, BatteryDotsWidget::class.java, 1f),
+            WidgetSpec("battery-glyph", R.string.battery_glyph_name, R.string.widget_size_2x1_to_4x2, R.string.battery_glyph_description, BatteryGlyphWidget::class.java, 2f),
+            WidgetSpec("next-alarm", R.string.next_alarm_name, R.string.widget_size_2x1_to_4x2, R.string.next_alarm_description, NextAlarmWidget::class.java, 2f),
+            WidgetSpec("storage-matrix", R.string.storage_matrix_name, R.string.widget_size_2x2_to_4x2, R.string.storage_matrix_description, StorageMatrixWidget::class.java, 1f),
+            WidgetSpec("month-matrix", R.string.month_matrix_name, R.string.widget_size_4x2, R.string.month_matrix_description, MonthMatrixWidget::class.java, 2f),
+            WidgetSpec("week-strip", R.string.week_strip_name, R.string.widget_size_4x1_to_4x2, R.string.week_strip_description, WeekStripWidget::class.java, 2.6f),
+            WidgetSpec("year-dots", R.string.year_dots_name, R.string.widget_size_4x2, R.string.year_dots_description, YearDotsWidget::class.java, 2f),
+            WidgetSpec("device-panel", R.string.device_panel_name, R.string.widget_size_4x2, R.string.device_panel_description, DevicePanelWidget::class.java, 2f),
+            WidgetSpec("milestone", R.string.milestone_name, R.string.widget_size_2x2_to_4x2, R.string.milestone_description, MilestoneWidget::class.java, 1f),
+            WidgetSpec("ndot-clock", R.string.ndot_clock_name, R.string.widget_size_2x1_to_4x2, R.string.ndot_clock_description, NDotClockWidget::class.java, 2f),
+            WidgetSpec("playbox-shortcuts", R.string.playbox_shortcuts_name, R.string.widget_size_4x1, R.string.playbox_shortcuts_description, PlayboxShortcutsWidget::class.java, 3f),
         )
     }
 
@@ -117,98 +119,134 @@ fun WidgetsScreen() {
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (listOf("Time Bars") + specs.map { it.name }).forEach { name ->
-                FilterChip(selected = widgetType == name, onClick = { widgetType = name }, label = { Text(name) })
+            FilterChip(
+                selected = widgetType == "time-bars",
+                onClick = { widgetType = "time-bars" },
+                label = { Text(stringResource(R.string.time_bars_name)) },
+            )
+            specs.forEach { spec ->
+                FilterChip(
+                    selected = widgetType == spec.key,
+                    onClick = { widgetType = spec.key },
+                    label = { Text(stringResource(spec.nameRes)) },
+                )
             }
         }
 
-        if (widgetType == "Time Bars") {
+        if (widgetType == "time-bars") {
             val preview = remember(now, timeSettings) { TimeBarsRenderer.render(now, timeSettings).asImageBitmap() }
-            Image(preview, "Live preview of four dotted time progress bars", Modifier.fillMaxWidth().aspectRatio(2f))
+            Image(
+                preview,
+                stringResource(R.string.time_bars_preview_cd),
+                Modifier.fillMaxWidth().aspectRatio(2f),
+            )
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("TIME BARS / 4 × 2", fontFamily = NothingDotFont.family)
+                    Text(stringResource(R.string.time_bars_header), fontFamily = NothingDotFont.family)
                     WeekStartSetting(locale, timeSettings.weekStart, weekMenu, { weekMenu = it }) { day ->
                         timeSettings = timeSettings.copy(weekStart = day)
                         timeSettings.save(context)
                     }
-                    Text("FILL STYLE", fontFamily = NothingDotFont.family)
+                    Text(stringResource(R.string.fill_style), fontFamily = NothingDotFont.family)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         BarFill.entries.forEach { fill ->
-                            FilterChip(selected = timeSettings.fill == fill, onClick = {
-                                timeSettings = timeSettings.copy(fill = fill)
-                                timeSettings.save(context)
-                            }, label = { Text(fill.label) })
+                            FilterChip(
+                                selected = timeSettings.fill == fill,
+                                onClick = {
+                                    timeSettings = timeSettings.copy(fill = fill)
+                                    timeSettings.save(context)
+                                },
+                                label = { Text(barFillLabel(fill)) },
+                            )
                         }
                     }
                     Text(
-                        if (timeSettings.fill == BarFill.DENSITY) "Scattered dots build up in a stable pattern as each period passes."
-                        else "Dots fill ${timeSettings.fill.label.lowercase(Locale.ROOT)} as each period passes.",
+                        if (timeSettings.fill == BarFill.DENSITY) {
+                            stringResource(R.string.density_fill_help)
+                        } else {
+                            stringResource(R.string.directional_fill_help, barFillLabel(timeSettings.fill).lowercase(locale))
+                        },
                         color = Muted,
                     )
-                    Text("Refreshes about every 15 minutes. Android battery saving may delay bitmap widgets.", color = Muted)
-                    AddWidgetButton(TimeBarsWidget::class.java, "Time Bars", onStatus = { status = it })
+                    Text(stringResource(R.string.bitmap_refresh_help), color = Muted)
+                    AddWidgetButton(
+                        TimeBarsWidget::class.java,
+                        stringResource(R.string.time_bars_name),
+                        onStatus = { status = it },
+                    )
                     status?.let { Text(it, color = Muted) }
                 }
             }
             return@Column
         }
 
-        val spec = specs.first { it.name == widgetType }
+        val spec = specs.first { it.key == widgetType }
+        val widgetName = stringResource(spec.nameRes)
         val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm) {
             when (widgetType) {
-                "Day Dial" -> DashboardRenderer.dayDial(now)
-                "Battery Dots" -> DashboardRenderer.battery(battery.percent, battery.charging)
-                "Battery Glyph" -> UtilityWidgetRenderer.batteryGlyph(battery, utilitySettings.batteryVisual, 720, 320)
-                "Next Alarm" -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, 720, 320)
-                "Storage Matrix" -> UtilityWidgetRenderer.storage(storage, utilitySettings.storageDisplay, 360, 360)
-                "Month Matrix" -> UtilityWidgetRenderer.month(now, timeSettings.weekStart, 720, 360)
-                "Week Strip" -> UtilityWidgetRenderer.weekStrip(now, timeSettings.weekStart, 800, 300)
-                "Year Dots" -> UtilityWidgetRenderer.year(now, utilitySettings.yearDisplay, 720, 360)
-                "Device Panel" -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, 720, 360)
-                "Milestone" -> UtilityWidgetRenderer.milestone(now, utilitySettings.milestoneTarget, 360, 360)
-                "NDot Clock" -> UtilityWidgetRenderer.clockPreview(context, now, 720, 320)
-                "Playbox Shortcuts" -> UtilityWidgetRenderer.shortcutsPreview(900, 300)
+                "day-dial" -> DashboardRenderer.dayDial(now)
+                "battery-dots" -> DashboardRenderer.battery(battery.percent, battery.charging)
+                "battery-glyph" -> UtilityWidgetRenderer.batteryGlyph(battery, utilitySettings.batteryVisual, 720, 320)
+                "next-alarm" -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, 720, 320)
+                "storage-matrix" -> UtilityWidgetRenderer.storage(storage, utilitySettings.storageDisplay, 360, 360)
+                "month-matrix" -> UtilityWidgetRenderer.month(now, timeSettings.weekStart, 720, 360)
+                "week-strip" -> UtilityWidgetRenderer.weekStrip(now, timeSettings.weekStart, 800, 300)
+                "year-dots" -> UtilityWidgetRenderer.year(now, utilitySettings.yearDisplay, 720, 360)
+                "device-panel" -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, 720, 360)
+                "milestone" -> UtilityWidgetRenderer.milestone(now, utilitySettings.milestoneTarget, 360, 360)
+                "ndot-clock" -> UtilityWidgetRenderer.clockPreview(context, now, 720, 320)
+                "playbox-shortcuts" -> UtilityWidgetRenderer.shortcutsPreview(900, 300)
                 else -> DashboardRenderer.dayDial(now)
             }.asImageBitmap()
         }
-        Image(preview, "$widgetType preview", Modifier.fillMaxWidth().aspectRatio(spec.previewAspect))
+        Image(
+            preview,
+            stringResource(R.string.widget_preview_cd, widgetName),
+            Modifier.fillMaxWidth().aspectRatio(spec.previewAspect),
+        )
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
             Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text("${widgetType.uppercase(Locale.ROOT)} / ${spec.size}", fontFamily = NothingDotFont.family)
-                Text(spec.description, color = Muted)
+                Text(
+                    stringResource(
+                        R.string.widget_header,
+                        widgetName.uppercase(locale),
+                        stringResource(spec.sizeRes),
+                    ),
+                    fontFamily = NothingDotFont.family,
+                )
+                Text(stringResource(spec.descriptionRes), color = Muted)
 
                 when (widgetType) {
-                    "Battery Glyph" -> {
-                        Text("VISUAL", fontFamily = NothingDotFont.family)
-                        SettingChips(BatteryVisual.entries.toList(), utilitySettings.batteryVisual, { it.label }) { value ->
+                    "battery-glyph" -> {
+                        Text(stringResource(R.string.visual), fontFamily = NothingDotFont.family)
+                        SettingChips(BatteryVisual.entries.toList(), utilitySettings.batteryVisual, ::batteryVisualLabel) { value ->
                             utilitySettings = utilitySettings.copy(batteryVisual = value)
                             utilitySettings.save(context)
                         }
                     }
-                    "Storage Matrix" -> {
-                        Text("MEASURE", fontFamily = NothingDotFont.family)
-                        SettingChips(StorageDisplay.entries.toList(), utilitySettings.storageDisplay, { it.label }) { value ->
+                    "storage-matrix" -> {
+                        Text(stringResource(R.string.measure), fontFamily = NothingDotFont.family)
+                        SettingChips(StorageDisplay.entries.toList(), utilitySettings.storageDisplay, ::storageDisplayLabel) { value ->
                             utilitySettings = utilitySettings.copy(storageDisplay = value)
                             utilitySettings.save(context)
                         }
                     }
-                    "Year Dots" -> {
-                        Text("SHOW", fontFamily = NothingDotFont.family)
-                        SettingChips(YearDisplay.entries.toList(), utilitySettings.yearDisplay, { it.label }) { value ->
+                    "year-dots" -> {
+                        Text(stringResource(R.string.show), fontFamily = NothingDotFont.family)
+                        SettingChips(YearDisplay.entries.toList(), utilitySettings.yearDisplay, ::yearDisplayLabel) { value ->
                             utilitySettings = utilitySettings.copy(yearDisplay = value)
                             utilitySettings.save(context)
                         }
                     }
-                    "Milestone" -> {
-                        Text("COUNT DOWN TO", fontFamily = NothingDotFont.family)
-                        SettingChips(MilestoneTarget.entries.toList(), utilitySettings.milestoneTarget, { it.label }) { value ->
+                    "milestone" -> {
+                        Text(stringResource(R.string.count_down_to), fontFamily = NothingDotFont.family)
+                        SettingChips(MilestoneTarget.entries.toList(), utilitySettings.milestoneTarget, ::milestoneTargetLabel) { value ->
                             utilitySettings = utilitySettings.copy(milestoneTarget = value)
                             utilitySettings.save(context)
                         }
                     }
-                    "Month Matrix", "Week Strip" -> {
+                    "month-matrix", "week-strip" -> {
                         WeekStartSetting(locale, timeSettings.weekStart, weekMenu, { weekMenu = it }) { day ->
                             timeSettings = timeSettings.copy(weekStart = day)
                             timeSettings.save(context)
@@ -217,11 +255,14 @@ fun WidgetsScreen() {
                 }
 
                 Text(
-                    if (widgetType == "NDot Clock" || widgetType == "Playbox Shortcuts") "System-driven widget: no periodic worker needed."
-                    else "Bitmap widgets refresh together about every 15 minutes and immediately on relevant clock, alarm or charging events.",
+                    if (widgetType == "ndot-clock" || widgetType == "playbox-shortcuts") {
+                        stringResource(R.string.system_widget_help)
+                    } else {
+                        stringResource(R.string.shared_widget_refresh_help)
+                    },
                     color = Muted,
                 )
-                AddWidgetButton(spec.provider, widgetType, onStatus = { status = it })
+                AddWidgetButton(spec.provider, widgetName, onStatus = { status = it })
                 status?.let { Text(it, color = Muted) }
             }
         }
@@ -236,7 +277,7 @@ private fun WeekStartSetting(
     setExpanded: (Boolean) -> Unit,
     onSelected: (DayOfWeek) -> Unit,
 ) {
-    Text("WEEK STARTS ON", fontFamily = NothingDotFont.family)
+    Text(stringResource(R.string.week_starts_on), fontFamily = NothingDotFont.family)
     Box {
         OutlinedButton(onClick = { setExpanded(true) }) {
             Text(selected.getDisplayName(TextStyle.FULL, locale))
@@ -259,15 +300,62 @@ private fun WeekStartSetting(
 private fun <T> SettingChips(
     values: List<T>,
     selected: T,
-    label: (T) -> String,
+    label: @Composable (T) -> String,
     onSelected: (T) -> Unit,
 ) {
     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         values.forEach { value ->
-            FilterChip(selected = value == selected, onClick = { onSelected(value) }, label = { Text(label(value)) })
+            FilterChip(
+                selected = value == selected,
+                onClick = { onSelected(value) },
+                label = { Text(label(value)) },
+            )
         }
     }
 }
+
+@Composable
+private fun barFillLabel(fill: BarFill): String = stringResource(
+    when (fill) {
+        BarFill.LEFT_TO_RIGHT -> R.string.fill_left_to_right
+        BarFill.RIGHT_TO_LEFT -> R.string.fill_right_to_left
+        BarFill.DENSITY -> R.string.fill_density
+    },
+)
+
+@Composable
+private fun batteryVisualLabel(value: BatteryVisual): String = stringResource(
+    when (value) {
+        BatteryVisual.RING -> R.string.battery_visual_ring
+        BatteryVisual.DOTS -> R.string.battery_visual_dots
+        BatteryVisual.BAR -> R.string.battery_visual_bar
+    },
+)
+
+@Composable
+private fun storageDisplayLabel(value: StorageDisplay): String = stringResource(
+    when (value) {
+        StorageDisplay.USED -> R.string.storage_used
+        StorageDisplay.FREE -> R.string.storage_free
+    },
+)
+
+@Composable
+private fun yearDisplayLabel(value: YearDisplay): String = stringResource(
+    when (value) {
+        YearDisplay.ELAPSED -> R.string.year_elapsed
+        YearDisplay.REMAINING -> R.string.year_remaining
+    },
+)
+
+@Composable
+private fun milestoneTargetLabel(value: MilestoneTarget): String = stringResource(
+    when (value) {
+        MilestoneTarget.WEEKEND -> R.string.milestone_weekend
+        MilestoneTarget.MONTH_END -> R.string.milestone_month_end
+        MilestoneTarget.YEAR_END -> R.string.milestone_year_end
+    },
+)
 
 @Composable
 private fun AddWidgetButton(provider: Class<*>, name: String, onStatus: (String) -> Unit) {
@@ -275,17 +363,17 @@ private fun AddWidgetButton(provider: Class<*>, name: String, onStatus: (String)
     Button(
         onClick = {
             val manager = AppWidgetManager.getInstance(context)
-            val fallback = "Long-press your home screen → Widgets → Nothing Playbox → $name."
+            val fallback = context.getString(R.string.pin_widget_fallback, name)
             onStatus(
                 if (manager.isRequestPinAppWidgetSupported) {
                     runCatching {
                         if (manager.requestPinAppWidget(ComponentName(context, provider), null, null)) {
-                            "Finish adding the widget in your launcher."
+                            context.getString(R.string.pin_widget_finish)
                         } else fallback
                     }.getOrDefault(fallback)
                 } else fallback,
             )
         },
         modifier = Modifier.fillMaxWidth(),
-    ) { Text("ADD TO HOME SCREEN") }
+    ) { Text(stringResource(R.string.add_to_home_screen)) }
 }
