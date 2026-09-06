@@ -7,6 +7,7 @@
     android:minResizeWidth="110dp"
     android:minResizeHeight="55dp"
     android:initialLayout="@layout/widget_time_bars"
+    android:previewLayout="@layout/widget_preview_battery_glyph"
     android:description="@string/battery_glyph_description"
     android:updatePeriodMillis="0"
     android:resizeMode="horizontal|vertical"
