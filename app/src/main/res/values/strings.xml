@@ -126,4 +126,31 @@
     <string name="type_noise">SHIFTING NOISE • LIVE FIELD</string>
     <string name="type_lava">LAVA LAMP • LIVE METABALLS</string>
     <string name="type_bloom">ORGANIC BLOOM • LIVE REACTION-DIFFUSION</string>
+
+    <string name="choose_effect">Choose an effect</string>
+    <string name="paused">Paused</string>
+    <string name="quiet_hours_status">Quiet hours</string>
+    <string name="rotating_selection">Rotating your selection</string>
+    <string name="aod_preview">AOD preview</string>
+    <string name="choose_effect_action">CHOOSE EFFECT</string>
+    <string name="aod_playback">AOD playback</string>
+    <string name="stop_matrix_preview">STOP MATRIX PREVIEW</string>
+    <string name="preview_on_matrix">PREVIEW ON MATRIX</string>
+    <string name="open_aod_settings_fallback">Open Settings → Glyph Interface → Flip to Glyph → Always-on Glyph Toy, then select Nothing Playbox.</string>
+    <string name="enable_in_nothing_settings">ENABLE IN NOTHING SETTINGS</string>
+    <string name="aod_settings_help">Select Nothing Playbox as the system&apos;s Always-on Glyph Toy. These controls apply when Nothing OS runs the toy.</string>
+    <string name="output">OUTPUT</string>
+    <string name="brightness">BRIGHTNESS  %1$d%%</string>
+    <string name="speed_multiplier">SPEED  %1$s×</string>
+    <string name="quiet_hours">Quiet hours</string>
+    <string name="from">From</string>
+    <string name="until">Until</string>
+    <string name="equal_hours_mute">Equal hours mute the entire day.</string>
+    <string name="quiet_hours_help">Matrix stays dark during these hours in your phone&apos;s time zone.</string>
+    <string name="rotate_effects">Rotate effects</string>
+    <string name="change_every_seconds">CHANGE EVERY %1$d SECONDS</string>
+    <string name="rotation_help">Choose effects and profiles to rotate. An empty selection uses your chosen effect.</string>
+    <string name="aod_effect_title">AOD EFFECT</string>
+    <string name="close">CLOSE</string>
+    <string name="hour_picker_format">%1$s %2$s:00</string>
 </resources>
