@@ -3,6 +3,17 @@ plugins {
     alias(libs.plugins.kotlin.compose)
 }
 
+val releaseStorePath = System.getenv("PLAYBOX_KEYSTORE_PATH")
+val releaseStorePassword = System.getenv("PLAYBOX_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("PLAYBOX_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("PLAYBOX_KEY_PASSWORD")
+val releaseSigningReady = listOf(
+    releaseStorePath,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword,
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.agentkosticka.playbox"
     compileSdk {
@@ -13,16 +24,30 @@ android {
         applicationId = "com.agentkosticka.playbox"
         minSdk = 35
         targetSdk = 37
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "1.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (releaseSigningReady) {
+            create("release") {
+                storeFile = file(requireNotNull(releaseStorePath))
+                storePassword = releaseStorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     buildTypes {
         release {
             optimization {
-                enable = false
+                enable = true
+            }
+            if (releaseSigningReady) {
+                signingConfig = signingConfigs.getByName("release")
             }
         }
     }
