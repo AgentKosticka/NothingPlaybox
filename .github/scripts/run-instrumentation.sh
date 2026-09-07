@@ -11,8 +11,15 @@ test -n "$APP_APK" || { echo "Debug app APK not found under $APK_DIR" >&2; exit 
 test -n "$TEST_APK" || { echo "Instrumentation APK not found under $APK_DIR" >&2; exit 1; }
 
 adb wait-for-device
-adb install -r -t "$APP_APK"
-adb install -r -t "$TEST_APK"
+
+# A cached AVD can retain APKs installed by an older CI run. Debug signing keys are runner-local,
+# so those cached packages may have a different signature and make `adb install -r` fail with
+# INSTALL_FAILED_UPDATE_INCOMPATIBLE. Always start the test install from a clean package state.
+adb uninstall com.agentkosticka.playbox.test >/dev/null 2>&1 || true
+adb uninstall com.agentkosticka.playbox >/dev/null 2>&1 || true
+
+adb install -t "$APP_APK"
+adb install -t "$TEST_APK"
 
 RUNNER="$(adb shell pm list instrumentation \
   | tr -d '\r' \
