@@ -131,16 +131,6 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
-    override fun onStart() {
-        super.onStart()
-        playboxApplication.glyphClient.connect()
-    }
-
-    override fun onStop() {
-        playboxApplication.glyphClient.close()
-        super.onStop()
-    }
 }
 
 @Composable
@@ -200,6 +190,12 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
                 .onFailure { message = it.message ?: resources.getString(R.string.error_export) }
         }
     }
+
+    // Keep the APP lease for the lifetime of this composition. Android can stop an Activity when
+    // the display turns off; tying Glyph ownership to onStart/onStop tears down Nothing's SDK at
+    // lock-screen time and it does not reliably reinitialize without toggling Glyphs system-wide.
+    LaunchedEffect(Unit) { glyphClient.connect() }
+    DisposableEffect(Unit) { onDispose { glyphClient.close() } }
 
     LaunchedEffect(message) {
         message?.let { snackbar.showSnackbar(it); message = null }
