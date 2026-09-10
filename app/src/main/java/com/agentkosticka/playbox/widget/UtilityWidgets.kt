@@ -192,7 +192,7 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
                             else -> UtilityWidgetRenderer.milestone(now, MilestoneTarget.WEEKEND, width, height)
                         }
                         val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
-                        views.setImageViewBitmap(R.id.time_bars_image, bitmap)
+                        views.setThemedWidgetBitmap(context, R.id.time_bars_image, bitmap)
                         views.setContentDescription(
                             R.id.time_bars_image,
                             contentDescription(provider, context, now, battery, storage, alarm, utility),
