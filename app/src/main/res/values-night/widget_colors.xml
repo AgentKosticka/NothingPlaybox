@@ -1,9 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="widget_surface">@android:color/system_surface_container_dark</color>
-    <color name="widget_on_surface">@android:color/system_on_surface_dark</color>
-    <color name="widget_on_surface_variant">@android:color/system_on_surface_variant_dark</color>
-    <color name="widget_inactive">@android:color/system_outline_variant_dark</color>
-    <color name="widget_container">@android:color/system_surface_container_high_dark</color>
-    <color name="widget_accent">@android:color/system_primary_dark</color>
+    <!-- Nothing OS classic dark widget palette. Keep independent of Material You wallpaper colors. -->
+    <color name="widget_surface">#1B1B1B</color>
+    <color name="widget_on_surface">#FFFFFF</color>
+    <color name="widget_on_surface_variant">#BDBDBD</color>
+    <color name="widget_inactive">#393939</color>
+    <color name="widget_container">#242424</color>
+    <color name="widget_accent">#D71920</color>
 </resources>

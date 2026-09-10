@@ -7,7 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.widget.RemoteViews
 
-/** Semantic widget colors sourced from Android's OEM/runtime-overridable system color roles. */
+/** Semantic widget colors backed by Nothing's classic branded light/dark widget palette. */
 data class WidgetPalette(
     val background: Int,
     val foreground: Int,
@@ -17,27 +17,32 @@ data class WidgetPalette(
     val accent: Int,
 ) {
     companion object {
+        private val LIGHT = WidgetPalette(
+            background = 0xFFF1F1F1.toInt(),
+            foreground = 0xFF111111.toInt(),
+            muted = 0xFF5A5A5A.toInt(),
+            inactive = 0xFFBDBDBD.toInt(),
+            container = 0xFFFFFFFF.toInt(),
+            accent = 0xFFD71920.toInt(),
+        )
+
+        private val DARK = WidgetPalette(
+            background = 0xFF1B1B1B.toInt(),
+            foreground = 0xFFFFFFFF.toInt(),
+            muted = 0xFFBDBDBD.toInt(),
+            inactive = 0xFF393939.toInt(),
+            container = 0xFF242424.toInt(),
+            accent = 0xFFD71920.toInt(),
+        )
+
         fun resolve(context: Context, night: Boolean? = null): WidgetPalette {
             val resolvedNight = night ?: context.resources.configuration.isNightMode
-            return fromSystemColors(resolvedNight, context::getColor)
+            return if (resolvedNight) DARK else LIGHT
         }
 
-        /** Used by in-app bitmap previews when only system resources are available to the renderer. */
-        fun current(): WidgetPalette {
-            val resources = Resources.getSystem()
-            return fromSystemColors(resources.configuration.isNightMode) { resourceId ->
-                resources.getColor(resourceId, null)
-            }
-        }
-
-        private fun fromSystemColors(night: Boolean, color: (Int) -> Int): WidgetPalette = WidgetPalette(
-            background = color(if (night) android.R.color.system_surface_container_dark else android.R.color.system_surface_container_light),
-            foreground = color(if (night) android.R.color.system_on_surface_dark else android.R.color.system_on_surface_light),
-            muted = color(if (night) android.R.color.system_on_surface_variant_dark else android.R.color.system_on_surface_variant_light),
-            inactive = color(if (night) android.R.color.system_outline_variant_dark else android.R.color.system_outline_variant_light),
-            container = color(if (night) android.R.color.system_surface_container_high_dark else android.R.color.system_surface_container_high_light),
-            accent = color(if (night) android.R.color.system_primary_dark else android.R.color.system_primary_light),
-        )
+        /** Used by in-app bitmap previews when only system configuration is available. */
+        fun current(): WidgetPalette =
+            if (Resources.getSystem().configuration.isNightMode) DARK else LIGHT
     }
 }
 
