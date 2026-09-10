@@ -10,7 +10,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.os.BatteryManager
 import android.os.Bundle
@@ -21,7 +20,6 @@ import android.widget.RemoteViews
 import androidx.core.graphics.createBitmap
 import com.agentkosticka.playbox.MainActivity
 import com.agentkosticka.playbox.R
-import com.agentkosticka.playbox.ui.NOTHING_RED_ARGB
 import com.agentkosticka.playbox.ui.NothingDotFont
 import java.time.DayOfWeek
 import java.time.Duration
@@ -178,21 +176,22 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
             selectedProviders.forEach { provider ->
                 manager.getAppWidgetIds(ComponentName(context, provider)).forEach { id ->
                     val views = sizedWidgetViews(manager.getAppWidgetOptions(id), defaultWidth(provider), defaultHeight(provider)) { width, height ->
-                        val bitmap = when (provider) {
-                            BatteryColumnWidget::class.java -> UtilityWidgetRenderer.batteryColumn(battery, width, height)
-                            WeekColumnWidget::class.java -> UtilityWidgetRenderer.weekColumn(now, time.weekStart, width, height)
-                            BatteryGlyphWidget::class.java -> UtilityWidgetRenderer.batteryGlyph(battery, utility.batteryVisual, width, height)
-                            NextAlarmWidget::class.java -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, width, height)
-                            StorageMatrixWidget::class.java -> UtilityWidgetRenderer.storage(storage, utility.storageDisplay, width, height)
-                            MonthMatrixWidget::class.java -> UtilityWidgetRenderer.month(now, time.weekStart, width, height)
-                            WeekStripWidget::class.java -> UtilityWidgetRenderer.weekStrip(now, time.weekStart, width, height)
-                            YearDotsWidget::class.java -> UtilityWidgetRenderer.year(now, utility.yearDisplay, width, height)
-                            DevicePanelWidget::class.java -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, width, height)
-                            MilestoneWidget::class.java -> UtilityWidgetRenderer.milestone(now, utility.milestoneTarget, width, height)
-                            else -> UtilityWidgetRenderer.milestone(now, MilestoneTarget.WEEKEND, width, height)
-                        }
                         val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
-                        views.setThemedWidgetBitmap(context, R.id.time_bars_image, bitmap)
+                        views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette ->
+                            when (provider) {
+                                BatteryColumnWidget::class.java -> UtilityWidgetRenderer.batteryColumn(battery, width, height, palette)
+                                WeekColumnWidget::class.java -> UtilityWidgetRenderer.weekColumn(now, time.weekStart, width, height, palette)
+                                BatteryGlyphWidget::class.java -> UtilityWidgetRenderer.batteryGlyph(battery, utility.batteryVisual, width, height, palette)
+                                NextAlarmWidget::class.java -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, width, height, palette)
+                                StorageMatrixWidget::class.java -> UtilityWidgetRenderer.storage(storage, utility.storageDisplay, width, height, palette)
+                                MonthMatrixWidget::class.java -> UtilityWidgetRenderer.month(now, time.weekStart, width, height, palette)
+                                WeekStripWidget::class.java -> UtilityWidgetRenderer.weekStrip(now, time.weekStart, width, height, palette)
+                                YearDotsWidget::class.java -> UtilityWidgetRenderer.year(now, utility.yearDisplay, width, height, palette)
+                                DevicePanelWidget::class.java -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, width, height, palette)
+                                MilestoneWidget::class.java -> UtilityWidgetRenderer.milestone(now, utility.milestoneTarget, width, height, palette)
+                                else -> UtilityWidgetRenderer.milestone(now, MilestoneTarget.WEEKEND, width, height, palette)
+                            }
+                        }
                         views.setContentDescription(
                             R.id.time_bars_image,
                             contentDescription(provider, context, now, battery, storage, alarm, utility),
@@ -285,11 +284,6 @@ private fun alarmDayLabel(now: ZonedDateTime, alarm: ZonedDateTime): String = wh
 }
 
 object UtilityWidgetRenderer {
-    private const val BG = 0xFF111111.toInt()
-    private const val MID = 0xFF393939.toInt()
-    private const val DIM = 0xFF242424.toInt()
-    private const val RED = NOTHING_RED_ARGB
-
     fun bitmapSize(widthDp: Int, heightDp: Int): Pair<Int, Int> {
         val ratio = (widthDp.coerceAtLeast(1).toFloat() / heightDp.coerceAtLeast(1)).coerceIn(.2f, 5f)
         // Bound the longest edge, preserving portrait shapes and the bitmap IPC budget.
@@ -297,30 +291,47 @@ object UtilityWidgetRenderer {
         else (720 * ratio).roundToInt() to 720
     }
 
-    fun batteryColumn(info: BatteryInfo, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
+    fun batteryColumn(
+        info: BatteryInfo,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
         val unit = min(width.toFloat(), height / 2f)
         val cx = width / 2f
-        fittedText(canvas, "BATTERY", cx, height * .13f, width * .8f, unit * .12f, Color.LTGRAY, Paint.Align.CENTER)
+        fittedText(canvas, "BATTERY", cx, height * .13f, width * .8f, unit * .12f, palette.muted, Paint.Align.CENTER)
         val top = height * .23f
         val bottom = height * .64f
         repeat(10) { row ->
             repeat(3) { col ->
-                dot(canvas, cx + (col - 1) * unit * .16f, bottom - row * (bottom - top) / 9f,
-                    unit * .035f, row * 3 + col < (info.percent ?: 0) * 30 / 100)
+                dot(
+                    canvas,
+                    cx + (col - 1) * unit * .16f,
+                    bottom - row * (bottom - top) / 9f,
+                    unit * .035f,
+                    row * 3 + col < (info.percent ?: 0) * 30 / 100,
+                    palette,
+                )
             }
         }
         fittedText(canvas, info.percent?.let { "$it%" } ?: "--", cx, height * .81f,
-            width * .84f, unit * .28f, Color.WHITE, Paint.Align.CENTER)
+            width * .84f, unit * .28f, palette.foreground, Paint.Align.CENTER)
         fittedText(canvas, if (info.charging) "CHARGING" else "BATTERY", cx, height * .92f,
-            width * .82f, unit * .09f, if (info.charging) RED else Color.LTGRAY, Paint.Align.CENTER)
+            width * .82f, unit * .09f, if (info.charging) palette.accent else palette.muted, Paint.Align.CENTER)
         return bitmap
     }
 
-    fun weekColumn(now: ZonedDateTime, weekStart: DayOfWeek, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
+    fun weekColumn(
+        now: ZonedDateTime,
+        weekStart: DayOfWeek,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
         val unit = min(width.toFloat(), height / 2f)
-        fittedText(canvas, "WEEK", width / 2f, height * .11f, width * .8f, unit * .12f, Color.LTGRAY, Paint.Align.CENTER)
+        fittedText(canvas, "WEEK", width / 2f, height * .11f, width * .8f, unit * .12f, palette.muted, Paint.Align.CENTER)
         val today = now.toLocalDate()
         val start = today.minusDays(((today.dayOfWeek.value - weekStart.value + 7) % 7).toLong())
         repeat(7) { i ->
@@ -328,20 +339,28 @@ object UtilityWidgetRenderer {
             val y = height * (.23f + i * .11f)
             if (date == today) {
                 canvas.drawRoundRect(width * .10f, y - unit * .13f, width * .90f, y + unit * .055f,
-                    unit * .06f, unit * .06f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = RED })
+                    unit * .06f, unit * .06f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent })
             }
             text(canvas, date.dayOfWeek.name.take(1), width * .24f, y, unit * .13f,
-                if (date.isAfter(today)) Color.LTGRAY else Color.WHITE)
-            text(canvas, date.dayOfMonth.toString(), width * .76f, y, unit * .15f, Color.WHITE, Paint.Align.RIGHT)
+                if (date.isAfter(today)) palette.muted else palette.foreground)
+            text(canvas, date.dayOfMonth.toString(), width * .76f, y, unit * .15f, palette.foreground, Paint.Align.RIGHT)
         }
         return bitmap
     }
 
-    private fun base(width: Int, height: Int): Pair<Bitmap, Canvas> {
+    private fun base(width: Int, height: Int, palette: WidgetPalette): Pair<Bitmap, Canvas> {
         val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
         val radius = min(width, height) * .09f
-        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = BG })
+        canvas.drawRoundRect(
+            0f,
+            0f,
+            width.toFloat(),
+            height.toFloat(),
+            radius,
+            radius,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.background },
+        )
         return bitmap to canvas
     }
 
@@ -351,7 +370,7 @@ object UtilityWidgetRenderer {
         x: Float,
         baseline: Float,
         size: Float,
-        color: Int = Color.WHITE,
+        color: Int,
         align: Paint.Align = Paint.Align.LEFT,
     ) {
         canvas.drawText(value, x, baseline, Paint(Paint.ANTI_ALIAS_FLAG).apply {
@@ -370,7 +389,7 @@ object UtilityWidgetRenderer {
         baseline: Float,
         maxWidth: Float,
         maxSize: Float,
-        color: Int = Color.WHITE,
+        color: Int,
         align: Paint.Align = Paint.Align.LEFT,
     ) {
         var size = maxSize
@@ -383,31 +402,53 @@ object UtilityWidgetRenderer {
         text(canvas, value, x, baseline, size, color, align)
     }
 
-    private fun header(canvas: Canvas, value: String, width: Int, height: Int) {
-        text(canvas, value, width * .07f, height * .17f, min(width, height) * .075f, Color.LTGRAY)
+    private fun header(canvas: Canvas, value: String, width: Int, height: Int, palette: WidgetPalette) {
+        text(canvas, value, width * .07f, height * .17f, min(width, height) * .075f, palette.muted)
     }
 
-    private fun dot(canvas: Canvas, x: Float, y: Float, radius: Float, filled: Boolean, accent: Boolean = false) {
+    private fun dot(
+        canvas: Canvas,
+        x: Float,
+        y: Float,
+        radius: Float,
+        filled: Boolean,
+        palette: WidgetPalette,
+        accent: Boolean = false,
+    ) {
         canvas.drawCircle(x, y, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = when {
-                accent -> RED
-                filled -> Color.WHITE
-                else -> MID
+                accent -> palette.accent
+                filled -> palette.foreground
+                else -> palette.inactive
             }
         })
     }
 
-    private fun dottedBar(canvas: Canvas, fraction: Double, left: Float, right: Float, y: Float, count: Int = 32) {
+    private fun dottedBar(
+        canvas: Canvas,
+        fraction: Double,
+        left: Float,
+        right: Float,
+        y: Float,
+        palette: WidgetPalette,
+        count: Int = 32,
+    ) {
         val safeCount = count.coerceAtLeast(2)
         val step = (right - left) / (safeCount - 1)
         val filled = floor(fraction.coerceIn(0.0, 1.0) * safeCount).toInt()
         val radius = (step * .25f).coerceIn(2.3f, 5f)
-        repeat(safeCount) { i -> dot(canvas, left + i * step, y, radius, i < filled) }
+        repeat(safeCount) { i -> dot(canvas, left + i * step, y, radius, i < filled, palette) }
     }
 
-    fun batteryGlyph(info: BatteryInfo, visual: BatteryVisual, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        header(canvas, "BATTERY GLYPH", width, height)
+    fun batteryGlyph(
+        info: BatteryInfo,
+        visual: BatteryVisual,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
+        header(canvas, "BATTERY GLYPH", width, height, palette)
         val wide = width > height * 1.45f
         val percent = info.percent ?: 0
         val cx = if (wide) width * .25f else width * .5f
@@ -422,6 +463,7 @@ object UtilityWidgetRenderer {
                     cy + sin(angle).toFloat() * radius,
                     min(width, height) * .012f,
                     i < percent * 40 / 100,
+                    palette,
                     info.charging && i == percent * 40 / 100,
                 )
             }
@@ -432,13 +474,15 @@ object UtilityWidgetRenderer {
                     cy - radius * .7f + (i / 5) * radius * .35f,
                     min(width, height) * .018f,
                     i < ceil(percent / 4.0).toInt(),
+                    palette,
                 )
             }
-            BatteryVisual.BAR -> dottedBar(canvas, percent / 100.0, cx - radius, cx + radius, cy, 25)
+            BatteryVisual.BAR -> dottedBar(canvas, percent / 100.0, cx - radius, cx + radius, cy, palette, 25)
         }
         val valueX = if (wide) width * .54f else width * .5f
         val valueY = if (wide) height * .59f else height * .80f
-        text(canvas, info.percent?.let { "$it%" } ?: "--", valueX, valueY, min(width, height) * .19f, Color.WHITE, if (wide) Paint.Align.LEFT else Paint.Align.CENTER)
+        text(canvas, info.percent?.let { "$it%" } ?: "--", valueX, valueY, min(width, height) * .19f,
+            palette.foreground, if (wide) Paint.Align.LEFT else Paint.Align.CENTER)
         val detail = when {
             info.charging && info.chargeRemainingMs != null -> "FULL IN ${formatDuration(info.chargeRemainingMs)}"
             info.charging -> "CHARGING"
@@ -451,33 +495,49 @@ object UtilityWidgetRenderer {
             if (wide) height * .76f else height * .93f,
             if (wide) width * .39f else width * .82f,
             min(width, height) * .06f,
-            if (info.charging) RED else Color.LTGRAY,
+            if (info.charging) palette.accent else palette.muted,
             if (wide) Paint.Align.LEFT else Paint.Align.CENTER,
         )
         return bitmap
     }
 
-    fun nextAlarm(context: Context, now: ZonedDateTime, alarm: ZonedDateTime?, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        header(canvas, "NEXT ALARM", width, height)
+    fun nextAlarm(
+        context: Context,
+        now: ZonedDateTime,
+        alarm: ZonedDateTime?,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
+        header(canvas, "NEXT ALARM", width, height, palette)
         if (alarm == null) {
-            text(canvas, "NO ALARM", width / 2f, height * .62f, min(width, height) * .15f, Color.WHITE, Paint.Align.CENTER)
-            text(canvas, "NOTHING SCHEDULED", width / 2f, height * .82f, min(width, height) * .045f, Color.LTGRAY, Paint.Align.CENTER)
+            text(canvas, "NO ALARM", width / 2f, height * .62f, min(width, height) * .15f, palette.foreground, Paint.Align.CENTER)
+            text(canvas, "NOTHING SCHEDULED", width / 2f, height * .82f, min(width, height) * .045f, palette.muted, Paint.Align.CENTER)
             return bitmap
         }
-        fittedText(canvas, formatAlarmTime(context, alarm), width / 2f, height * .60f, width * .86f, min(width, height) * .28f, Color.WHITE, Paint.Align.CENTER)
-        text(canvas, alarmDayLabel(now, alarm), width / 2f, height * .78f, min(width, height) * .07f, RED, Paint.Align.CENTER)
+        fittedText(canvas, formatAlarmTime(context, alarm), width / 2f, height * .60f, width * .86f,
+            min(width, height) * .28f, palette.foreground, Paint.Align.CENTER)
+        text(canvas, alarmDayLabel(now, alarm), width / 2f, height * .78f, min(width, height) * .07f,
+            palette.accent, Paint.Align.CENTER)
         val minutes = Duration.between(now, alarm).toMinutes().coerceAtLeast(0)
         val until = if (minutes < 60) "IN $minutes MIN" else "IN ${String.format(Locale.US, "%.1f", minutes / 60.0)} H"
-        text(canvas, until, width / 2f, height * .91f, min(width, height) * .045f, Color.LTGRAY, Paint.Align.CENTER)
+        text(canvas, until, width / 2f, height * .91f, min(width, height) * .045f, palette.muted, Paint.Align.CENTER)
         return bitmap
     }
 
-    fun storage(info: StorageInfo?, display: StorageDisplay, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        header(canvas, "STORAGE", width, height)
+    fun storage(
+        info: StorageInfo?,
+        display: StorageDisplay,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
+        header(canvas, "STORAGE", width, height, palette)
         if (info == null) {
-            text(canvas, "UNAVAILABLE", width / 2f, height * .58f, min(width, height) * .12f, Color.WHITE, Paint.Align.CENTER)
+            text(canvas, "UNAVAILABLE", width / 2f, height * .58f, min(width, height) * .12f,
+                palette.foreground, Paint.Align.CENTER)
             return bitmap
         }
         val fraction = if (display == StorageDisplay.FREE) info.freeFraction else 1.0 - info.freeFraction
@@ -493,18 +553,27 @@ object UtilityWidgetRenderer {
                 top + (i / 20) * (bottom - top) / 4f,
                 min(width, height) * .009f,
                 i < (fraction * 100).roundToInt(),
+                palette,
             )
         }
-        text(canvas, "${(fraction * 100).roundToInt()}% ${display.name}", width / 2f, height * .82f, min(width, height) * .085f, Color.WHITE, Paint.Align.CENTER)
-        text(canvas, "${formatGb(selectedBytes)} / ${formatGb(info.totalBytes)}", width / 2f, height * .94f, min(width, height) * .047f, Color.LTGRAY, Paint.Align.CENTER)
+        text(canvas, "${(fraction * 100).roundToInt()}% ${display.name}", width / 2f, height * .82f,
+            min(width, height) * .085f, palette.foreground, Paint.Align.CENTER)
+        text(canvas, "${formatGb(selectedBytes)} / ${formatGb(info.totalBytes)}", width / 2f, height * .94f,
+            min(width, height) * .047f, palette.muted, Paint.Align.CENTER)
         return bitmap
     }
 
-    fun month(now: ZonedDateTime, weekStart: DayOfWeek, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
+    fun month(
+        now: ZonedDateTime,
+        weekStart: DayOfWeek,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
         val locale = Locale.getDefault()
         val date = now.toLocalDate()
-        header(canvas, now.format(DateTimeFormatter.ofPattern("MMM yyyy", locale)).uppercase(locale), width, height)
+        header(canvas, now.format(DateTimeFormatter.ofPattern("MMM yyyy", locale)).uppercase(locale), width, height, palette)
         val first = date.withDayOfMonth(1)
         val offset = ((first.dayOfWeek.value - weekStart.value) + 7) % 7
         val left = width * .09f
@@ -515,7 +584,8 @@ object UtilityWidgetRenderer {
         val cellH = (bottom - top) / 7f
         repeat(7) { col ->
             val day = DayOfWeek.of(((weekStart.value - 1 + col) % 7) + 1)
-            text(canvas, day.name.take(1), left + cellW * (col + .5f), top, min(width, height) * .043f, Color.LTGRAY, Paint.Align.CENTER)
+            text(canvas, day.name.take(1), left + cellW * (col + .5f), top, min(width, height) * .043f,
+                palette.muted, Paint.Align.CENTER)
         }
         repeat(date.lengthOfMonth()) { zero ->
             val day = zero + 1
@@ -523,15 +593,27 @@ object UtilityWidgetRenderer {
             val x = left + cellW * (cell % 7 + .5f)
             val y = top + cellH * (cell / 7 + 1.25f)
             val today = day == date.dayOfMonth
-            if (today) canvas.drawCircle(x, y - min(width, height) * .014f, min(width, height) * .052f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = RED })
-            text(canvas, day.toString(), x, y, min(width, height) * .052f, if (today) Color.WHITE else Color.LTGRAY, Paint.Align.CENTER)
+            if (today) canvas.drawCircle(
+                x,
+                y - min(width, height) * .014f,
+                min(width, height) * .052f,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent },
+            )
+            text(canvas, day.toString(), x, y, min(width, height) * .052f,
+                if (today) palette.foreground else palette.muted, Paint.Align.CENTER)
         }
         return bitmap
     }
 
-    fun weekStrip(now: ZonedDateTime, weekStart: DayOfWeek, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        header(canvas, "THIS WEEK", width, height)
+    fun weekStrip(
+        now: ZonedDateTime,
+        weekStart: DayOfWeek,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
+        header(canvas, "THIS WEEK", width, height, palette)
         val today = now.toLocalDate()
         val delta = ((today.dayOfWeek.value - weekStart.value) + 7) % 7
         val start = today.minusDays(delta.toLong())
@@ -541,26 +623,39 @@ object UtilityWidgetRenderer {
             val date = start.plusDays(i.toLong())
             val x = left + cell * (i + .5f)
             val current = date == today
-            text(canvas, date.dayOfWeek.name.take(1), x, height * .39f, min(width, height) * .055f, Color.LTGRAY, Paint.Align.CENTER)
-            if (current) canvas.drawCircle(x, height * .66f, min(width, height) * .105f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = RED })
-            text(canvas, date.dayOfMonth.toString(), x, height * .72f, min(width, height) * .11f, Color.WHITE, Paint.Align.CENTER)
-            dot(canvas, x, height * .86f, min(width, height) * .018f, !date.isAfter(today), current)
+            text(canvas, date.dayOfWeek.name.take(1), x, height * .39f, min(width, height) * .055f,
+                palette.muted, Paint.Align.CENTER)
+            if (current) canvas.drawCircle(
+                x,
+                height * .66f,
+                min(width, height) * .105f,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent },
+            )
+            text(canvas, date.dayOfMonth.toString(), x, height * .72f, min(width, height) * .11f,
+                palette.foreground, Paint.Align.CENTER)
+            dot(canvas, x, height * .86f, min(width, height) * .018f, !date.isAfter(today), palette, current)
         }
         return bitmap
     }
 
-    fun year(now: ZonedDateTime, display: YearDisplay, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
+    fun year(
+        now: ZonedDateTime,
+        display: YearDisplay,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
         val today = now.toLocalDate()
         val totalDays = today.lengthOfYear()
-        header(canvas, "YEAR ${now.year}", width, height)
+        header(canvas, "YEAR ${now.year}", width, height, palette)
         text(
             canvas,
             if (display == YearDisplay.ELAPSED) "${today.dayOfYear} / $totalDays" else "${totalDays - today.dayOfYear} LEFT",
             width * .93f,
             height * .17f,
             min(width, height) * .055f,
-            Color.LTGRAY,
+            palette.muted,
             Paint.Align.RIGHT,
         )
         val labelX = width * .10f
@@ -574,11 +669,12 @@ object UtilityWidgetRenderer {
         repeat(12) { monthIndex ->
             val first = LocalDate.of(now.year, monthIndex + 1, 1)
             val y = top + monthIndex * rowStep
-            text(canvas, first.month.name.take(3), labelX, y + radius * 1.6f, min(width, height) * .035f, Color.LTGRAY, Paint.Align.CENTER)
+            text(canvas, first.month.name.take(3), labelX, y + radius * 1.6f,
+                min(width, height) * .035f, palette.muted, Paint.Align.CENTER)
             repeat(first.lengthOfMonth()) { dayIndex ->
                 val date = first.plusDays(dayIndex.toLong())
                 val filled = if (display == YearDisplay.ELAPSED) !date.isAfter(today) else date.isAfter(today)
-                dot(canvas, left + dayIndex * colStep, y, radius, filled, date == today)
+                dot(canvas, left + dayIndex * colStep, y, radius, filled, palette, date == today)
             }
         }
         return bitmap
@@ -592,51 +688,80 @@ object UtilityWidgetRenderer {
         alarm: ZonedDateTime?,
         width: Int,
         height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
     ): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = MID; strokeWidth = 2f }
+        val (bitmap, canvas) = base(width, height, palette)
+        val line = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.inactive; strokeWidth = 2f }
         canvas.drawLine(width / 2f, height * .12f, width / 2f, height * .88f, line)
         canvas.drawLine(width * .06f, height / 2f, width * .94f, height / 2f, line)
         fun metric(title: String, value: String, detail: String, cx: Float, top: Float, accent: Boolean = false) {
-            text(canvas, title, cx, top + height * .10f, min(width, height) * .045f, Color.LTGRAY, Paint.Align.CENTER)
-            fittedText(canvas, value, cx, top + height * .25f, width * .39f, min(width, height) * .12f, if (accent) RED else Color.WHITE, Paint.Align.CENTER)
-            fittedText(canvas, detail, cx, top + height * .34f, width * .39f, min(width, height) * .038f, Color.LTGRAY, Paint.Align.CENTER)
+            text(canvas, title, cx, top + height * .10f, min(width, height) * .045f, palette.muted, Paint.Align.CENTER)
+            fittedText(canvas, value, cx, top + height * .25f, width * .39f, min(width, height) * .12f,
+                if (accent) palette.accent else palette.foreground, Paint.Align.CENTER)
+            fittedText(canvas, detail, cx, top + height * .34f, width * .39f, min(width, height) * .038f,
+                palette.muted, Paint.Align.CENTER)
         }
-        metric("BATTERY", battery.percent?.let { "$it%" } ?: "--", if (battery.charging) "CHARGING" else "ON BATTERY", width * .25f, height * .05f, battery.charging)
-        metric("STORAGE", storage?.let { "${(it.freeFraction * 100).roundToInt()}%" } ?: "--", "FREE", width * .75f, height * .05f)
-        metric("NEXT ALARM", alarm?.let { formatAlarmTime(context, it) } ?: "NONE", alarm?.let { alarmDayLabel(now, it) } ?: "NO ALARM SET", width * .25f, height * .52f, alarm?.toLocalDate() == now.toLocalDate())
+        metric("BATTERY", battery.percent?.let { "$it%" } ?: "--", if (battery.charging) "CHARGING" else "ON BATTERY",
+            width * .25f, height * .05f, battery.charging)
+        metric("STORAGE", storage?.let { "${(it.freeFraction * 100).roundToInt()}%" } ?: "--", "FREE",
+            width * .75f, height * .05f)
+        metric("NEXT ALARM", alarm?.let { formatAlarmTime(context, it) } ?: "NONE",
+            alarm?.let { alarmDayLabel(now, it) } ?: "NO ALARM SET", width * .25f, height * .52f,
+            alarm?.toLocalDate() == now.toLocalDate())
         val day = timeProgress(now)[0].fraction
-        metric("TODAY", "${(day * 100).toInt()}%", "${now.dayOfWeek.name.take(3)} ${now.dayOfMonth}", width * .75f, height * .52f)
+        metric("TODAY", "${(day * 100).toInt()}%", "${now.dayOfWeek.name.take(3)} ${now.dayOfMonth}",
+            width * .75f, height * .52f)
         return bitmap
     }
 
-    fun milestone(now: ZonedDateTime, target: MilestoneTarget, width: Int, height: Int): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        header(canvas, target.label.uppercase(Locale.getDefault()), width, height)
+    fun milestone(
+        now: ZonedDateTime,
+        target: MilestoneTarget,
+        width: Int,
+        height: Int,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
+        header(canvas, target.label.uppercase(Locale.getDefault()), width, height, palette)
         val remaining = milestoneRemaining(now, target)
-        fittedText(canvas, remaining?.let(::formatBigDuration) ?: "NOW", width / 2f, height * .61f, width * .86f, min(width, height) * .24f, Color.WHITE, Paint.Align.CENTER)
+        fittedText(canvas, remaining?.let(::formatBigDuration) ?: "NOW", width / 2f, height * .61f,
+            width * .86f, min(width, height) * .24f, palette.foreground, Paint.Align.CENTER)
         val detail = if (remaining == null) "ENJOY IT" else when (target) {
             MilestoneTarget.WEEKEND -> "UNTIL SATURDAY"
             MilestoneTarget.MONTH_END -> "UNTIL NEXT MONTH"
             MilestoneTarget.YEAR_END -> "UNTIL ${now.year + 1}"
         }
-        text(canvas, detail, width / 2f, height * .79f, min(width, height) * .06f, if (remaining == null) RED else Color.LTGRAY, Paint.Align.CENTER)
-        dottedBar(canvas, milestoneFraction(now, target), width * .12f, width * .88f, height * .91f, if (width > height * 1.5f) 36 else 24)
+        text(canvas, detail, width / 2f, height * .79f, min(width, height) * .06f,
+            if (remaining == null) palette.accent else palette.muted, Paint.Align.CENTER)
+        dottedBar(canvas, milestoneFraction(now, target), width * .12f, width * .88f, height * .91f,
+            palette, if (width > height * 1.5f) 36 else 24)
         return bitmap
     }
 
-    fun clockPreview(context: Context, now: ZonedDateTime, width: Int = 720, height: Int = 320): Bitmap {
-        val (bitmap, canvas) = base(width, height)
+    fun clockPreview(
+        context: Context,
+        now: ZonedDateTime,
+        width: Int = 720,
+        height: Int = 320,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
         val pattern = if (DateFormat.is24HourFormat(context)) "HH:mm" else "h:mm"
-        fittedText(canvas, now.format(DateTimeFormatter.ofPattern(pattern)), width * .08f, height * .58f, width * .84f, height * .34f)
-        text(canvas, now.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())).uppercase(Locale.getDefault()), width * .09f, height * .82f, height * .10f, Color.LTGRAY)
-        dot(canvas, width * .91f, height * .22f, height * .025f, true, true)
+        fittedText(canvas, now.format(DateTimeFormatter.ofPattern(pattern)), width * .08f, height * .58f,
+            width * .84f, height * .34f, palette.foreground)
+        text(canvas, now.format(DateTimeFormatter.ofPattern("EEE d MMM", Locale.getDefault())).uppercase(Locale.getDefault()),
+            width * .09f, height * .82f, height * .10f, palette.muted)
+        dot(canvas, width * .91f, height * .22f, height * .025f, true, palette, true)
         return bitmap
     }
 
-    fun shortcutsPreview(width: Int = 900, height: Int = 300): Bitmap {
-        val (bitmap, canvas) = base(width, height)
-        header(canvas, "PLAYBOX", width, height)
+    fun shortcutsPreview(
+        width: Int = 900,
+        height: Int = 300,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
+        val (bitmap, canvas) = base(width, height, palette)
+        header(canvas, "PLAYBOX", width, height, palette)
         val labels = listOf("MATRIX", "WIDGETS", "AOD TOY")
         val gap = width * .025f
         val left = width * .06f
@@ -646,8 +771,10 @@ object UtilityWidgetRenderer {
         val cellWidth = (right - left - gap * 2) / 3f
         labels.forEachIndexed { index, label ->
             val x = left + index * (cellWidth + gap)
-            canvas.drawRoundRect(x, top, x + cellWidth, bottom, height * .08f, height * .08f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = DIM })
-            text(canvas, label, x + cellWidth / 2f, top + (bottom - top) * .61f, height * .075f, if (index == 2) RED else Color.WHITE, Paint.Align.CENTER)
+            canvas.drawRoundRect(x, top, x + cellWidth, bottom, height * .08f, height * .08f,
+                Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.container })
+            text(canvas, label, x + cellWidth / 2f, top + (bottom - top) * .61f, height * .075f,
+                if (index == 2) palette.accent else palette.foreground, Paint.Align.CENTER)
         }
         return bitmap
     }
