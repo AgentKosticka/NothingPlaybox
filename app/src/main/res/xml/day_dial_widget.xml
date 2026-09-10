@@ -1,4 +1,4 @@
 <appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
     android:minWidth="110dp" android:minHeight="110dp" android:targetCellWidth="2" android:targetCellHeight="2"
-    android:initialLayout="@layout/widget_time_bars" android:previewImage="@drawable/day_dial_preview"
+    android:initialLayout="@layout/widget_time_bars" android:previewLayout="@layout/widget_preview_day_dial"
     android:description="@string/day_dial_description" android:updatePeriodMillis="0" android:widgetCategory="home_screen" />

@@ -7,7 +7,7 @@
     android:minResizeWidth="250dp"
     android:minResizeHeight="110dp"
     android:initialLayout="@layout/widget_time_bars"
-    android:previewImage="@drawable/time_bars_preview"
+    android:previewLayout="@layout/widget_preview_time_bars"
     android:description="@string/time_bars_description"
     android:resizeMode="horizontal|vertical"
     android:updatePeriodMillis="0"

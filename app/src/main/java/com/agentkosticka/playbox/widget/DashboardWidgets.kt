@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import android.os.BatteryManager
 import android.widget.RemoteViews
@@ -43,8 +42,14 @@ open class DashboardWidget : AppWidgetProvider() {
                 val ids = manager.getAppWidgetIds(ComponentName(context, provider))
                 if (ids.isNotEmpty()) {
                     val battery = batteryStatus(context)
-                    val bitmap = if (provider == DayDialWidget::class.java) DashboardRenderer.dayDial(now) else DashboardRenderer.battery(battery.first, battery.second)
                     val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
+                    views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette ->
+                        if (provider == DayDialWidget::class.java) {
+                            DashboardRenderer.dayDial(now, palette)
+                        } else {
+                            DashboardRenderer.battery(battery.first, battery.second, palette)
+                        }
+                    }
                     val contentDescription = if (provider == DayDialWidget::class.java) {
                         context.getString(R.string.widget_day_progress_cd, (timeProgress(now)[0].fraction * 100).toInt())
                     } else {
@@ -56,7 +61,6 @@ open class DashboardWidget : AppWidgetProvider() {
                         } ?: context.getString(R.string.widget_battery_unknown_cd, status)
                     }
                     views.setContentDescription(R.id.time_bars_image, contentDescription)
-                    views.setImageViewBitmap(R.id.time_bars_image, bitmap)
                     views.setOnClickPendingIntent(R.id.time_bars_image, widgetPendingIntent(context, WidgetDestination.forProvider(provider)))
                     manager.updateAppWidget(ids, views)
                 }
@@ -74,39 +78,42 @@ fun batteryStatus(context: Context): Pair<Int?, Boolean> {
 }
 
 object DashboardRenderer {
-    private fun base(): Pair<Bitmap, Canvas> {
+    private fun base(palette: WidgetPalette): Pair<Bitmap, Canvas> {
         val bitmap = createBitmap(360, 360)
         val canvas = Canvas(bitmap)
-        canvas.drawRoundRect(0f, 0f, 360f, 360f, 32f, 32f, Paint().apply { color = Color.rgb(17, 17, 17) })
+        canvas.drawRoundRect(0f, 0f, 360f, 360f, 32f, 32f, Paint().apply { color = palette.background })
         return bitmap to canvas
     }
-    private fun label(canvas: Canvas, text: String, y: Float, step: Float, color: Int = Color.WHITE) {
+
+    private fun label(canvas: Canvas, text: String, y: Float, step: Float, color: Int) {
         TimeBarsRenderer.dotText(canvas, text, (360 - (text.length * 6 - 1) * step) / 2, y, step, color)
     }
-    fun dayDial(now: ZonedDateTime): Bitmap {
-        val (bitmap, canvas) = base()
+
+    fun dayDial(now: ZonedDateTime, palette: WidgetPalette = WidgetPalette.current()): Bitmap {
+        val (bitmap, canvas) = base(palette)
         val fraction = timeProgress(now)[0].fraction
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         repeat(60) { dot ->
             val angle = dot * PI / 30 - PI / 2
-            paint.color = if (dot < floor(fraction * 60)) Color.WHITE else Color.DKGRAY
+            paint.color = if (dot < floor(fraction * 60)) palette.foreground else palette.inactive
             canvas.drawCircle(180 + cos(angle).toFloat() * 145, 180 + sin(angle).toFloat() * 145, 3.8f, paint)
         }
-        label(canvas, now.dayOfWeek.name.take(3), 104f, 4f)
-        label(canvas, "${(fraction * 100).toInt()}%", 155f, 7f)
-        label(canvas, "${now.dayOfMonth} ${now.month.name.take(3)}", 223f, 3.5f, Color.LTGRAY)
+        label(canvas, now.dayOfWeek.name.take(3), 104f, 4f, palette.foreground)
+        label(canvas, "${(fraction * 100).toInt()}%", 155f, 7f, palette.foreground)
+        label(canvas, "${now.dayOfMonth} ${now.month.name.take(3)}", 223f, 3.5f, palette.muted)
         return bitmap
     }
-    fun battery(percent: Int?, charging: Boolean): Bitmap {
-        val (bitmap, canvas) = base()
-        label(canvas, "BATTERY", 25f, 4f)
+
+    fun battery(percent: Int?, charging: Boolean, palette: WidgetPalette = WidgetPalette.current()): Bitmap {
+        val (bitmap, canvas) = base(palette)
+        label(canvas, "BATTERY", 25f, 4f, palette.foreground)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         repeat(100) { dot ->
-            paint.color = if (dot < (percent ?: 0)) Color.WHITE else Color.DKGRAY
+            paint.color = if (dot < (percent ?: 0)) palette.foreground else palette.inactive
             canvas.drawCircle(90f + dot % 10 * 20, 83f + dot / 10 * 16, 3.7f, paint)
         }
-        label(canvas, percent?.let { "$it%" } ?: "UNKNOWN", 251f, if (percent == null) 4f else 6f)
-        label(canvas, if (charging) "CHARGING" else "ON BATTERY", 315f, 2.8f, Color.LTGRAY)
+        label(canvas, percent?.let { "$it%" } ?: "UNKNOWN", 251f, if (percent == null) 4f else 6f, palette.foreground)
+        label(canvas, if (charging) "CHARGING" else "ON BATTERY", 315f, 2.8f, if (charging) palette.accent else palette.muted)
         return bitmap
     }
 }

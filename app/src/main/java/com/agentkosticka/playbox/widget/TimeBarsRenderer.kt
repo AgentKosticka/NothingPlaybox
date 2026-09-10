@@ -2,7 +2,6 @@ package com.agentkosticka.playbox.widget
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import androidx.core.graphics.createBitmap
 import com.agentkosticka.playbox.ui.NothingDotFont
@@ -35,7 +34,7 @@ object TimeBarsRenderer {
         return "..."
     }
 
-    internal fun dotText(canvas: Canvas, value: String, x: Float, y: Float, step: Float, color: Int = Color.WHITE) {
+    internal fun dotText(canvas: Canvas, value: String, x: Float, y: Float, step: Float, color: Int) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
             typeface = dotTypeface
@@ -79,7 +78,13 @@ object TimeBarsRenderer {
         '.' to "00000000000000000000000000000000100",
     )
 
-    fun render(now: ZonedDateTime, settings: TimeBarsSettings = TimeBarsSettings(), width: Int = 720, height: Int = 360): Bitmap {
+    fun render(
+        now: ZonedDateTime,
+        settings: TimeBarsSettings = TimeBarsSettings(),
+        width: Int = 720,
+        height: Int = 360,
+        palette: WidgetPalette = WidgetPalette.current(),
+    ): Bitmap {
         val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
         // Use one scale for both axes so dots and letterforms stay round at every size.
@@ -88,7 +93,7 @@ object TimeBarsRenderer {
         val w = width / scale
         val h = height / scale
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
-        paint.color = Color.rgb(17, 17, 17)
+        paint.color = palette.background
         canvas.drawRoundRect(0f, 0f, w, h, 32f, 32f, paint)
         fun text(value: String, x: Float, y: Float, step: Float, color: Int) = dotText(canvas, value, x, y, step, color)
         timeProgress(now, settings.weekStart).forEachIndexed { index, bar ->
@@ -96,9 +101,9 @@ object TimeBarsRenderer {
             val y = 20f + index * rowHeight + (rowHeight - 30f) / 2f
             val textStep = 5.2f
             val label = labelThatFits(bar.label, textStep, 238f)
-            text(label, 36f, y, textStep, Color.WHITE)
+            text(label, 36f, y, textStep, palette.foreground)
             val percent = "${floor(bar.fraction * 100).toInt()}%"
-            text(percent, w - 36f - textWidth(percent, textStep), y, textStep, Color.WHITE)
+            text(percent, w - 36f - textWidth(percent, textStep), y, textStep, palette.foreground)
             val left = 285f
             val right = w - 205f
             val columns = ((right - left) / 10f).toInt().coerceAtLeast(2) + 1
@@ -107,7 +112,7 @@ object TimeBarsRenderer {
             val rows = 2
             val dots = filledDots(columns * rows, bar.fraction, settings.fill, index)
             dots.forEachIndexed { dot, filled ->
-                paint.color = if (filled) Color.WHITE else Color.rgb(57, 57, 57)
+                paint.color = if (filled) palette.foreground else palette.inactive
                 // Column-major order lets the rows fill one dot at a time.
                 canvas.drawCircle(left + dot / rows * step, dotY + dot % rows * 12f,
                     3.4f, paint)

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android system color roles are OEM/runtime-overridable, so Nothing OS supplies the palette. -->
+    <color name="widget_surface">@android:color/system_surface_container_light</color>
+    <color name="widget_on_surface">@android:color/system_on_surface_light</color>
+    <color name="widget_on_surface_variant">@android:color/system_on_surface_variant_light</color>
+    <color name="widget_inactive">@android:color/system_outline_variant_light</color>
+    <color name="widget_container">@android:color/system_surface_container_high_light</color>
+    <color name="widget_accent">@android:color/system_primary_light</color>
+</resources>
