@@ -5,7 +5,6 @@
     android:orientation="horizontal"
     android:gravity="center"
     android:padding="8dp"
-    android:theme="@android:style/Theme.DeviceDefault.DayNight"
     android:background="@drawable/widget_card_background">
 
     <TextView
@@ -18,7 +17,7 @@
         android:background="@drawable/widget_shortcut_button"
         android:fontFamily="NDot57"
         android:text="MATRIX"
-        android:textColor="?android:attr/textColorPrimary"
+        android:textColor="@color/widget_on_surface"
         android:textSize="12sp" />
 
     <TextView
@@ -31,7 +30,7 @@
         android:background="@drawable/widget_shortcut_button"
         android:fontFamily="NDot57"
         android:text="WIDGETS"
-        android:textColor="?android:attr/textColorPrimary"
+        android:textColor="@color/widget_on_surface"
         android:textSize="12sp" />
 
     <TextView
@@ -44,6 +43,6 @@
         android:background="@drawable/widget_shortcut_button"
         android:fontFamily="NDot57"
         android:text="AOD TOY"
-        android:textColor="?android:attr/colorAccent"
+        android:textColor="@color/widget_accent"
         android:textSize="12sp" />
 </LinearLayout>
