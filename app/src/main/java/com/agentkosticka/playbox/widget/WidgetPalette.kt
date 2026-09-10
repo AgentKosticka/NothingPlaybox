@@ -8,10 +8,12 @@ import android.graphics.drawable.Icon
 import android.view.ContextThemeWrapper
 import android.widget.RemoteViews
 import androidx.core.graphics.ColorUtils
+import androidx.core.graphics.createBitmap
 import com.agentkosticka.playbox.ui.NOTHING_RED_ARGB
+import kotlin.math.roundToInt
 
 /** Semantic widget colors resolved from Android's device theme instead of fixed swatches. */
-internal data class WidgetPalette(
+data class WidgetPalette(
     val background: Int,
     val foreground: Int,
     val muted: Int,
@@ -88,12 +90,103 @@ internal fun RemoteViews.setThemedWidgetBitmap(
     viewId: Int,
     render: (WidgetPalette) -> Bitmap,
 ) {
-    val notNight = render(WidgetPalette.resolve(context, night = false))
-    val night = render(WidgetPalette.resolve(context, night = true))
+    setDayNightBitmaps(
+        viewId,
+        render(WidgetPalette.resolve(context, night = false)),
+        render(WidgetPalette.resolve(context, night = true)),
+    )
+}
+
+/**
+ * Transitional adapter for the older utility renderer. It treats its fixed grayscale/red output as
+ * semantic paint slots, then replaces those slots with the device palette before the widget leaves
+ * the app process. This keeps production widget colors device-driven without duplicating that large
+ * renderer while it is being migrated to semantic colors.
+ */
+internal fun RemoteViews.setThemedWidgetBitmap(
+    context: Context,
+    viewId: Int,
+    legacyBitmap: Bitmap,
+) {
+    val notNight = legacyBitmap.recolorLegacyWidget(WidgetPalette.resolve(context, night = false))
+    val night = legacyBitmap.recolorLegacyWidget(WidgetPalette.resolve(context, night = true))
+    legacyBitmap.recycle()
+    setDayNightBitmaps(viewId, notNight, night)
+}
+
+private fun RemoteViews.setDayNightBitmaps(viewId: Int, notNight: Bitmap, night: Bitmap) {
     setIcon(
         viewId,
         "setImageIcon",
         Icon.createWithBitmap(notNight),
         Icon.createWithBitmap(night),
+    )
+}
+
+private fun Bitmap.recolorLegacyWidget(palette: WidgetPalette): Bitmap {
+    val pixels = IntArray(width * height)
+    getPixels(pixels, 0, width, 0, 0, width, height)
+
+    val sourceBackground = intArrayOf(17, 17, 17)
+    val sourceAccent = intArrayOf(
+        Color.red(NOTHING_RED_ARGB),
+        Color.green(NOTHING_RED_ARGB),
+        Color.blue(NOTHING_RED_ARGB),
+    )
+    val accentVector = intArrayOf(
+        sourceAccent[0] - sourceBackground[0],
+        sourceAccent[1] - sourceBackground[1],
+        sourceAccent[2] - sourceBackground[2],
+    )
+    val accentLengthSquared = accentVector.sumOf { it * it }.coerceAtLeast(1)
+
+    pixels.indices.forEach { index ->
+        val source = pixels[index]
+        val alpha = Color.alpha(source)
+        if (alpha == 0) return@forEach
+
+        val red = Color.red(source)
+        val green = Color.green(source)
+        val blue = Color.blue(source)
+        val chroma = red - maxOf(green, blue)
+        val mapped = if (chroma > 8) {
+            val projection = (
+                (red - sourceBackground[0]) * accentVector[0] +
+                    (green - sourceBackground[1]) * accentVector[1] +
+                    (blue - sourceBackground[2]) * accentVector[2]
+                ).toFloat() / accentLengthSquared
+            blend(palette.background, palette.accent, projection.coerceIn(0f, 1f))
+        } else {
+            val gray = (red + green + blue) / 3f
+            mapLegacyNeutral(gray, palette)
+        }
+        pixels[index] = Color.argb(
+            alpha,
+            Color.red(mapped),
+            Color.green(mapped),
+            Color.blue(mapped),
+        )
+    }
+
+    return createBitmap(width, height).also {
+        it.setPixels(pixels, 0, width, 0, 0, width, height)
+    }
+}
+
+private fun mapLegacyNeutral(gray: Float, palette: WidgetPalette): Int = when {
+    gray <= 17f -> palette.background
+    gray <= 36f -> blend(palette.background, palette.container, (gray - 17f) / 19f)
+    gray <= 57f -> blend(palette.container, palette.inactive, (gray - 36f) / 21f)
+    gray <= 211f -> blend(palette.inactive, palette.muted, (gray - 57f) / 154f)
+    else -> blend(palette.muted, palette.foreground, (gray - 211f) / 44f)
+}
+
+private fun blend(from: Int, to: Int, fraction: Float): Int {
+    val amount = fraction.coerceIn(0f, 1f)
+    fun channel(start: Int, end: Int): Int = (start + (end - start) * amount).roundToInt()
+    return Color.rgb(
+        channel(Color.red(from), Color.red(to)),
+        channel(Color.green(from), Color.green(to)),
+        channel(Color.blue(from), Color.blue(to)),
     )
 }
