@@ -1,5 +1,8 @@
 package com.agentkosticka.playbox
 
+import android.content.Intent
+import com.agentkosticka.playbox.widget.EXTRA_WIDGET_KEY
+import com.agentkosticka.playbox.widget.WidgetDestination
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -28,6 +31,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -117,24 +121,33 @@ import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
+    private var navigationIntent by mutableStateOf<Intent?>(null)
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        navigationIntent = intent
+    }
+
     private lateinit var playboxApplication: PlayboxApplication
     private lateinit var playboxViewModel: PlayboxViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (savedInstanceState == null) navigationIntent = intent
         enableEdgeToEdge()
         playboxApplication = application as PlayboxApplication
         playboxViewModel = ViewModelProvider(this)[PlayboxViewModel::class.java]
         setContent {
             PlayboxTheme {
-                PlayboxApp(playboxApplication.repository, playboxApplication.glyphClient, playboxViewModel)
+                PlayboxApp(playboxApplication.repository, playboxApplication.glyphClient, playboxViewModel, navigationIntent)
             }
         }
     }
 }
 
 @Composable
-private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixClient, viewModel: PlayboxViewModel) {
+private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixClient, viewModel: PlayboxViewModel, navigationIntent: Intent?) {
     val effects by repository.effects.collectAsState()
     val connection by glyphClient.state.collectAsState()
     val editing = viewModel.editorDraft
@@ -148,8 +161,16 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
     val resources = LocalResources.current
     val resolver = context.contentResolver
     val filenameFallback = stringResource(R.string.effect_filename_fallback)
-    var section by rememberSaveable {
-        mutableStateOf(if ((context as? MainActivity)?.intent?.getBooleanExtra("open_widgets", false) == true) "Widgets" else "Matrix")
+    var section by rememberSaveable { mutableStateOf("Matrix") }
+    var widgetType by rememberSaveable { mutableStateOf("time-bars") }
+    LaunchedEffect(navigationIntent) {
+        if (navigationIntent?.getBooleanExtra("open_widgets", false) == true) {
+            section = "Widgets"
+            navigationIntent.getStringExtra(EXTRA_WIDGET_KEY)?.let {
+                widgetType = WidgetDestination.fromKey(it).key
+            }
+            createDialog = false
+        }
     }
     val mainHandler = remember { Handler(Looper.getMainLooper()) }
 
@@ -201,7 +222,7 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
         message?.let { snackbar.showSnackbar(it); message = null }
     }
 
-    if (editing != null) {
+    if (editing != null && section != "Widgets") {
         EditorScreen(
             initial = editing,
             connection = connection,
@@ -226,6 +247,8 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
             repository = repository,
             section = section,
             onSection = { section = it },
+            widgetType = widgetType,
+            onWidgetType = { widgetType = it },
             effects = effects,
             connection = connection,
             glyphClient = glyphClient,
@@ -309,6 +332,8 @@ private fun HomeScreen(
     repository: EffectRepository,
     section: String,
     onSection: (String) -> Unit,
+    widgetType: String,
+    onWidgetType: (String) -> Unit,
     effects: List<PlayboxEffect>,
     connection: GlyphConnectionState,
     glyphClient: GlyphMatrixClient,
@@ -321,6 +346,10 @@ private fun HomeScreen(
     onImport: () -> Unit,
 ) {
     var engine by rememberSaveable { mutableStateOf<String?>(null) }
+    val listState = rememberLazyListState()
+    LaunchedEffect(section, widgetType) {
+        if (section == "Widgets") listState.scrollToItem(0)
+    }
     val engines = effects.filter { it.builtIn && it.procedural != null }
     val selectedEngine = engines.firstOrNull { it.id == engine }
     val visibleEffects = when (section) {
@@ -404,6 +433,7 @@ private fun HomeScreen(
         },
     ) { padding ->
         LazyColumn(
+            state = listState,
             modifier = Modifier.fillMaxSize().padding(padding),
             contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -425,7 +455,7 @@ private fun HomeScreen(
                 Spacer(Modifier.height(4.dp))
                 Text(subtitle, color = Muted)
             }
-            if (section == "Widgets") item { WidgetsScreen() }
+            if (section == "Widgets") item { WidgetsScreen(widgetType, onWidgetType) }
             if (section == "AOD") item { AodScreen(repository, glyphClient) }
             if (section == "Procedural" && selectedEngine == null) {
                 items(engines, key = { "engine-${it.id}" }) { effect ->

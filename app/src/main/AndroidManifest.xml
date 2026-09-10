@@ -57,6 +57,16 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/battery_glyph_widget" />
         </receiver>
 
+        <receiver android:name=".widget.BatteryColumnWidget" android:exported="false" android:label="@string/battery_column_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/battery_column_widget" />
+        </receiver>
+
+        <receiver android:name=".widget.WeekColumnWidget" android:exported="false" android:label="@string/week_column_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/week_column_widget" />
+        </receiver>
+
         <receiver android:name=".widget.NextAlarmWidget" android:exported="false" android:label="@string/next_alarm_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />

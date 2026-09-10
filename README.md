@@ -1,6 +1,6 @@
 # Nothing Playbox
 
-Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It combines a 137-pixel intensity editor, multi-frame animation, image/video import, live procedural engines, a simulator, direct Matrix output, portable `.playbox` files, 13 home-screen widgets, and configurable Always-on Glyph playback.
+Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It combines a 137-pixel intensity editor, multi-frame animation, image/video import, live procedural engines, a simulator, direct Matrix output, portable `.playbox` files, 15 home-screen widgets, and configurable Always-on Glyph playback.
 
 The built-in library includes static/animated effects plus Radar Sweep, Breathing Orbit, Woven Light, Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Procedural effects are evaluated live from compact saved settings instead of storing giant baked animation loops.
 
@@ -8,7 +8,7 @@ The built-in library includes static/animated effects plus Radar Sweep, Breathin
 
 - **Matrix** — static artwork, frame animations, Pixel Lab, and image/video imports.
 - **Procedural** — Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Open an engine to preview it or create independent named profiles. Profiles stay editable and work with `.playbox` import/export and AOD selection.
-- **Widgets** — live previews, settings, and one-tap launcher pinning for all 13 widgets.
+- **Widgets** — Time, Battery, Calendar, and Device categories with a widget selector, live previews, settings, and one-tap launcher pinning for all 15 widgets.
 - **AOD** — select the active effect, preview on the Glyph Matrix, adjust brightness/speed, rotate a playlist, and configure quiet hours. Nothing OS's Always-on Glyph Toy reads the same settings.
 
 Editor changes are kept as an in-memory draft until **Save**, including across Activity/configuration recreation. Opening an effect no longer mutates the library, and **Discard** leaves persisted data untouched.
@@ -30,10 +30,14 @@ Nothing Playbox currently ships:
 11. **Milestone** — countdown to weekend, next month, or next year.
 12. **NDot Clock** — system-driven live clock using NDot57 when Android actually exposes that family.
 13. **Playbox Shortcuts** — quick entry points to Matrix, Widgets, and Nothing's AOD Toy selector.
+14. **Battery Column** — a vertical dotted battery gauge, one column wide and two rows tall.
+15. **Week Column** — seven stacked days with today highlighted, one column wide and two rows tall.
+
+Time Bars keeps its horizontal layout when resized, including five columns by two rows, without stretching its dots or text.
 
 Bitmap widgets share one periodic WorkManager refresh (about every 15 minutes). Setting changes and relevant system events request a coalesced background refresh instead of rendering the whole widget fleet in the UI callback. NDot Clock and shortcuts are system-driven and do not need periodic polling. Android may defer periodic work during Doze/battery saving.
 
-All providers include launcher preview metadata. Tap an installed widget to open the Widgets section. Widgets do not require Glyph hardware.
+All providers include launcher preview metadata. Tap an installed widget to open its category and matching widget settings, including when the app is already open. Widgets do not require Glyph hardware.
 
 ## Build and verification
 

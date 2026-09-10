@@ -37,8 +37,12 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.agentkosticka.playbox.ui.Muted
 import com.agentkosticka.playbox.ui.NothingDotFont
+import com.agentkosticka.playbox.widget.WidgetCategory
+import com.agentkosticka.playbox.widget.WidgetDestination
 import com.agentkosticka.playbox.widget.BarFill
 import com.agentkosticka.playbox.widget.BatteryDotsWidget
+import com.agentkosticka.playbox.widget.BatteryColumnWidget
+import com.agentkosticka.playbox.widget.WeekColumnWidget
 import com.agentkosticka.playbox.widget.BatteryGlyphWidget
 import com.agentkosticka.playbox.widget.BatteryVisual
 import com.agentkosticka.playbox.widget.DashboardRenderer
@@ -79,7 +83,7 @@ private data class WidgetSpec(
 )
 
 @Composable
-fun WidgetsScreen() {
+fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableStateOf(ZonedDateTime.now()) }
@@ -87,10 +91,13 @@ fun WidgetsScreen() {
     var timeSettings by remember { mutableStateOf(TimeBarsSettings.load(context)) }
     var utilitySettings by remember { mutableStateOf(UtilityWidgetSettings.load(context)) }
     var weekMenu by remember { mutableStateOf(false) }
-    var widgetType by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf("time-bars") }
+    var variantMenu by remember { mutableStateOf(false) }
+    val category = WidgetDestination.fromKey(widgetType).category
 
     val specs = remember {
         listOf(
+            WidgetSpec("battery-column", R.string.battery_column_name, R.string.widget_size_vertical, R.string.battery_column_description, BatteryColumnWidget::class.java, .5f),
+            WidgetSpec("week-column", R.string.week_column_name, R.string.widget_size_vertical, R.string.week_column_description, WeekColumnWidget::class.java, .5f),
             WidgetSpec("day-dial", R.string.day_dial_name, R.string.widget_size_2x2, R.string.day_dial_description, DayDialWidget::class.java, 1f),
             WidgetSpec("battery-dots", R.string.battery_dots_name, R.string.widget_size_2x2, R.string.battery_dots_description, BatteryDotsWidget::class.java, 1f),
             WidgetSpec("battery-glyph", R.string.battery_glyph_name, R.string.widget_size_2x1_to_4x2, R.string.battery_glyph_description, BatteryGlyphWidget::class.java, 2f),
@@ -119,27 +126,40 @@ fun WidgetsScreen() {
     val alarm = remember(now) { nextAlarm(context, now) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = widgetType == "time-bars",
-                onClick = { widgetType = "time-bars" },
-                label = { Text(stringResource(R.string.time_bars_name)) },
-            )
-            specs.forEach { spec ->
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+            WidgetCategory.entries.forEach { item ->
                 FilterChip(
-                    selected = widgetType == spec.key,
-                    onClick = { widgetType = spec.key },
-                    label = { Text(stringResource(spec.nameRes)) },
+                    selected = category == item,
+                    onClick = {
+                        variantMenu = false
+                        if (category != item) onWidgetType(WidgetDestination.entries.first { it.category == item }.key)
+                    },
+                    label = { Text(stringResource(item.titleRes)) },
                 )
+            }
+        }
+        Box {
+            val selectedName = if (widgetType == "time-bars") R.string.time_bars_name else specs.first { it.key == widgetType }.nameRes
+            OutlinedButton(onClick = { variantMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.widget_variant_selector, stringResource(selectedName)))
+            }
+            DropdownMenu(expanded = variantMenu, onDismissRequest = { variantMenu = false }) {
+                WidgetDestination.entries.filter { it.category == category }.forEach { destination ->
+                    val name = if (destination.key == "time-bars") R.string.time_bars_name else specs.first { it.key == destination.key }.nameRes
+                    DropdownMenuItem(
+                        text = { Text(stringResource(name)) },
+                        onClick = { onWidgetType(destination.key); variantMenu = false },
+                    )
+                }
             }
         }
 
         if (widgetType == "time-bars") {
-            val preview = remember(now, timeSettings) { TimeBarsRenderer.render(now, timeSettings).asImageBitmap() }
+            val preview = remember(now, timeSettings) { TimeBarsRenderer.render(now, timeSettings, 900, 360).asImageBitmap() }
             Image(
                 preview,
                 stringResource(R.string.time_bars_preview_cd),
-                Modifier.fillMaxWidth().aspectRatio(2f),
+                Modifier.fillMaxWidth().aspectRatio(2.5f),
             )
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -185,6 +205,8 @@ fun WidgetsScreen() {
         val widgetName = stringResource(spec.nameRes)
         val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm) {
             when (widgetType) {
+                "battery-column" -> UtilityWidgetRenderer.batteryColumn(battery, 360, 720)
+                "week-column" -> UtilityWidgetRenderer.weekColumn(now, timeSettings.weekStart, 360, 720)
                 "day-dial" -> DashboardRenderer.dayDial(now)
                 "battery-dots" -> DashboardRenderer.battery(battery.percent, battery.charging)
                 "battery-glyph" -> UtilityWidgetRenderer.batteryGlyph(battery, utilitySettings.batteryVisual, 720, 320)
@@ -203,7 +225,7 @@ fun WidgetsScreen() {
         Image(
             preview,
             stringResource(R.string.widget_preview_cd, widgetName),
-            Modifier.fillMaxWidth().aspectRatio(spec.previewAspect),
+            Modifier.fillMaxWidth(if (spec.previewAspect < 1f) .35f else 1f).aspectRatio(spec.previewAspect),
         )
 
         Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
@@ -247,7 +269,7 @@ fun WidgetsScreen() {
                             utilitySettings.save(context)
                         }
                     }
-                    "month-matrix", "week-strip" -> {
+                    "month-matrix", "week-strip", "week-column" -> {
                         WeekStartSetting(locale, timeSettings.weekStart, weekMenu, { weekMenu = it }) { day ->
                             timeSettings = timeSettings.copy(weekStart = day)
                             timeSettings.save(context)
