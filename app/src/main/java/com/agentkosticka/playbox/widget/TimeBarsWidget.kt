@@ -1,6 +1,5 @@
 package com.agentkosticka.playbox.widget
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -16,7 +15,6 @@ import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.Worker
 import androidx.work.WorkerParameters
-import com.agentkosticka.playbox.MainActivity
 import com.agentkosticka.playbox.R
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
@@ -113,21 +111,19 @@ class TimeBarsWidget : AppWidgetProvider() {
             }
 
             widgetIds(context).forEach { id ->
-                val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
-                views.setImageViewBitmap(R.id.time_bars_image, TimeBarsRenderer.render(now, timeSettings))
-                views.setContentDescription(
-                    R.id.time_bars_image,
-                    timeProgress(now, timeSettings.weekStart).joinToString { "${it.label}: ${(it.fraction * 100).toInt()} percent" },
-                )
-                views.setOnClickPendingIntent(
-                    R.id.time_bars_image,
-                    PendingIntent.getActivity(
-                        context,
-                        0,
-                        Intent(context, MainActivity::class.java).putExtra("open_widgets", true),
-                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                    ),
-                )
+                val views = sizedWidgetViews(manager.getAppWidgetOptions(id), 250, 110) { width, height ->
+                    val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
+                    views.setImageViewBitmap(R.id.time_bars_image, TimeBarsRenderer.render(now, timeSettings, width, height))
+                    views.setContentDescription(
+                        R.id.time_bars_image,
+                        timeProgress(now, timeSettings.weekStart).joinToString { "${it.label}: ${(it.fraction * 100).toInt()} percent" },
+                    )
+                    views.setOnClickPendingIntent(
+                        R.id.time_bars_image,
+                        widgetPendingIntent(context, WidgetDestination.TIME_BARS),
+                    )
+                    views
+                }
                 manager.updateAppWidget(id, views)
             }
         }

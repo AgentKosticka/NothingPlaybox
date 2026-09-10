@@ -82,22 +82,35 @@ object TimeBarsRenderer {
     fun render(now: ZonedDateTime, settings: TimeBarsSettings = TimeBarsSettings(), width: Int = 720, height: Int = 360): Bitmap {
         val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
-        canvas.scale(width / 720f, height / 360f)
+        // Use one scale for both axes so dots and letterforms stay round at every size.
+        val scale = minOf(width / 720f, height / 360f)
+        canvas.scale(scale, scale)
+        val w = width / scale
+        val h = height / scale
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         paint.color = Color.rgb(17, 17, 17)
-        canvas.drawRoundRect(0f, 0f, 720f, 360f, 32f, 32f, paint)
+        canvas.drawRoundRect(0f, 0f, w, h, 32f, 32f, paint)
         fun text(value: String, x: Float, y: Float, step: Float, color: Int) = dotText(canvas, value, x, y, step, color)
         timeProgress(now, settings.weekStart).forEachIndexed { index, bar ->
-            val y = 45f + index * 80f
-            val label = labelThatFits(bar.label, 5.2f)
-            text(label, 36f, y, 5.2f, Color.WHITE)
+            val rowHeight = (h - 40f) / 4f
+            val y = 20f + index * rowHeight + (rowHeight - 30f) / 2f
+            val textStep = 5.2f
+            val label = labelThatFits(bar.label, textStep, 238f)
+            text(label, 36f, y, textStep, Color.WHITE)
             val percent = "${floor(bar.fraction * 100).toInt()}%"
-            text(percent, 684f - textWidth(percent, 5.2f), y, 5.2f, Color.WHITE)
-            val dots = filledDots(48, bar.fraction, settings.fill, index)
+            text(percent, w - 36f - textWidth(percent, textStep), y, textStep, Color.WHITE)
+            val left = 285f
+            val right = w - 205f
+            val columns = ((right - left) / 10f).toInt().coerceAtLeast(2) + 1
+            val step = (right - left) / (columns - 1)
+            val dotY = y + 6f
+            val rows = 2
+            val dots = filledDots(columns * rows, bar.fraction, settings.fill, index)
             dots.forEachIndexed { dot, filled ->
                 paint.color = if (filled) Color.WHITE else Color.rgb(57, 57, 57)
-                // Column-major order lets the two rows fill one dot at a time.
-                canvas.drawCircle(285f + dot / 2 * 10f, y + 6f + dot % 2 * 12f, 3.4f, paint)
+                // Column-major order lets the rows fill one dot at a time.
+                canvas.drawCircle(left + dot / rows * step, dotY + dot % rows * 12f,
+                    3.4f, paint)
             }
         }
         return bitmap

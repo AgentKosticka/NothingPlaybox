@@ -40,6 +40,8 @@ import kotlin.math.roundToInt
 import kotlin.math.sin
 
 class BatteryGlyphWidget : UtilityDashboardWidget()
+class BatteryColumnWidget : UtilityDashboardWidget()
+class WeekColumnWidget : UtilityDashboardWidget()
 class NextAlarmWidget : UtilityDashboardWidget()
 class StorageMatrixWidget : UtilityDashboardWidget()
 class MonthMatrixWidget : UtilityDashboardWidget()
@@ -52,7 +54,7 @@ class NDotClockWidget : AppWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { id ->
             val views = RemoteViews(context.packageName, R.layout.widget_ndot_clock)
-            views.setOnClickPendingIntent(R.id.ndot_clock_root, widgetsPendingIntent(context))
+            views.setOnClickPendingIntent(R.id.ndot_clock_root, widgetPendingIntent(context, WidgetDestination.CLOCK))
             manager.updateAppWidget(id, views)
         }
     }
@@ -77,7 +79,9 @@ class PlayboxShortcutsWidget : AppWidgetProvider() {
                 PendingIntent.getActivity(
                     context,
                     101,
-                    Intent(context, MainActivity::class.java).putExtra("open_widgets", true),
+                    Intent(context, MainActivity::class.java)
+                        .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+                        .putExtra("open_widgets", true),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 ),
             )
@@ -130,6 +134,8 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
     companion object {
         val providers: List<Class<out UtilityDashboardWidget>> = listOf(
             BatteryGlyphWidget::class.java,
+            BatteryColumnWidget::class.java,
+            WeekColumnWidget::class.java,
             NextAlarmWidget::class.java,
             StorageMatrixWidget::class.java,
             MonthMatrixWidget::class.java,
@@ -148,7 +154,7 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
         fun updateBatteryWidgets(context: Context, now: ZonedDateTime) = updateProviders(
             context,
             now,
-            listOf(BatteryGlyphWidget::class.java, DevicePanelWidget::class.java),
+            listOf(BatteryGlyphWidget::class.java, BatteryColumnWidget::class.java, DevicePanelWidget::class.java),
         )
 
         private fun updateAlarmWidgets(context: Context, now: ZonedDateTime) = updateProviders(
@@ -171,34 +177,36 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
 
             selectedProviders.forEach { provider ->
                 manager.getAppWidgetIds(ComponentName(context, provider)).forEach { id ->
-                    val options = manager.getAppWidgetOptions(id)
-                    val widthDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, defaultWidth(provider))
-                    val heightDp = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, defaultHeight(provider))
-                    val (width, height) = UtilityWidgetRenderer.bitmapSize(widthDp, heightDp)
-                    val bitmap = when (provider) {
-                        BatteryGlyphWidget::class.java -> UtilityWidgetRenderer.batteryGlyph(battery, utility.batteryVisual, width, height)
-                        NextAlarmWidget::class.java -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, width, height)
-                        StorageMatrixWidget::class.java -> UtilityWidgetRenderer.storage(storage, utility.storageDisplay, width, height)
-                        MonthMatrixWidget::class.java -> UtilityWidgetRenderer.month(now, time.weekStart, width, height)
-                        WeekStripWidget::class.java -> UtilityWidgetRenderer.weekStrip(now, time.weekStart, width, height)
-                        YearDotsWidget::class.java -> UtilityWidgetRenderer.year(now, utility.yearDisplay, width, height)
-                        DevicePanelWidget::class.java -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, width, height)
-                        MilestoneWidget::class.java -> UtilityWidgetRenderer.milestone(now, utility.milestoneTarget, width, height)
-                        else -> UtilityWidgetRenderer.milestone(now, MilestoneTarget.WEEKEND, width, height)
+                    val views = sizedWidgetViews(manager.getAppWidgetOptions(id), defaultWidth(provider), defaultHeight(provider)) { width, height ->
+                        val bitmap = when (provider) {
+                            BatteryColumnWidget::class.java -> UtilityWidgetRenderer.batteryColumn(battery, width, height)
+                            WeekColumnWidget::class.java -> UtilityWidgetRenderer.weekColumn(now, time.weekStart, width, height)
+                            BatteryGlyphWidget::class.java -> UtilityWidgetRenderer.batteryGlyph(battery, utility.batteryVisual, width, height)
+                            NextAlarmWidget::class.java -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, width, height)
+                            StorageMatrixWidget::class.java -> UtilityWidgetRenderer.storage(storage, utility.storageDisplay, width, height)
+                            MonthMatrixWidget::class.java -> UtilityWidgetRenderer.month(now, time.weekStart, width, height)
+                            WeekStripWidget::class.java -> UtilityWidgetRenderer.weekStrip(now, time.weekStart, width, height)
+                            YearDotsWidget::class.java -> UtilityWidgetRenderer.year(now, utility.yearDisplay, width, height)
+                            DevicePanelWidget::class.java -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, width, height)
+                            MilestoneWidget::class.java -> UtilityWidgetRenderer.milestone(now, utility.milestoneTarget, width, height)
+                            else -> UtilityWidgetRenderer.milestone(now, MilestoneTarget.WEEKEND, width, height)
+                        }
+                        val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
+                        views.setImageViewBitmap(R.id.time_bars_image, bitmap)
+                        views.setContentDescription(
+                            R.id.time_bars_image,
+                            contentDescription(provider, context, now, battery, storage, alarm, utility),
+                        )
+                        views.setOnClickPendingIntent(R.id.time_bars_image, widgetPendingIntent(context, WidgetDestination.forProvider(provider)))
+                        views
                     }
-                    val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
-                    views.setImageViewBitmap(R.id.time_bars_image, bitmap)
-                    views.setContentDescription(
-                        R.id.time_bars_image,
-                        contentDescription(provider, context, now, battery, storage, alarm, utility),
-                    )
-                    views.setOnClickPendingIntent(R.id.time_bars_image, widgetsPendingIntent(context))
                     manager.updateAppWidget(id, views)
                 }
             }
         }
 
         private fun defaultWidth(provider: Class<out UtilityDashboardWidget>): Int = when (provider) {
+            BatteryColumnWidget::class.java, WeekColumnWidget::class.java -> 55
             BatteryGlyphWidget::class.java, NextAlarmWidget::class.java, MilestoneWidget::class.java -> 110
             else -> 250
         }
@@ -217,7 +225,7 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
             alarm: ZonedDateTime?,
             settings: UtilityWidgetSettings,
         ): String = when (provider) {
-            BatteryGlyphWidget::class.java -> battery.percent?.let {
+            BatteryGlyphWidget::class.java, BatteryColumnWidget::class.java -> battery.percent?.let {
                 "Battery $it percent, ${if (battery.charging) "charging" else "on battery"}"
             } ?: "Battery level unavailable, ${if (battery.charging) "charging" else "on battery"}"
             NextAlarmWidget::class.java -> alarm?.let { "Next alarm ${formatAlarmTime(context, it)} ${alarmDayLabel(now, it)}" } ?: "No alarm set"
@@ -226,7 +234,7 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
                 "Storage ${settings.storageDisplay.label.lowercase(Locale.ROOT)} ${(fraction * 100).roundToInt()} percent"
             } ?: "Storage unavailable"
             MonthMatrixWidget::class.java -> "Calendar for ${now.month.name.lowercase(Locale.ROOT)} ${now.year}, today is ${now.dayOfMonth}"
-            WeekStripWidget::class.java -> "Current week, today is ${now.dayOfWeek.name.lowercase(Locale.ROOT)} ${now.dayOfMonth}"
+            WeekStripWidget::class.java, WeekColumnWidget::class.java -> "Current week, today is ${now.dayOfWeek.name.lowercase(Locale.ROOT)} ${now.dayOfMonth}"
             YearDotsWidget::class.java -> "${settings.yearDisplay.label} days in ${now.year}"
             DevicePanelWidget::class.java -> "Device status: battery, free storage, next alarm and today progress"
             MilestoneWidget::class.java -> "Countdown to ${settings.milestoneTarget.label.lowercase(Locale.ROOT)}"
@@ -234,13 +242,6 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
         }
     }
 }
-
-private fun widgetsPendingIntent(context: Context): PendingIntent = PendingIntent.getActivity(
-    context,
-    0,
-    Intent(context, MainActivity::class.java).putExtra("open_widgets", true),
-    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-)
 
 data class BatteryInfo(val percent: Int?, val charging: Boolean, val chargeRemainingMs: Long?)
 
@@ -290,9 +291,50 @@ object UtilityWidgetRenderer {
     private const val RED = NOTHING_RED_ARGB
 
     fun bitmapSize(widthDp: Int, heightDp: Int): Pair<Int, Int> {
-        val ratio = (widthDp.coerceAtLeast(55).toFloat() / heightDp.coerceAtLeast(55)).coerceIn(.75f, 3f)
-        val height = if (ratio > 1.45f) 320 else 360
-        return (height * ratio).roundToInt().coerceIn(320, 960) to height
+        val ratio = (widthDp.coerceAtLeast(1).toFloat() / heightDp.coerceAtLeast(1)).coerceIn(.2f, 5f)
+        // Bound the longest edge, preserving portrait shapes and the bitmap IPC budget.
+        return if (ratio >= 1f) 960 to (960 / ratio).roundToInt()
+        else (720 * ratio).roundToInt() to 720
+    }
+
+    fun batteryColumn(info: BatteryInfo, width: Int, height: Int): Bitmap {
+        val (bitmap, canvas) = base(width, height)
+        val unit = min(width.toFloat(), height / 2f)
+        val cx = width / 2f
+        fittedText(canvas, "BATTERY", cx, height * .13f, width * .8f, unit * .12f, Color.LTGRAY, Paint.Align.CENTER)
+        val top = height * .23f
+        val bottom = height * .64f
+        repeat(10) { row ->
+            repeat(3) { col ->
+                dot(canvas, cx + (col - 1) * unit * .16f, bottom - row * (bottom - top) / 9f,
+                    unit * .035f, row * 3 + col < (info.percent ?: 0) * 30 / 100)
+            }
+        }
+        fittedText(canvas, info.percent?.let { "$it%" } ?: "--", cx, height * .81f,
+            width * .84f, unit * .28f, Color.WHITE, Paint.Align.CENTER)
+        fittedText(canvas, if (info.charging) "CHARGING" else "BATTERY", cx, height * .92f,
+            width * .82f, unit * .09f, if (info.charging) RED else Color.LTGRAY, Paint.Align.CENTER)
+        return bitmap
+    }
+
+    fun weekColumn(now: ZonedDateTime, weekStart: DayOfWeek, width: Int, height: Int): Bitmap {
+        val (bitmap, canvas) = base(width, height)
+        val unit = min(width.toFloat(), height / 2f)
+        fittedText(canvas, "WEEK", width / 2f, height * .11f, width * .8f, unit * .12f, Color.LTGRAY, Paint.Align.CENTER)
+        val today = now.toLocalDate()
+        val start = today.minusDays(((today.dayOfWeek.value - weekStart.value + 7) % 7).toLong())
+        repeat(7) { i ->
+            val date = start.plusDays(i.toLong())
+            val y = height * (.23f + i * .11f)
+            if (date == today) {
+                canvas.drawRoundRect(width * .10f, y - unit * .13f, width * .90f, y + unit * .055f,
+                    unit * .06f, unit * .06f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = RED })
+            }
+            text(canvas, date.dayOfWeek.name.take(1), width * .24f, y, unit * .13f,
+                if (date.isAfter(today)) Color.LTGRAY else Color.WHITE)
+            text(canvas, date.dayOfMonth.toString(), width * .76f, y, unit * .15f, Color.WHITE, Paint.Align.RIGHT)
+        }
+        return bitmap
     }
 
     private fun base(width: Int, height: Int): Pair<Bitmap, Canvas> {

@@ -2,10 +2,14 @@ package com.agentkosticka.playbox
 
 import android.graphics.Bitmap
 import android.graphics.Typeface
+import android.graphics.Canvas
+import android.graphics.Color
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.agentkosticka.playbox.ui.NothingDotFont
 import com.agentkosticka.playbox.widget.TimeBarsRenderer
+import com.agentkosticka.playbox.widget.UtilityWidgetRenderer
+import com.agentkosticka.playbox.widget.BatteryInfo
 import java.io.File
 import java.time.DayOfWeek
 import java.time.Month
@@ -16,6 +20,35 @@ import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class TimeBarsAppearanceTest {
+    @Test fun responsiveWidgetsKeepTheirShapeAndContent() {
+        val now = ZonedDateTime.parse("2026-09-10T12:00:00+02:00")
+        listOf(350 to 140, 140 to 350, 55 to 110).forEach { (w, h) ->
+            val (bw, bh) = UtilityWidgetRenderer.bitmapSize(w, h)
+            assertEquals(w.toFloat() / h, bw.toFloat() / bh, .005f)
+        }
+        val wide = TimeBarsRenderer.render(now, width = 900, height = 360)
+        // A dot in the wide layout has the same diameter along both axes.
+        val cx = 285
+        val cy = 51
+        val horizontal = (cx - 5..cx + 5).count { wide.getPixel(it, cy) != Color.rgb(17, 17, 17) }
+        val vertical = (cy - 5..cy + 5).count { wide.getPixel(cx, it) != Color.rgb(17, 17, 17) }
+        assertTrue(horizontal > 0)
+        assertEquals(horizontal, vertical)
+        val battery = UtilityWidgetRenderer.batteryColumn(BatteryInfo(68, true, null), 180, 360)
+        val week = UtilityWidgetRenderer.weekColumn(now, DayOfWeek.MONDAY, 180, 360)
+        val sheet = Bitmap.createBitmap(900, 800, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(sheet)
+        canvas.drawColor(Color.rgb(30, 30, 30))
+        canvas.drawBitmap(wide, 0f, 0f, null)
+        canvas.drawBitmap(battery, 30f, 400f, null)
+        canvas.drawBitmap(week, 240f, 400f, null)
+        val context = InstrumentationRegistry.getInstrumentation().targetContext
+        File(context.getExternalFilesDir(null), "responsive-widgets-review.png").outputStream().use {
+            sheet.compress(Bitmap.CompressFormat.PNG, 100, it)
+        }
+        listOf(wide, battery, week, sheet).forEach { it.recycle() }
+    }
+
     @Test fun calendarLabelsStayBeforeTheBars() {
         val labels = Month.entries.map { it.name } + DayOfWeek.entries.map { it.name }
         labels.forEach { label ->

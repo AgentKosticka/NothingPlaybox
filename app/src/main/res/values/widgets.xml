@@ -35,7 +35,7 @@
     <string name="widget_size_4x1">4 × 1</string>
     <string name="widget_header">%1$s / %2$s</string>
     <string name="time_bars_preview_cd">Live preview of four dotted time progress bars</string>
-    <string name="time_bars_header">TIME BARS / 4 × 2</string>
+    <string name="time_bars_header">TIME BARS / RESIZABLE</string>
     <string name="fill_style">FILL STYLE</string>
     <string name="fill_left_to_right">Left to right</string>
     <string name="fill_right_to_left">Right to left</string>
@@ -70,4 +70,14 @@
     <string name="widget_battery_unknown_cd">Battery level unavailable, %1$s</string>
     <string name="widget_battery_charging">charging</string>
     <string name="widget_battery_on_battery">on battery</string>
+    <string name="battery_column_name">Battery column</string>
+    <string name="battery_column_description">A vertical dotted battery gauge with percentage and charging status.</string>
+    <string name="week_column_name">Week column</string>
+    <string name="week_column_description">Seven days stacked vertically, with today highlighted. Uses your chosen week start.</string>
+    <string name="widget_size_vertical">1 column × 2 rows</string>
+    <string name="widget_category_time">Time</string>
+    <string name="widget_category_battery">Battery</string>
+    <string name="widget_category_calendar">Calendar</string>
+    <string name="widget_category_device">Device</string>
+    <string name="widget_variant_selector">Widget: %1$s ▾</string>
 </resources>

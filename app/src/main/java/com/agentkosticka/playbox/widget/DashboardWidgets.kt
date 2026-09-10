@@ -1,6 +1,5 @@
 package com.agentkosticka.playbox.widget
 
-import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
@@ -14,7 +13,6 @@ import android.graphics.Paint
 import android.os.BatteryManager
 import android.widget.RemoteViews
 import androidx.core.graphics.createBitmap
-import com.agentkosticka.playbox.MainActivity
 import com.agentkosticka.playbox.R
 import java.time.ZonedDateTime
 import kotlin.math.*
@@ -58,8 +56,8 @@ open class DashboardWidget : AppWidgetProvider() {
                         } ?: context.getString(R.string.widget_battery_unknown_cd, status)
                     }
                     views.setContentDescription(R.id.time_bars_image, contentDescription)
-                    views.setOnClickPendingIntent(R.id.time_bars_image, PendingIntent.getActivity(context, 0,
-                        Intent(context, MainActivity::class.java).putExtra("open_widgets", true), PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE))
+                    views.setImageViewBitmap(R.id.time_bars_image, bitmap)
+                    views.setOnClickPendingIntent(R.id.time_bars_image, widgetPendingIntent(context, WidgetDestination.forProvider(provider)))
                     manager.updateAppWidget(ids, views)
                 }
             }
