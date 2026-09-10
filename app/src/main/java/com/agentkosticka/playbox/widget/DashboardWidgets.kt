@@ -89,7 +89,7 @@ object DashboardRenderer {
         TimeBarsRenderer.dotText(canvas, text, (360 - (text.length * 6 - 1) * step) / 2, y, step, color)
     }
 
-    fun dayDial(now: ZonedDateTime, palette: WidgetPalette = WidgetPalette.fallbackDark): Bitmap {
+    fun dayDial(now: ZonedDateTime, palette: WidgetPalette = WidgetPalette.current()): Bitmap {
         val (bitmap, canvas) = base(palette)
         val fraction = timeProgress(now)[0].fraction
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
@@ -104,7 +104,7 @@ object DashboardRenderer {
         return bitmap
     }
 
-    fun battery(percent: Int?, charging: Boolean, palette: WidgetPalette = WidgetPalette.fallbackDark): Bitmap {
+    fun battery(percent: Int?, charging: Boolean, palette: WidgetPalette = WidgetPalette.current()): Bitmap {
         val (bitmap, canvas) = base(palette)
         label(canvas, "BATTERY", 25f, 4f, palette.foreground)
         val paint = Paint(Paint.ANTI_ALIAS_FLAG)
