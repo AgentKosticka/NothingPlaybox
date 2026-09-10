@@ -27,7 +27,7 @@ class TimeBarsAppearanceTest {
             val (bw, bh) = UtilityWidgetRenderer.bitmapSize(w, h)
             assertEquals(w.toFloat() / h, bw.toFloat() / bh, .005f)
         }
-        val palette = WidgetPalette.fallbackDark
+        val palette = WidgetPalette.current()
         val wide = TimeBarsRenderer.render(now, width = 900, height = 360, palette = palette)
         // A dot in the wide layout has the same diameter along both axes.
         val cx = 285
@@ -58,7 +58,7 @@ class TimeBarsAppearanceTest {
             assertTrue("$label renders as $fitted", TimeBarsRenderer.textWidth(fitted, 5.2f) <= 238f)
         }
         val context = InstrumentationRegistry.getInstrumentation().targetContext
-        val palette = WidgetPalette.fallbackDark
+        val palette = WidgetPalette.current()
         val bitmap = TimeBarsRenderer.render(
             ZonedDateTime.parse("2026-09-09T12:00:00+02:00"),
             palette = palette,
