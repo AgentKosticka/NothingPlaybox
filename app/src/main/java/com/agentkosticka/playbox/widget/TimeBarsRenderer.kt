@@ -2,7 +2,6 @@ package com.agentkosticka.playbox.widget
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.Color
 import android.graphics.Paint
 import androidx.core.graphics.createBitmap
 import com.agentkosticka.playbox.ui.NothingDotFont
@@ -35,7 +34,7 @@ object TimeBarsRenderer {
         return "..."
     }
 
-    internal fun dotText(canvas: Canvas, value: String, x: Float, y: Float, step: Float, color: Int = Color.WHITE) {
+    internal fun dotText(canvas: Canvas, value: String, x: Float, y: Float, step: Float, color: Int) {
         val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
             typeface = dotTypeface
@@ -84,7 +83,7 @@ object TimeBarsRenderer {
         settings: TimeBarsSettings = TimeBarsSettings(),
         width: Int = 720,
         height: Int = 360,
-        palette: WidgetPalette = WidgetPalette.fallbackDark,
+        palette: WidgetPalette = WidgetPalette.current(),
     ): Bitmap {
         val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
