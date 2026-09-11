@@ -117,9 +117,19 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/ndot_clock_widget" />
         </receiver>
 
+        <receiver android:name=".widget.DualClockWidget" android:exported="false" android:label="@string/dual_clock_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/dual_clock_widget" />
+        </receiver>
+
         <receiver android:name=".widget.PlayboxShortcutsWidget" android:exported="false" android:label="@string/playbox_shortcuts_name">
             <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/playbox_shortcuts_widget" />
+        </receiver>
+
+        <receiver android:name=".widget.QuickTasksWidget" android:exported="false" android:label="@string/quick_tasks_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_tasks_widget" />
         </receiver>
 
         <service
