@@ -1,0 +1,110 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/quick_tasks_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="10dp"
+    android:background="@drawable/widget_card_background">
+
+    <LinearLayout
+        android:id="@+id/quick_tasks_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingBottom="4dp">
+
+        <TextView
+            android:id="@+id/quick_tasks_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="NDot57"
+            android:text="TODAY"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="15sp"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <TextView
+            android:id="@+id/quick_tasks_progress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="NDot57"
+            android:text="2/4"
+            android:textColor="@color/widget_on_surface_variant"
+            android:textSize="12sp" />
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/quick_tasks_empty"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center"
+        android:fontFamily="NDot57"
+        android:text="TAP TO ADD TASKS"
+        android:textColor="@color/widget_on_surface_variant"
+        android:textSize="13sp"
+        android:visibility="gone" />
+
+    <CheckBox
+        android:id="@+id/quick_task_1"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:buttonTint="@color/widget_accent"
+        android:fontFamily="NDot57"
+        android:text="Reply to messages"
+        android:textColor="@color/widget_on_surface"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <CheckBox
+        android:id="@+id/quick_task_2"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:buttonTint="@color/widget_accent"
+        android:fontFamily="NDot57"
+        android:text="Pick up groceries"
+        android:textColor="@color/widget_on_surface"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:checked="true" />
+
+    <CheckBox
+        android:id="@+id/quick_task_3"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:buttonTint="@color/widget_accent"
+        android:fontFamily="NDot57"
+        android:text="Plan tomorrow"
+        android:textColor="@color/widget_on_surface"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end" />
+
+    <CheckBox
+        android:id="@+id/quick_task_4"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="center_vertical"
+        android:buttonTint="@color/widget_accent"
+        android:fontFamily="NDot57"
+        android:text="Charge headphones"
+        android:textColor="@color/widget_on_surface"
+        android:textSize="14sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:checked="true" />
+</LinearLayout>
