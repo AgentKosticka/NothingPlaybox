@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/habit_tracker_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:paddingHorizontal="16dp"
+    android:paddingVertical="10dp"
+    android:background="@drawable/widget_card_background">
+
+    <LinearLayout
+        android:id="@+id/habit_tracker_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/habit_tracker_name"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="NDot57"
+                android:text="READ"
+                android:textColor="@color/widget_on_surface"
+                android:textSize="15sp"
+                android:maxLines="1"
+                android:ellipsize="end" />
+
+            <TextView
+                android:id="@+id/habit_tracker_meta"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="NDot57"
+                android:text="SEP · 8 DAYS"
+                android:textColor="@color/widget_on_surface_variant"
+                android:textSize="10sp"
+                android:maxLines="1" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/habit_tracker_streak"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:fontFamily="NDot57"
+            android:text="3 DAYS"
+            android:textColor="@color/widget_on_surface_variant"
+            android:textSize="11sp" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/habit_tracker_grid"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:contentDescription="@null"
+        android:scaleType="fitCenter" />
+
+    <TextView
+        android:id="@+id/habit_tracker_toggle"
+        android:layout_width="match_parent"
+        android:layout_height="32dp"
+        android:gravity="center"
+        android:fontFamily="NDot57"
+        android:text="MARK TODAY"
+        android:textColor="@color/widget_accent"
+        android:textSize="12sp" />
+</LinearLayout>
