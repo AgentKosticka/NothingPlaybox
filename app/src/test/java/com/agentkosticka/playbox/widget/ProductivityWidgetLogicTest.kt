@@ -1,5 +1,6 @@
 package com.agentkosticka.playbox.widget
 
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -41,5 +42,26 @@ class ProductivityWidgetLogicTest {
         assertEquals("Europe/Prague", validatedZoneId("Europe/Prague"))
         assertEquals("UTC", validatedZoneId("not/a-real-zone"))
         assertEquals("UTC", validatedZoneId(null))
+    }
+
+    @Test
+    fun habitTrackerBoundsHistoryAndComputesCurrentStreak() {
+        val today = LocalDate.of(2026, 9, 11)
+        val state = HabitTrackerState(
+            name = "R".repeat(40),
+            completedDays = setOf(
+                today,
+                today.minusDays(1),
+                today.minusDays(3),
+                today.minusDays(500),
+                today.plusDays(1),
+            ),
+        ).normalized(today)
+
+        assertEquals(24, state.name.length)
+        assertEquals(setOf(today, today.minusDays(1), today.minusDays(3)), state.completedDays)
+        assertEquals(2, state.currentStreak(today))
+        assertTrue(state.isDone(today))
+        assertFalse(state.toggle(today, today).isDone(today))
     }
 }
