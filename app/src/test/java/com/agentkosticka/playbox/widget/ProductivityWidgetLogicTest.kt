@@ -19,7 +19,8 @@ class ProductivityWidgetLogicTest {
             ),
         ).normalized()
 
-        assertEquals("TODAY", state.title)
+        assertEquals("", state.title)
+        assertEquals("TODAY", state.displayTitle)
         assertEquals(4, state.tasks.size)
         assertEquals(60, state.tasks[0].text.length)
         assertFalse(state.tasks[1].done)
