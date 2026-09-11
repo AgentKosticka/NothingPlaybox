@@ -132,6 +132,15 @@
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_tasks_widget" />
         </receiver>
 
+        <receiver android:name=".widget.HabitTrackerWidget" android:exported="false" android:label="@string/habit_tracker_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="android.intent.action.DATE_CHANGED" />
+                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/habit_tracker_widget" />
+        </receiver>
+
         <service
             android:name=".matrix.PlayboxToyService"
             android:exported="true"
