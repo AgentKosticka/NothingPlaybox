@@ -32,17 +32,21 @@ data class QuickTasksState(
     val title: String = "TODAY",
     val tasks: List<QuickTask> = List(QUICK_TASK_COUNT) { QuickTask() },
 ) {
-    fun normalized(): QuickTasksState = copy(
-        title = title.take(24).ifBlank { "TODAY" },
-        tasks = tasks.take(QUICK_TASK_COUNT).map { task ->
+    val displayTitle: String get() = title.ifBlank { "TODAY" }
+
+    fun normalized(): QuickTasksState {
+        val bounded = tasks.take(QUICK_TASK_COUNT).map { task ->
             QuickTask(task.text.take(60), task.done && task.text.isNotBlank())
-        }.let { it + List((QUICK_TASK_COUNT - it.size).coerceAtLeast(0)) { QuickTask() } },
-    )
+        }
+        return copy(
+            title = title.take(24),
+            tasks = bounded + List((QUICK_TASK_COUNT - bounded.size).coerceAtLeast(0)) { QuickTask() },
+        )
+    }
 
     fun withDone(index: Int, done: Boolean): QuickTasksState {
-        if (index !in 0 until QUICK_TASK_COUNT) return this
         val normalized = normalized()
-        if (normalized.tasks[index].text.isBlank()) return normalized
+        if (index !in normalized.tasks.indices || normalized.tasks[index].text.isBlank()) return normalized
         val updated = normalized.tasks.toMutableList()
         updated[index] = updated[index].copy(done = done)
         return normalized.copy(tasks = updated)
@@ -146,12 +150,19 @@ class QuickTasksWidget : InstanceWidgetProvider() {
     }
 
     override fun onReceive(context: Context, intent: Intent) {
+        if (intent.action == ACTION_SET_DONE) {
+            val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
+            val index = intent.getIntExtra(EXTRA_TASK_INDEX, -1)
+            if (id != AppWidgetManager.INVALID_APPWIDGET_ID && index in 0 until QUICK_TASK_COUNT) {
+                QuickTasksStore(context).setDone(
+                    id,
+                    index,
+                    intent.getBooleanExtra(RemoteViews.EXTRA_CHECKED, false),
+                )
+            }
+            return
+        }
         super.onReceive(context, intent)
-        if (intent.action != ACTION_SET_DONE) return
-        val id = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
-        val index = intent.getIntExtra(EXTRA_TASK_INDEX, -1)
-        if (id == AppWidgetManager.INVALID_APPWIDGET_ID || index !in 0 until QUICK_TASK_COUNT) return
-        QuickTasksStore(context).setDone(id, index, intent.getBooleanExtra(RemoteViews.EXTRA_CHECKED, false))
     }
 
     companion object {
@@ -174,7 +185,7 @@ class QuickTasksWidget : InstanceWidgetProvider() {
             val views = RemoteViews(context.packageName, R.layout.widget_quick_tasks)
             val visibleTasks = state.tasks.count { it.text.isNotBlank() }
             val doneTasks = state.tasks.count { it.text.isNotBlank() && it.done }
-            views.setTextViewText(R.id.quick_tasks_title, state.title)
+            views.setTextViewText(R.id.quick_tasks_title, state.displayTitle)
             views.setTextViewText(R.id.quick_tasks_progress, "$doneTasks/$visibleTasks")
             views.setOnClickPendingIntent(
                 R.id.quick_tasks_header,
@@ -212,11 +223,13 @@ class QuickTasksWidget : InstanceWidgetProvider() {
                 .setData(Uri.parse("playbox://quick-tasks/$id/$index"))
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
                 .putExtra(EXTRA_TASK_INDEX, index)
+            // The launcher must add RemoteViews.EXTRA_CHECKED when the user toggles the checkbox.
+            // Keep this PendingIntent mutable, but explicit to Playbox's private receiver.
             return PendingIntent.getBroadcast(
                 context,
                 index,
                 intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE,
             )
         }
     }
@@ -351,7 +364,7 @@ object ProductivityWidgetRenderer {
         val (bitmap, canvas) = base(width, height, palette)
         val active = state.tasks.filter { it.text.isNotBlank() }
         val done = active.count { it.done }
-        text(canvas, state.title.uppercase(Locale.getDefault()), width * .06f, height * .16f,
+        text(canvas, state.displayTitle.uppercase(Locale.getDefault()), width * .06f, height * .16f,
             min(width, height) * .065f, palette.foreground)
         text(canvas, "$done/${active.size}", width * .94f, height * .16f,
             min(width, height) * .055f, palette.muted, Paint.Align.RIGHT)
