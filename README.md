@@ -67,9 +67,9 @@ Pull requests run unit tests, lint, debug + release builds, SDK/wrapper integrit
 Pushing a `v*` tag triggers `.github/workflows/release.yml`. The workflow requires these repository secrets:
 
 - `PLAYBOX_KEYSTORE_BASE64` — base64-encoded release keystore
-- `PLAYBOX_KEYSTORE_PASSWORD`
-- `PLAYBOX_KEY_ALIAS`
-- `PLAYBOX_KEY_PASSWORD`
+- `PLAYBOX_KEYSTORE_PASSWORD` — base64-encoded release keystore
+- `PLAYBOX_KEY_ALIAS` — release key alias
+- `PLAYBOX_KEY_PASSWORD` — release key password
 
 The workflow builds the optimized release with R8/resource optimization, verifies the APK signature with `apksigner`, then creates a GitHub Release with the signed APK. Signing material is never committed.
 
@@ -88,7 +88,7 @@ User effects are stored as bounded per-effect atomic files in app-private storag
 
 Imported images/videos are converted to 13×13 luminance frames and original media is not retained. Video import accepts at most 60 seconds/600 samples and keeps all decode paths bounded before conversion.
 
-The app has no network permission, accounts, analytics, advertising, or app-managed cloud dependency. Android backup/device transfer includes only per-widget configuration (`widget-instances.xml`) to support widget restoration. Effect libraries, Quick Tasks checklist content, and other app data remain excluded; use `.playbox` files for manual effect export. Calendar event records are never persisted, logged, or uploaded by Playbox.
+The app has no network permission, accounts, analytics, advertising, or app-managed cloud dependency. Android backup/device transfer includes only per-widget configuration (`widget-instances.xml` plus the Dual Clock `dual-clock.xml`) to support widget restoration. Effect libraries, Quick Tasks checklist content, and other app data remain excluded; use `.playbox` files for manual effect export. Calendar event records are never persisted, logged, or uploaded by Playbox.
 
 ## Licensing
 
