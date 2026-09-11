@@ -56,6 +56,10 @@ import com.agentkosticka.playbox.widget.DevicePanelWidget
 import com.agentkosticka.playbox.widget.DualClockStore
 import com.agentkosticka.playbox.widget.DualClockWidget
 import com.agentkosticka.playbox.widget.DualClockZones
+import com.agentkosticka.playbox.widget.HabitTrackerRenderer
+import com.agentkosticka.playbox.widget.HabitTrackerState
+import com.agentkosticka.playbox.widget.HabitTrackerStore
+import com.agentkosticka.playbox.widget.HabitTrackerWidget
 import com.agentkosticka.playbox.widget.MilestoneTarget
 import com.agentkosticka.playbox.widget.MilestoneWidget
 import com.agentkosticka.playbox.widget.MonthMatrixWidget
@@ -103,6 +107,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     val store = remember(context) { WidgetInstanceSettings(context) }
     val taskStore = remember(context) { QuickTasksStore(context) }
     val dualClockStore = remember(context) { DualClockStore(context) }
+    val habitStore = remember(context) { HabitTrackerStore(context) }
     val validInstance = appWidgetId == null || AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)?.provider == ComponentName(context, WidgetDestination.fromKey(widgetType).provider)
     var instance by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(store.load(appWidgetId.takeIf { validInstance })) }
     var taskState by remember(widgetType, appWidgetId, validInstance) {
@@ -110,6 +115,9 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     }
     var dualClockZone by remember(widgetType, appWidgetId, validInstance) {
         mutableStateOf(dualClockStore.load(appWidgetId.takeIf { validInstance && widgetType == "dual-clock" }))
+    }
+    var habitState by remember(widgetType, appWidgetId, validInstance) {
+        mutableStateOf(habitStore.load(appWidgetId.takeIf { validInstance && widgetType == "habit-tracker" }, now.toLocalDate()))
     }
     val timeSettings = instance.time
     val utilitySettings = instance.utility
@@ -122,6 +130,11 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     fun saveDualClock(value: String) {
         dualClockZone = value
         dualClockStore.save(appWidgetId.takeIf { widgetType == "dual-clock" }, value)
+    }
+    fun saveHabit(value: HabitTrackerState) {
+        val today = now.toLocalDate()
+        habitState = value.normalized(today)
+        habitStore.save(appWidgetId.takeIf { widgetType == "habit-tracker" }, habitState, today)
     }
 
     var weekMenu by remember { mutableStateOf(false) }
@@ -148,6 +161,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             WidgetSpec("dual-clock", R.string.dual_clock_name, R.string.widget_size_4x2, R.string.dual_clock_description, DualClockWidget::class.java, 2f),
             WidgetSpec("playbox-shortcuts", R.string.playbox_shortcuts_name, R.string.widget_size_4x1, R.string.playbox_shortcuts_description, PlayboxShortcutsWidget::class.java, 3f),
             WidgetSpec("quick-tasks", R.string.quick_tasks_name, R.string.widget_size_4x2, R.string.quick_tasks_description, QuickTasksWidget::class.java, 2f),
+            WidgetSpec("habit-tracker", R.string.habit_tracker_name, R.string.widget_size_4x2, R.string.habit_tracker_description, HabitTrackerWidget::class.java, 2f),
         )
     }
 
@@ -256,7 +270,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
 
         val spec = specs.first { it.key == widgetType }
         val widgetName = stringResource(spec.nameRes)
-        val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone) {
+        val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone, habitState) {
             when (widgetType) {
                 "battery-column" -> UtilityWidgetRenderer.batteryColumn(battery, 360, 720)
                 "week-column" -> UtilityWidgetRenderer.weekColumn(now, timeSettings.weekStart, 360, 720)
@@ -274,6 +288,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                 "dual-clock" -> ProductivityWidgetRenderer.dualClock(context, now, dualClockZone, 720, 360)
                 "playbox-shortcuts" -> UtilityWidgetRenderer.shortcutsPreview(900, 300)
                 "quick-tasks" -> ProductivityWidgetRenderer.quickTasks(taskState, 720, 360)
+                "habit-tracker" -> HabitTrackerRenderer.preview(habitState, now.toLocalDate(), 720, 360)
                 else -> DashboardRenderer.dayDial(now)
             }.asImageBitmap()
         }
@@ -382,6 +397,25 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                             }
                         }
                     }
+                    "habit-tracker" -> {
+                        Text(stringResource(R.string.habit_tracker_label), fontFamily = NothingDotFont.family)
+                        OutlinedTextField(
+                            value = habitState.name,
+                            onValueChange = { saveHabit(habitState.copy(name = it.take(24))) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedButton(
+                            onClick = {
+                                val today = now.toLocalDate()
+                                saveHabit(habitState.toggle(today, today))
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Text(stringResource(if (habitState.isDone(now.toLocalDate())) R.string.habit_tracker_done_today else R.string.habit_tracker_mark_today))
+                        }
+                        Text(stringResource(R.string.habit_tracker_local_help), color = Muted)
+                    }
                 }
 
                 if (widgetType in listOf("month-matrix", "week-strip", "week-column")) {
@@ -393,7 +427,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                 Text(
                     when (widgetType) {
                         "ndot-clock", "playbox-shortcuts", "dual-clock" -> stringResource(R.string.system_widget_help)
-                        "quick-tasks" -> stringResource(R.string.interactive_widget_help)
+                        "quick-tasks", "habit-tracker" -> stringResource(R.string.interactive_widget_help)
                         else -> stringResource(R.string.shared_widget_refresh_help)
                     },
                     color = Muted,
