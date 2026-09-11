@@ -67,9 +67,9 @@ Pull requests run unit tests, lint, debug + release builds, SDK/wrapper integrit
 Pushing a `v*` tag triggers `.github/workflows/release.yml`. The workflow requires these repository secrets:
 
 - `PLAYBOX_KEYSTORE_BASE64` — base64-encoded release keystore
-- `PLAYBOX_KEYSTORE_PASSWORD` — base64-encoded release keystore
-- `PLAYBOX_KEY_ALIAS` — release key alias
-- `PLAYBOX_KEY_PASSWORD` — release key password
+- `PLAYBOX_KEYSTORE_PASSWORD`
+- `PLAYBOX_KEY_ALIAS`
+- `PLAYBOX_KEY_PASSWORD`
 
 The workflow builds the optimized release with R8/resource optimization, verifies the APK signature with `apksigner`, then creates a GitHub Release with the signed APK. Signing material is never committed.
 
