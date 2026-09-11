@@ -1,0 +1,44 @@
+<resources>
+ <string name="agenda_name">Agenda</string>
+ <string name="agenda_description">Upcoming appointments from calendars on this device. Tap an event to open it; tap the heading to configure.</string>
+ <string name="agenda_permission_off">CALENDAR ACCESS OFF</string>
+ <string name="agenda_error">CALENDAR UNAVAILABLE
+Tap to retry in settings</string>
+ <string name="agenda_select_calendars">SELECT CALENDARS</string>
+ <string name="agenda_no_events">NO EVENTS IN THE NEXT 7 DAYS</string>
+ <string name="agenda_untitled">Untitled event</string>
+ <string name="agenda_all_day">ALL DAY</string>
+ <string name="agenda_setup">Tap to set up your calendars</string>
+ <string name="agenda_preview">FRI 11 SEP · 10:30
+Physics
+
+FRI 11 SEP · 13:15
+Dentist</string>
+ <string name="device_open_battery">Open battery settings</string>
+ <string name="device_open_storage">Open storage settings</string>
+ <string name="device_open_alarm">Open alarms</string>
+ <string name="device_open_day">Open Device Panel settings</string>
+ <string name="widget_defaults_explanation">Defaults for new widgets. Existing widgets keep their own settings.</string>
+ <string name="widget_instance_explanation">Editing this home-screen widget. Changes save automatically.</string>
+ <string name="widget_instance_missing">This widget was removed. Open another widget or choose defaults.</string>
+ <string name="widget_edit_defaults">Edit defaults</string>
+ <string name="milestone_custom">Custom date</string>
+ <string name="milestone_label">Label</string>
+ <string name="milestone_repeat">Repeat yearly</string>
+ <string name="milestone_repeat_help">February 29 repeats on February 28 in non-leap years. Past dates show days since.</string>
+ <string name="calendar_heading">Calendar events</string>
+ <string name="calendar_explanation">Playbox can show upcoming events from calendars already on this device. Event details stay on your device.</string>
+ <string name="calendar_enable">Enable calendar access</string>
+ <string name="calendar_settings">Open app settings</string>
+ <string name="calendar_denied">Calendar access is off. Other widgets still work.</string>
+ <string name="calendar_loading">Loading calendars…</string>
+ <string name="calendar_empty">No calendars on this device. Add or sync a calendar in your calendar app.</string>
+ <string name="calendar_retry">Refresh calendars</string>
+ <string name="calendar_markers">Show event dots</string>
+ <string name="calendar_all_day">Show all-day events</string>
+ <string name="calendar_max_items">Maximum events</string>
+ <string name="calendar_visible">Use visible calendars</string>
+ <string name="calendar_select_none">Select none</string>
+ <string name="calendar_selected_default">Following visible calendars until you choose a selection.</string>
+ <string name="calendar_refresh_help">Shows the next 7 days. Android may delay background refreshes; open settings to refresh.</string>
+</resources>

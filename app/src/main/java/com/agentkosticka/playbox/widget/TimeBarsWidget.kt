@@ -19,9 +19,10 @@ import com.agentkosticka.playbox.R
 import java.time.ZonedDateTime
 import java.util.concurrent.TimeUnit
 
-class TimeBarsWidget : AppWidgetProvider() {
+class TimeBarsWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        updateAll(context)
+        ids.forEach { WidgetInstanceSettings(context).load(it) }
+        requestImmediateUpdate(context)
         schedule(context)
     }
 
@@ -43,7 +44,7 @@ class TimeBarsWidget : AppWidgetProvider() {
                 Intent.ACTION_MY_PACKAGE_REPLACED,
             )
         ) {
-            if (widgetIds(context).isNotEmpty() || DashboardWidget.hasWidgets(context) || UtilityDashboardWidget.hasWidgets(context)) {
+            if (widgetIds(context).isNotEmpty() || DashboardWidget.hasWidgets(context) || UtilityDashboardWidget.hasWidgets(context) || AgendaWidget.hasWidgets(context)) {
                 requestImmediateUpdate(context)
                 schedule(context)
             }
@@ -55,11 +56,12 @@ class TimeBarsWidget : AppWidgetProvider() {
         private const val IMMEDIATE_WORK_NAME = "time-bars-immediate"
         private const val UTILITY_BURST_WINDOW_MS = 2_000L
         private var lastUtilityRefreshMs = -UTILITY_BURST_WINDOW_MS
+        private val updateRevision = java.util.concurrent.atomic.AtomicInteger()
         private var lastUtilityStateHash = 0
         private var lastUtilityWidgetSignature = 0
 
         fun cancelIfUnused(context: Context) {
-            if (widgetIds(context).isEmpty() && !DashboardWidget.hasWidgets(context) && !UtilityDashboardWidget.hasWidgets(context)) {
+            if (widgetIds(context).isEmpty() && !DashboardWidget.hasWidgets(context) && !UtilityDashboardWidget.hasWidgets(context) && !AgendaWidget.hasWidgets(context)) {
                 WorkManager.getInstance(context).cancelUniqueWork(WORK_NAME)
                 WorkManager.getInstance(context).cancelUniqueWork(IMMEDIATE_WORK_NAME)
             }
@@ -78,6 +80,7 @@ class TimeBarsWidget : AppWidgetProvider() {
 
         /** Coalesces UI/broadcast bursts and renders on WorkManager's background executor. */
         fun requestImmediateUpdate(context: Context) {
+            updateRevision.incrementAndGet()
             WorkManager.getInstance(context.applicationContext).enqueueUniqueWork(
                 IMMEDIATE_WORK_NAME,
                 ExistingWorkPolicy.REPLACE,
@@ -97,7 +100,7 @@ class TimeBarsWidget : AppWidgetProvider() {
 
             if (UtilityDashboardWidget.hasWidgets(context)) {
                 val elapsed = SystemClock.elapsedRealtime()
-                val stateHash = 31 * timeSettings.hashCode() + utilitySettings.hashCode()
+                val stateHash = 31 * timeSettings.hashCode() + utilitySettings.hashCode() + WidgetInstanceSettings(context).stateHash() + updateRevision.get()
                 val widgetSignature = UtilityDashboardWidget.providers.fold(1) { hash, provider ->
                     31 * hash + manager.getAppWidgetIds(ComponentName(context, provider)).contentHashCode()
                 }
@@ -110,7 +113,9 @@ class TimeBarsWidget : AppWidgetProvider() {
                 }
             }
 
+            AgendaWidget.updateAll(context, now)
             widgetIds(context).forEach { id ->
+                val timeSettings = WidgetInstanceSettings(context).load(id).time
                 val views = sizedWidgetViews(manager.getAppWidgetOptions(id), 250, 110) { width, height ->
                     val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
                     views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette ->
@@ -122,7 +127,7 @@ class TimeBarsWidget : AppWidgetProvider() {
                     )
                     views.setOnClickPendingIntent(
                         R.id.time_bars_image,
-                        widgetPendingIntent(context, WidgetDestination.TIME_BARS),
+                        widgetPendingIntent(context, WidgetDestination.TIME_BARS, id),
                     )
                     views
                 }

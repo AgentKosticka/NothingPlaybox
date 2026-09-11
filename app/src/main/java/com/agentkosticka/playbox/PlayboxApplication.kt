@@ -8,6 +8,7 @@ import com.agentkosticka.playbox.matrix.GlyphMatrixClient
 class PlayboxApplication : Application() {
     override fun onCreate() {
         super.onCreate()
+        com.agentkosticka.playbox.widget.WidgetInstanceSettings(this).snapshotInstalled()
         // Battery broadcasts cannot wake a manifest receiver on modern Android. Observe them
         // while the process exists; periodic widget work remains the background fallback.
         registerReceiver(object : android.content.BroadcastReceiver() {

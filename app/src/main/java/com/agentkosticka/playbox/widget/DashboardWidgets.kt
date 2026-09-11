@@ -19,9 +19,10 @@ import kotlin.math.*
 class DayDialWidget : DashboardWidget()
 class BatteryDotsWidget : DashboardWidget()
 
-open class DashboardWidget : AppWidgetProvider() {
+open class DashboardWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        TimeBarsWidget.updateAll(context)
+        ids.forEach { WidgetInstanceSettings(context).load(it) }
+        TimeBarsWidget.requestImmediateUpdate(context)
         TimeBarsWidget.schedule(context)
     }
     override fun onDisabled(context: Context) { TimeBarsWidget.cancelIfUnused(context) }

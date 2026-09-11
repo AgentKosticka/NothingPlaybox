@@ -27,6 +27,7 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
     MONTH("month-matrix", WidgetCategory.CALENDAR, MonthMatrixWidget::class.java),
     WEEK("week-strip", WidgetCategory.CALENDAR, WeekStripWidget::class.java),
     WEEK_COLUMN("week-column", WidgetCategory.CALENDAR, WeekColumnWidget::class.java),
+    AGENDA("agenda", WidgetCategory.CALENDAR, AgendaWidget::class.java),
     YEAR("year-dots", WidgetCategory.CALENDAR, YearDotsWidget::class.java),
     STORAGE("storage-matrix", WidgetCategory.DEVICE, StorageMatrixWidget::class.java),
     DEVICE("device-panel", WidgetCategory.DEVICE, DevicePanelWidget::class.java),
@@ -40,15 +41,16 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
 
 const val EXTRA_WIDGET_KEY = "widget_key"
 
-internal fun widgetIntent(context: Context, destination: WidgetDestination): Intent =
+internal fun widgetIntent(context: Context, destination: WidgetDestination, appWidgetId: Int? = null): Intent =
     Intent(context, MainActivity::class.java)
-        .setData(Uri.parse("playbox://widgets/${destination.key}"))
+        .setData(Uri.parse("playbox://widgets/${destination.key}/${appWidgetId ?: "defaults"}"))
         .addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP)
         .putExtra("open_widgets", true)
         .putExtra(EXTRA_WIDGET_KEY, destination.key)
+        .putExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId ?: android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID)
 
-internal fun widgetPendingIntent(context: Context, destination: WidgetDestination): PendingIntent =
+internal fun widgetPendingIntent(context: Context, destination: WidgetDestination, appWidgetId: Int? = null): PendingIntent =
     PendingIntent.getActivity(
-        context, 0, widgetIntent(context, destination),
+        context, 0, widgetIntent(context, destination, appWidgetId),
         PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
     )

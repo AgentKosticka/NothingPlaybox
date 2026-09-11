@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:id="@+id/agenda_root" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="12dp" android:background="@drawable/widget_card_background">
+    <TextView android:id="@+id/agenda_header" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/agenda_name" android:fontFamily="NDot57" android:textColor="@color/widget_accent" android:textSize="12sp" />
+    <TextView android:id="@+id/agenda_empty" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:gravity="center_vertical" android:text="@string/agenda_setup" android:textColor="@color/widget_on_surface" android:textSize="12sp" />
+    <LinearLayout android:id="@+id/agenda_row_1" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical" android:paddingVertical="3dp">
+        <TextView android:id="@+id/agenda_time_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_on_surface_variant" android:textSize="10sp" android:maxLines="2" android:ellipsize="end" />
+        <TextView android:id="@+id/agenda_title_1" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_on_surface" android:textSize="16sp" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/agenda_row_2" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical" android:paddingVertical="3dp">
+        <TextView android:id="@+id/agenda_time_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_on_surface_variant" android:textSize="10sp" android:maxLines="2" android:ellipsize="end" />
+        <TextView android:id="@+id/agenda_title_2" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_on_surface" android:textSize="16sp" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+    <LinearLayout android:id="@+id/agenda_row_3" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="vertical" android:gravity="center_vertical" android:paddingVertical="3dp">
+        <TextView android:id="@+id/agenda_time_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_on_surface_variant" android:textSize="10sp" android:maxLines="2" android:ellipsize="end" />
+        <TextView android:id="@+id/agenda_title_3" android:layout_width="match_parent" android:layout_height="wrap_content" android:textColor="@color/widget_on_surface" android:textSize="16sp" android:maxLines="1" android:ellipsize="end" />
+    </LinearLayout>
+</LinearLayout>

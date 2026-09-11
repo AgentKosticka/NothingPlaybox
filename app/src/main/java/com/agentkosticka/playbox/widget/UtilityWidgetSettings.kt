@@ -16,7 +16,7 @@ enum class YearDisplay(val label: String) {
 }
 
 enum class MilestoneTarget(val label: String) {
-    WEEKEND("Weekend"), MONTH_END("Month end"), YEAR_END("Year end")
+    WEEKEND("Weekend"), MONTH_END("Month end"), YEAR_END("Year end"), CUSTOM("Custom date")
 }
 
 data class UtilityWidgetSettings(
@@ -24,6 +24,9 @@ data class UtilityWidgetSettings(
     val storageDisplay: StorageDisplay = StorageDisplay.FREE,
     val yearDisplay: YearDisplay = YearDisplay.ELAPSED,
     val milestoneTarget: MilestoneTarget = MilestoneTarget.WEEKEND,
+    val customLabel: String = "Milestone",
+    val customDate: java.time.LocalDate = java.time.LocalDate.now(),
+    val repeatYearly: Boolean = false,
 ) {
     fun save(context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
@@ -31,6 +34,9 @@ data class UtilityWidgetSettings(
             putString("storage-display", storageDisplay.name)
             putString("year-display", yearDisplay.name)
             putString("milestone-target", milestoneTarget.name)
+            putString("custom-label", customLabel)
+            putString("custom-date", customDate.toString())
+            putBoolean("repeat-yearly", repeatYearly)
         }
         TimeBarsWidget.requestImmediateUpdate(context)
     }
@@ -45,6 +51,9 @@ data class UtilityWidgetSettings(
                 storageDisplay = enumValue(preferences.getString("storage-display", null), StorageDisplay.FREE),
                 yearDisplay = enumValue(preferences.getString("year-display", null), YearDisplay.ELAPSED),
                 milestoneTarget = enumValue(preferences.getString("milestone-target", null), MilestoneTarget.WEEKEND),
+                customLabel = preferences.getString("custom-label", "Milestone") ?: "Milestone",
+                customDate = runCatching { java.time.LocalDate.parse(preferences.getString("custom-date", "")) }.getOrDefault(java.time.LocalDate.now()),
+                repeatYearly = preferences.getBoolean("repeat-yearly", false),
             )
         }
 

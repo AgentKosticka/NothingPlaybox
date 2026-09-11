@@ -163,9 +163,11 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
     val filenameFallback = stringResource(R.string.effect_filename_fallback)
     var section by rememberSaveable { mutableStateOf("Matrix") }
     var widgetType by rememberSaveable { mutableStateOf("time-bars") }
+    var widgetId by rememberSaveable { mutableStateOf<Int?>(null) }
     LaunchedEffect(navigationIntent) {
         if (navigationIntent?.getBooleanExtra("open_widgets", false) == true) {
             section = "Widgets"
+            widgetId = navigationIntent.getIntExtra(android.appwidget.AppWidgetManager.EXTRA_APPWIDGET_ID, android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID).takeIf { it != android.appwidget.AppWidgetManager.INVALID_APPWIDGET_ID }
             navigationIntent.getStringExtra(EXTRA_WIDGET_KEY)?.let {
                 widgetType = WidgetDestination.fromKey(it).key
             }
@@ -246,9 +248,11 @@ private fun PlayboxApp(repository: EffectRepository, glyphClient: GlyphMatrixCli
         HomeScreen(
             repository = repository,
             section = section,
-            onSection = { section = it },
+            onSection = { section = it; widgetId = null },
             widgetType = widgetType,
-            onWidgetType = { widgetType = it },
+            onWidgetType = { widgetType = it; widgetId = null },
+            widgetId = widgetId,
+            onEditDefaults = { widgetId = null },
             effects = effects,
             connection = connection,
             glyphClient = glyphClient,
@@ -334,6 +338,8 @@ private fun HomeScreen(
     onSection: (String) -> Unit,
     widgetType: String,
     onWidgetType: (String) -> Unit,
+    widgetId: Int?,
+    onEditDefaults: () -> Unit,
     effects: List<PlayboxEffect>,
     connection: GlyphConnectionState,
     glyphClient: GlyphMatrixClient,
@@ -455,7 +461,7 @@ private fun HomeScreen(
                 Spacer(Modifier.height(4.dp))
                 Text(subtitle, color = Muted)
             }
-            if (section == "Widgets") item { WidgetsScreen(widgetType, onWidgetType) }
+            if (section == "Widgets") item { WidgetsScreen(widgetType, onWidgetType, widgetId, onEditDefaults) }
             if (section == "AOD") item { AodScreen(repository, glyphClient) }
             if (section == "Procedural" && selectedEngine == null) {
                 items(engines, key = { "engine-${it.id}" }) { effect ->

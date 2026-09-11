@@ -21,6 +21,9 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Switch
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,6 +40,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.agentkosticka.playbox.ui.Muted
 import com.agentkosticka.playbox.ui.NothingDotFont
+import com.agentkosticka.playbox.widget.WidgetInstanceSettings
+import com.agentkosticka.playbox.widget.AgendaWidget
 import com.agentkosticka.playbox.widget.WidgetCategory
 import com.agentkosticka.playbox.widget.WidgetDestination
 import com.agentkosticka.playbox.widget.BarFill
@@ -83,19 +88,26 @@ private data class WidgetSpec(
 )
 
 @Composable
-fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
+fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetId: Int? = null, onEditDefaults: () -> Unit = {}) {
     val context = LocalContext.current
     val locale = LocalConfiguration.current.locales[0]
     var now by remember { mutableStateOf(ZonedDateTime.now()) }
     var status by remember { mutableStateOf<String?>(null) }
-    var timeSettings by remember { mutableStateOf(TimeBarsSettings.load(context)) }
-    var utilitySettings by remember { mutableStateOf(UtilityWidgetSettings.load(context)) }
+    val store = remember(context) { WidgetInstanceSettings(context) }
+    val validInstance = appWidgetId == null || AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)?.provider == ComponentName(context, WidgetDestination.fromKey(widgetType).provider)
+    var instance by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(store.load(appWidgetId.takeIf { validInstance })) }
+    val timeSettings = instance.time
+    val utilitySettings = instance.utility
+    fun saveTime(value: TimeBarsSettings) { instance = instance.copy(time = value); store.save(appWidgetId, instance) }
+    fun saveUtility(value: UtilityWidgetSettings) { instance = instance.copy(utility = value); store.save(appWidgetId, instance) }
+
     var weekMenu by remember { mutableStateOf(false) }
     var variantMenu by remember { mutableStateOf(false) }
     val category = WidgetDestination.fromKey(widgetType).category
 
     val specs = remember {
         listOf(
+            WidgetSpec("agenda", R.string.agenda_name, R.string.widget_size_2x2_to_4x2, R.string.agenda_description, AgendaWidget::class.java, 1f),
             WidgetSpec("battery-column", R.string.battery_column_name, R.string.widget_size_vertical, R.string.battery_column_description, BatteryColumnWidget::class.java, .5f),
             WidgetSpec("week-column", R.string.week_column_name, R.string.widget_size_vertical, R.string.week_column_description, WeekColumnWidget::class.java, .5f),
             WidgetSpec("day-dial", R.string.day_dial_name, R.string.widget_size_2x2, R.string.day_dial_description, DayDialWidget::class.java, 1f),
@@ -126,6 +138,14 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
     val alarm = remember(now) { nextAlarm(context, now) }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(stringResource(if (appWidgetId == null) R.string.widget_defaults_explanation else R.string.widget_instance_explanation), color = Muted)
+        if (appWidgetId != null) {
+            TextButton(onClick = onEditDefaults) { Text(stringResource(R.string.widget_edit_defaults)) }
+            if (!validInstance) {
+                Text(stringResource(R.string.widget_instance_missing))
+                return@Column
+            }
+        }
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             WidgetCategory.entries.forEach { item ->
                 FilterChip(
@@ -154,6 +174,15 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
             }
         }
 
+        if (widgetType == "agenda") {
+            CalendarSettingsEditor(instance.agenda, true) { settings ->
+                instance = instance.copy(agenda = settings)
+                store.save(appWidgetId, instance)
+            }
+            if (appWidgetId == null) AddWidgetButton(AgendaWidget::class.java, stringResource(R.string.agenda_name), onStatus = { status = it })
+            status?.let { Text(it, color = Muted) }
+            return@Column
+        }
         if (widgetType == "time-bars") {
             val preview = remember(now, timeSettings) { TimeBarsRenderer.render(now, timeSettings, 900, 360).asImageBitmap() }
             Image(
@@ -165,8 +194,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(stringResource(R.string.time_bars_header), fontFamily = NothingDotFont.family)
                     WeekStartSetting(locale, timeSettings.weekStart, weekMenu, { weekMenu = it }) { day ->
-                        timeSettings = timeSettings.copy(weekStart = day)
-                        timeSettings.save(context)
+                        saveTime(timeSettings.copy(weekStart = day))
                     }
                     Text(stringResource(R.string.fill_style), fontFamily = NothingDotFont.family)
                     Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -174,8 +202,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
                             FilterChip(
                                 selected = timeSettings.fill == fill,
                                 onClick = {
-                                    timeSettings = timeSettings.copy(fill = fill)
-                                    timeSettings.save(context)
+                                    saveTime(timeSettings.copy(fill = fill))
                                 },
                                 label = { Text(barFillLabel(fill)) },
                             )
@@ -190,7 +217,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
                         color = Muted,
                     )
                     Text(stringResource(R.string.bitmap_refresh_help), color = Muted)
-                    AddWidgetButton(
+                    if (appWidgetId == null) AddWidgetButton(
                         TimeBarsWidget::class.java,
                         stringResource(R.string.time_bars_name),
                         onStatus = { status = it },
@@ -216,7 +243,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
                 "week-strip" -> UtilityWidgetRenderer.weekStrip(now, timeSettings.weekStart, 800, 300)
                 "year-dots" -> UtilityWidgetRenderer.year(now, utilitySettings.yearDisplay, 720, 360)
                 "device-panel" -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, 720, 360)
-                "milestone" -> UtilityWidgetRenderer.milestone(now, utilitySettings.milestoneTarget, 360, 360)
+                "milestone" -> UtilityWidgetRenderer.milestone(now, utilitySettings.milestoneTarget, 360, 360, settings = utilitySettings)
                 "ndot-clock" -> UtilityWidgetRenderer.clockPreview(context, now, 720, 320)
                 "playbox-shortcuts" -> UtilityWidgetRenderer.shortcutsPreview(900, 300)
                 else -> DashboardRenderer.dayDial(now)
@@ -244,39 +271,55 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
                     "battery-glyph" -> {
                         Text(stringResource(R.string.visual), fontFamily = NothingDotFont.family)
                         SettingChips(BatteryVisual.entries.toList(), utilitySettings.batteryVisual, ::batteryVisualLabel) { value ->
-                            utilitySettings = utilitySettings.copy(batteryVisual = value)
-                            utilitySettings.save(context)
+                            saveUtility(utilitySettings.copy(batteryVisual = value))
                         }
                     }
                     "storage-matrix" -> {
                         Text(stringResource(R.string.measure), fontFamily = NothingDotFont.family)
                         SettingChips(StorageDisplay.entries.toList(), utilitySettings.storageDisplay, ::storageDisplayLabel) { value ->
-                            utilitySettings = utilitySettings.copy(storageDisplay = value)
-                            utilitySettings.save(context)
+                            saveUtility(utilitySettings.copy(storageDisplay = value))
                         }
                     }
                     "year-dots" -> {
                         Text(stringResource(R.string.show), fontFamily = NothingDotFont.family)
                         SettingChips(YearDisplay.entries.toList(), utilitySettings.yearDisplay, ::yearDisplayLabel) { value ->
-                            utilitySettings = utilitySettings.copy(yearDisplay = value)
-                            utilitySettings.save(context)
+                            saveUtility(utilitySettings.copy(yearDisplay = value))
                         }
                     }
                     "milestone" -> {
                         Text(stringResource(R.string.count_down_to), fontFamily = NothingDotFont.family)
                         SettingChips(MilestoneTarget.entries.toList(), utilitySettings.milestoneTarget, ::milestoneTargetLabel) { value ->
-                            utilitySettings = utilitySettings.copy(milestoneTarget = value)
-                            utilitySettings.save(context)
+                            saveUtility(utilitySettings.copy(milestoneTarget = value))
+                        }
+                        if (utilitySettings.milestoneTarget == MilestoneTarget.CUSTOM) {
+                            OutlinedTextField(value = utilitySettings.customLabel, onValueChange = { saveUtility(utilitySettings.copy(customLabel = it.take(40))) },
+                                label = { Text(stringResource(R.string.milestone_label)) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                            OutlinedButton(onClick = {
+                                val date = utilitySettings.customDate
+                                android.app.DatePickerDialog(context, { _, year, month, day ->
+                                    saveUtility(utilitySettings.copy(customDate = java.time.LocalDate.of(year, month + 1, day)))
+                                }, date.year, date.monthValue - 1, date.dayOfMonth).show()
+                            }) { Text(utilitySettings.customDate.toString()) }
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Switch(checked = utilitySettings.repeatYearly, onCheckedChange = { saveUtility(utilitySettings.copy(repeatYearly = it)) })
+                                Text(stringResource(R.string.milestone_repeat))
+                            }
+                            Text(stringResource(R.string.milestone_repeat_help), color = Muted)
                         }
                     }
                     "month-matrix", "week-strip", "week-column" -> {
                         WeekStartSetting(locale, timeSettings.weekStart, weekMenu, { weekMenu = it }) { day ->
-                            timeSettings = timeSettings.copy(weekStart = day)
-                            timeSettings.save(context)
+                            saveTime(timeSettings.copy(weekStart = day))
                         }
                     }
                 }
 
+                if (widgetType in listOf("month-matrix", "week-strip", "week-column")) {
+                    CalendarSettingsEditor(instance.agenda, false) { settings ->
+                        instance = instance.copy(agenda = settings)
+                        store.save(appWidgetId, instance)
+                    }
+                }
                 Text(
                     if (widgetType == "ndot-clock" || widgetType == "playbox-shortcuts") {
                         stringResource(R.string.system_widget_help)
@@ -285,7 +328,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit) {
                     },
                     color = Muted,
                 )
-                AddWidgetButton(spec.provider, widgetName, onStatus = { status = it })
+                if (appWidgetId == null) AddWidgetButton(spec.provider, widgetName, onStatus = { status = it })
                 status?.let { Text(it, color = Muted) }
             }
         }
@@ -374,6 +417,7 @@ private fun yearDisplayLabel(value: YearDisplay): String = stringResource(
 @Composable
 private fun milestoneTargetLabel(value: MilestoneTarget): String = stringResource(
     when (value) {
+        MilestoneTarget.CUSTOM -> R.string.milestone_custom
         MilestoneTarget.WEEKEND -> R.string.milestone_weekend
         MilestoneTarget.MONTH_END -> R.string.milestone_month_end
         MilestoneTarget.YEAR_END -> R.string.milestone_year_end

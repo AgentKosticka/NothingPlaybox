@@ -48,18 +48,18 @@ class YearDotsWidget : UtilityDashboardWidget()
 class DevicePanelWidget : UtilityDashboardWidget()
 class MilestoneWidget : UtilityDashboardWidget()
 
-class NDotClockWidget : AppWidgetProvider() {
+class NDotClockWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { id ->
             val views = RemoteViews(context.packageName, R.layout.widget_ndot_clock)
-            views.setOnClickPendingIntent(R.id.ndot_clock_root, widgetPendingIntent(context, WidgetDestination.CLOCK))
+            views.setOnClickPendingIntent(R.id.ndot_clock_root, widgetPendingIntent(context, WidgetDestination.CLOCK, id))
             manager.updateAppWidget(id, views)
         }
     }
 }
 
 /** Home-screen entry points for the Playbox editor and Nothing's own AOD Toy selector. */
-class PlayboxShortcutsWidget : AppWidgetProvider() {
+class PlayboxShortcutsWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { id ->
             val views = RemoteViews(context.packageName, R.layout.widget_playbox_shortcuts)
@@ -103,14 +103,15 @@ class PlayboxShortcutsWidget : AppWidgetProvider() {
     }
 }
 
-open class UtilityDashboardWidget : AppWidgetProvider() {
+open class UtilityDashboardWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
-        TimeBarsWidget.updateAll(context)
+        ids.forEach { WidgetInstanceSettings(context).load(it) }
+        TimeBarsWidget.requestImmediateUpdate(context)
         TimeBarsWidget.schedule(context)
     }
 
     override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: Bundle) {
-        updateAll(context, ZonedDateTime.now())
+        TimeBarsWidget.requestImmediateUpdate(context)
     }
 
     override fun onDisabled(context: Context) {
@@ -167,28 +168,32 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
             selectedProviders: List<Class<out UtilityDashboardWidget>>,
         ) {
             val manager = AppWidgetManager.getInstance(context)
-            val utility = UtilityWidgetSettings.load(context)
-            val time = TimeBarsSettings.load(context)
+            val store = WidgetInstanceSettings(context)
+            val calendarDots = CalendarWidgetDots(context, now, selectedProviders)
             val battery = batteryInfo(context)
             val storage = storageInfo()
             val alarm = nextAlarm(context, now)
 
             selectedProviders.forEach { provider ->
                 manager.getAppWidgetIds(ComponentName(context, provider)).forEach { id ->
+                    val settings = store.load(id)
+                    val utility = settings.utility
+                    val time = settings.time
+                    val eventDates = calendarDots.dates(id, time.weekStart, provider)
                     val views = sizedWidgetViews(manager.getAppWidgetOptions(id), defaultWidth(provider), defaultHeight(provider)) { width, height ->
-                        val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
+                        val views = RemoteViews(context.packageName, if (provider == DevicePanelWidget::class.java) R.layout.widget_device_panel else R.layout.widget_time_bars)
                         views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette ->
                             when (provider) {
                                 BatteryColumnWidget::class.java -> UtilityWidgetRenderer.batteryColumn(battery, width, height, palette)
-                                WeekColumnWidget::class.java -> UtilityWidgetRenderer.weekColumn(now, time.weekStart, width, height, palette)
+                                WeekColumnWidget::class.java -> UtilityWidgetRenderer.weekColumn(now, time.weekStart, width, height, palette, eventDates)
                                 BatteryGlyphWidget::class.java -> UtilityWidgetRenderer.batteryGlyph(battery, utility.batteryVisual, width, height, palette)
                                 NextAlarmWidget::class.java -> UtilityWidgetRenderer.nextAlarm(context, now, alarm, width, height, palette)
                                 StorageMatrixWidget::class.java -> UtilityWidgetRenderer.storage(storage, utility.storageDisplay, width, height, palette)
-                                MonthMatrixWidget::class.java -> UtilityWidgetRenderer.month(now, time.weekStart, width, height, palette)
-                                WeekStripWidget::class.java -> UtilityWidgetRenderer.weekStrip(now, time.weekStart, width, height, palette)
+                                MonthMatrixWidget::class.java -> UtilityWidgetRenderer.month(now, time.weekStart, width, height, palette, eventDates)
+                                WeekStripWidget::class.java -> UtilityWidgetRenderer.weekStrip(now, time.weekStart, width, height, palette, eventDates)
                                 YearDotsWidget::class.java -> UtilityWidgetRenderer.year(now, utility.yearDisplay, width, height, palette)
                                 DevicePanelWidget::class.java -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, width, height, palette)
-                                MilestoneWidget::class.java -> UtilityWidgetRenderer.milestone(now, utility.milestoneTarget, width, height, palette)
+                                MilestoneWidget::class.java -> UtilityWidgetRenderer.milestone(now, utility.milestoneTarget, width, height, palette, utility)
                                 else -> UtilityWidgetRenderer.milestone(now, MilestoneTarget.WEEKEND, width, height, palette)
                             }
                         }
@@ -196,7 +201,8 @@ open class UtilityDashboardWidget : AppWidgetProvider() {
                             R.id.time_bars_image,
                             contentDescription(provider, context, now, battery, storage, alarm, utility),
                         )
-                        views.setOnClickPendingIntent(R.id.time_bars_image, widgetPendingIntent(context, WidgetDestination.forProvider(provider)))
+                        views.setOnClickPendingIntent(R.id.time_bars_image, widgetPendingIntent(context, WidgetDestination.forProvider(provider), id))
+                        if (provider == DevicePanelWidget::class.java) configureDeviceActions(context, views, id)
                         views
                     }
                     manager.updateAppWidget(id, views)
@@ -328,6 +334,7 @@ object UtilityWidgetRenderer {
         width: Int,
         height: Int,
         palette: WidgetPalette = WidgetPalette.current(),
+        eventDates: Set<LocalDate>? = null,
     ): Bitmap {
         val (bitmap, canvas) = base(width, height, palette)
         val unit = min(width.toFloat(), height / 2f)
@@ -344,6 +351,7 @@ object UtilityWidgetRenderer {
             text(canvas, date.dayOfWeek.name.take(1), width * .24f, y, unit * .13f,
                 if (date.isAfter(today)) palette.muted else palette.foreground)
             text(canvas, date.dayOfMonth.toString(), width * .76f, y, unit * .15f, palette.foreground, Paint.Align.RIGHT)
+            if (eventDates?.contains(date) == true) dot(canvas, width * .49f, y - unit * .04f, unit * .025f, true, palette)
         }
         return bitmap
     }
@@ -569,6 +577,7 @@ object UtilityWidgetRenderer {
         width: Int,
         height: Int,
         palette: WidgetPalette = WidgetPalette.current(),
+        eventDates: Set<LocalDate>? = null,
     ): Bitmap {
         val (bitmap, canvas) = base(width, height, palette)
         val locale = Locale.getDefault()
@@ -601,6 +610,7 @@ object UtilityWidgetRenderer {
             )
             text(canvas, day.toString(), x, y, min(width, height) * .052f,
                 if (today) palette.foreground else palette.muted, Paint.Align.CENTER)
+            if (eventDates?.contains(date.withDayOfMonth(day)) == true) dot(canvas, x, y + min(width, height) * .027f, min(width, height) * .009f, true, palette)
         }
         return bitmap
     }
@@ -611,6 +621,7 @@ object UtilityWidgetRenderer {
         width: Int,
         height: Int,
         palette: WidgetPalette = WidgetPalette.current(),
+        eventDates: Set<LocalDate>? = null,
     ): Bitmap {
         val (bitmap, canvas) = base(width, height, palette)
         header(canvas, "THIS WEEK", width, height, palette)
@@ -633,7 +644,8 @@ object UtilityWidgetRenderer {
             )
             text(canvas, date.dayOfMonth.toString(), x, height * .72f, min(width, height) * .11f,
                 palette.foreground, Paint.Align.CENTER)
-            dot(canvas, x, height * .86f, min(width, height) * .018f, !date.isAfter(today), palette, current)
+            if (eventDates == null) dot(canvas, x, height * .86f, min(width, height) * .018f, !date.isAfter(today), palette, current)
+            else if (date in eventDates) dot(canvas, x, height * .88f, min(width, height) * .014f, true, palette)
         }
         return bitmap
     }
@@ -720,13 +732,26 @@ object UtilityWidgetRenderer {
         width: Int,
         height: Int,
         palette: WidgetPalette = WidgetPalette.current(),
+        settings: UtilityWidgetSettings = UtilityWidgetSettings(),
     ): Bitmap {
         val (bitmap, canvas) = base(width, height, palette)
+        if (target == MilestoneTarget.CUSTOM) {
+            val days = milestoneDays(settings.customDate, settings.repeatYearly, now.toLocalDate())
+            fittedText(canvas, settings.customLabel.uppercase(Locale.getDefault()), width * .07f, height * .17f,
+                width * .86f, min(width, height) * .085f, palette.muted)
+            fittedText(canvas, if (days == 0L) "TODAY" else "${kotlin.math.abs(days)} DAYS", width / 2f, height * .60f,
+                width * .86f, min(width, height) * .20f, palette.foreground, Paint.Align.CENTER)
+            val date = milestoneDate(settings.customDate, settings.repeatYearly, now.toLocalDate())
+            text(canvas, if (days < 0) "SINCE $date" else date.toString(), width / 2f, height * .80f,
+                min(width, height) * .055f, palette.muted, Paint.Align.CENTER)
+            return bitmap
+        }
         header(canvas, target.label.uppercase(Locale.getDefault()), width, height, palette)
         val remaining = milestoneRemaining(now, target)
         fittedText(canvas, remaining?.let(::formatBigDuration) ?: "NOW", width / 2f, height * .61f,
             width * .86f, min(width, height) * .24f, palette.foreground, Paint.Align.CENTER)
         val detail = if (remaining == null) "ENJOY IT" else when (target) {
+            MilestoneTarget.CUSTOM -> ""
             MilestoneTarget.WEEKEND -> "UNTIL SATURDAY"
             MilestoneTarget.MONTH_END -> "UNTIL NEXT MONTH"
             MilestoneTarget.YEAR_END -> "UNTIL ${now.year + 1}"
@@ -793,6 +818,7 @@ object UtilityWidgetRenderer {
 
     private fun milestoneRemaining(now: ZonedDateTime, target: MilestoneTarget): Duration? {
         val targetTime = when (target) {
+            MilestoneTarget.CUSTOM -> return null
             MilestoneTarget.WEEKEND -> {
                 if (now.dayOfWeek == DayOfWeek.SATURDAY || now.dayOfWeek == DayOfWeek.SUNDAY) return null
                 now.toLocalDate().with(TemporalAdjusters.nextOrSame(DayOfWeek.SATURDAY)).atStartOfDay(now.zone)
@@ -804,6 +830,7 @@ object UtilityWidgetRenderer {
     }
 
     private fun milestoneFraction(now: ZonedDateTime, target: MilestoneTarget): Double = when (target) {
+        MilestoneTarget.CUSTOM -> 0.0
         MilestoneTarget.WEEKEND -> {
             if (now.dayOfWeek == DayOfWeek.SATURDAY || now.dayOfWeek == DayOfWeek.SUNDAY) 1.0 else {
                 val start = now.toLocalDate().with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).atStartOfDay(now.zone)
