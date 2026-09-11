@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <full-backup-content>
-    <!-- Only widget configuration is backed up; event records are never persisted. -->
+    <!-- Only widget configuration is backed up; event records and Quick Tasks content are never persisted to backup. -->
     <include domain="sharedpref" path="widget-instances.xml" />
+    <include domain="sharedpref" path="dual-clock.xml" />
 </full-backup-content>
