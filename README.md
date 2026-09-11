@@ -1,6 +1,6 @@
 # Nothing Playbox
 
-Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It combines a 137-pixel intensity editor, multi-frame animation, image/video import, live procedural engines, a simulator, direct Matrix output, portable `.playbox` files, 16 home-screen widgets, and configurable Always-on Glyph playback.
+Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It combines a 137-pixel intensity editor, multi-frame animation, image/video import, live procedural engines, a simulator, direct Matrix output, portable `.playbox` files, 18 home-screen widgets, and configurable Always-on Glyph playback.
 
 The built-in library includes static/animated effects plus Radar Sweep, Breathing Orbit, Woven Light, Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Procedural effects are evaluated live from compact saved settings instead of storing giant baked animation loops.
 
@@ -8,7 +8,7 @@ The built-in library includes static/animated effects plus Radar Sweep, Breathin
 
 - **Matrix** — static artwork, frame animations, Pixel Lab, and image/video imports.
 - **Procedural** — Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Open an engine to preview it or create independent named profiles. Profiles stay editable and work with `.playbox` import/export and AOD selection.
-- **Widgets** — Time, Battery, Calendar, and Device categories with a widget selector, live previews, settings, and one-tap launcher pinning for all 16 widgets.
+- **Widgets** — Time, Battery, Calendar, Device, and Productivity categories with a widget selector, live previews, settings, and one-tap launcher pinning for all 18 widgets.
 - **AOD** — select the active effect, preview on the Glyph Matrix, adjust brightness/speed, rotate a playlist, and configure quiet hours. Nothing OS's Always-on Glyph Toy reads the same settings.
 
 Editor changes are kept as an in-memory draft until **Save**, including across Activity/configuration recreation. Opening an effect no longer mutates the library, and **Discard** leaves persisted data untouched.
@@ -33,16 +33,18 @@ Nothing Playbox currently ships:
 14. **Battery Column** — a vertical dotted battery gauge, one column wide and two rows tall.
 15. **Week Column** — seven stacked days with today highlighted, one column wide and two rows tall. Week widgets also support optional event dots.
 16. **Agenda** — up to three upcoming/ongoing events over the next seven calendar days, including date, fixed time, and title. All-day and recurring events are supported. Tap an event to open that occurrence, or the heading to configure.
+17. **Quick Tasks** — four-item home-screen checklist with native checkboxes. Each instance keeps an independent title/list and task completion updates immediately without opening the app.
+18. **Dual Clock** — local time beside a selected world time zone, including both dates so cross-midnight differences stay obvious.
 
 Time Bars keeps its horizontal layout when resized, including five columns by two rows, without stretching its dots or text.
 
-Bitmap widgets share one periodic WorkManager refresh (about every 15 minutes). Setting changes and relevant system events request a coalesced background refresh instead of rendering the whole widget fleet in the UI callback. NDot Clock and shortcuts are system-driven and do not need periodic polling. Android may defer periodic work during Doze/battery saving.
+Bitmap widgets share one periodic WorkManager refresh (about every 15 minutes). Setting changes and relevant system events request a coalesced background refresh instead of rendering the whole widget fleet in the UI callback. NDot Clock, Dual Clock, Quick Tasks, and shortcuts are system/event-driven and do not need periodic polling. Android may defer periodic work during Doze/battery saving.
 
 All providers include launcher preview metadata. Configurable instances snapshot defaults independently, including existing widgets on upgrade. Tap an installed widget to edit that instance; settings opened normally in the app are defaults for new widgets. Agenda event rows and Device Panel quadrants have their own actions. Widgets do not require Glyph hardware.
 
 Calendar access is optional and read-only, requested only from calendar settings. Each calendar widget can select calendars independently; an untouched selection follows visible calendars, while an explicitly empty selection stays empty. Event dots use occupied dates with exclusive end boundaries. Agenda does not display minute countdowns or a potentially stale “NOW” label. Calendar queries run off the UI thread and share results within each widget group's refresh. Permission denial and provider errors have distinct states and never fail the shared worker.
 
-Widget settings are remapped when Android restores widget IDs. Calendar selections must be chosen again after restoration because calendar database IDs may refer to different accounts on the destination device.
+Widget settings are remapped when Android restores widget IDs. Calendar selections must be chosen again after restoration because calendar database IDs may refer to different accounts on the destination device. Quick Tasks text stays app-private and is deliberately excluded from Android backup/device transfer; a restored task widget starts from the destination device's local defaults instead of uploading checklist content.
 
 ## Build and verification
 
@@ -86,7 +88,7 @@ User effects are stored as bounded per-effect atomic files in app-private storag
 
 Imported images/videos are converted to 13×13 luminance frames and original media is not retained. Video import accepts at most 60 seconds/600 samples and keeps all decode paths bounded before conversion.
 
-The app has no network permission, accounts, analytics, advertising, or app-managed cloud dependency. Android backup/device transfer includes only per-widget configuration (`widget-instances.xml`) to support widget restoration. Effect libraries and other app data remain excluded; use `.playbox` files for manual effect export. Calendar event records are never persisted, logged, or uploaded by Playbox.
+The app has no network permission, accounts, analytics, advertising, or app-managed cloud dependency. Android backup/device transfer includes only per-widget configuration (`widget-instances.xml`) to support widget restoration. Effect libraries, Quick Tasks checklist content, and other app data remain excluded; use `.playbox` files for manual effect export. Calendar event records are never persisted, logged, or uploaded by Playbox.
 
 ## Licensing
 
