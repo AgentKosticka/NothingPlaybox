@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <data-extraction-rules>
     <cloud-backup>
-        <!-- Only widget configuration is backed up; event records and Quick Tasks content are excluded. -->
+        <!-- Only widget configuration is backed up; event records, Quick Tasks content and Habit Grid history are excluded. -->
         <include domain="sharedpref" path="widget-instances.xml" />
         <include domain="sharedpref" path="dual-clock.xml" />
     </cloud-backup>
     <device-transfer>
-        <!-- Only widget configuration is transferred; event records and Quick Tasks content are excluded. -->
+        <!-- Only widget configuration is transferred; event records, Quick Tasks content and Habit Grid history are excluded. -->
         <include domain="sharedpref" path="widget-instances.xml" />
         <include domain="sharedpref" path="dual-clock.xml" />
     </device-transfer>
