@@ -13,12 +13,14 @@ enum class WidgetCategory(@param:StringRes val titleRes: Int) {
     BATTERY(R.string.widget_category_battery),
     CALENDAR(R.string.widget_category_calendar),
     DEVICE(R.string.widget_category_device),
+    PRODUCTIVITY(R.string.widget_category_productivity),
 }
 
 enum class WidgetDestination(val key: String, val category: WidgetCategory, val provider: Class<*>) {
     TIME_BARS("time-bars", WidgetCategory.TIME, TimeBarsWidget::class.java),
     DAY_DIAL("day-dial", WidgetCategory.TIME, DayDialWidget::class.java),
     CLOCK("ndot-clock", WidgetCategory.TIME, NDotClockWidget::class.java),
+    DUAL_CLOCK("dual-clock", WidgetCategory.TIME, DualClockWidget::class.java),
     ALARM("next-alarm", WidgetCategory.TIME, NextAlarmWidget::class.java),
     MILESTONE("milestone", WidgetCategory.TIME, MilestoneWidget::class.java),
     BATTERY_GLYPH("battery-glyph", WidgetCategory.BATTERY, BatteryGlyphWidget::class.java),
@@ -31,7 +33,8 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
     YEAR("year-dots", WidgetCategory.CALENDAR, YearDotsWidget::class.java),
     STORAGE("storage-matrix", WidgetCategory.DEVICE, StorageMatrixWidget::class.java),
     DEVICE("device-panel", WidgetCategory.DEVICE, DevicePanelWidget::class.java),
-    SHORTCUTS("playbox-shortcuts", WidgetCategory.DEVICE, PlayboxShortcutsWidget::class.java);
+    SHORTCUTS("playbox-shortcuts", WidgetCategory.DEVICE, PlayboxShortcutsWidget::class.java),
+    QUICK_TASKS("quick-tasks", WidgetCategory.PRODUCTIVITY, QuickTasksWidget::class.java);
 
     companion object {
         fun fromKey(key: String?): WidgetDestination = entries.firstOrNull { it.key == key } ?: TIME_BARS
