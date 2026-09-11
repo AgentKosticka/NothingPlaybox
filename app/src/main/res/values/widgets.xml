@@ -26,6 +26,10 @@
     <string name="ndot_clock_description">A live home-screen clock using Nothing OS NDot57 on Nothing phones, with automatic system-time updates.</string>
     <string name="playbox_shortcuts_name">Playbox shortcuts</string>
     <string name="playbox_shortcuts_description">One-tap access to the Matrix studio, widget gallery and Nothing OS Always-on Glyph Toy selector.</string>
+    <string name="quick_tasks_name">Quick tasks</string>
+    <string name="quick_tasks_description">A four-item checklist you can complete directly on the home screen. Each widget keeps its own list.</string>
+    <string name="dual_clock_name">Dual clock</string>
+    <string name="dual_clock_description">Local time beside a chosen world time zone, with both dates visible when midnight differs.</string>
 
     <string name="widget_size_2x2">2 × 2</string>
     <string name="widget_size_2x1_to_4x2">2 × 1 → 4 × 2</string>
@@ -59,11 +63,16 @@
     <string name="milestone_month_end">Month end</string>
     <string name="milestone_year_end">Year end</string>
     <string name="system_widget_help">System-driven widget: no periodic worker needed.</string>
+    <string name="interactive_widget_help">Interactive widget: task checks update immediately and need no periodic worker.</string>
     <string name="shared_widget_refresh_help">Bitmap widgets refresh together about every 15 minutes and immediately on relevant clock, alarm or charging events.</string>
     <string name="week_starts_on">WEEK STARTS ON</string>
     <string name="pin_widget_fallback">Long-press your home screen → Widgets → Nothing Playbox → %1$s.</string>
     <string name="pin_widget_finish">Finish adding the widget in your launcher.</string>
     <string name="add_to_home_screen">ADD TO HOME SCREEN</string>
+    <string name="quick_tasks_list_title">LIST TITLE</string>
+    <string name="quick_tasks_tasks">TASKS</string>
+    <string name="quick_tasks_task_label">Task %1$d</string>
+    <string name="dual_clock_second_zone">SECOND CLOCK</string>
 
     <string name="widget_day_progress_cd">%1$d percent of today elapsed</string>
     <string name="widget_battery_percent_cd">Battery %1$d percent, %2$s</string>
@@ -79,5 +88,6 @@
     <string name="widget_category_battery">Battery</string>
     <string name="widget_category_calendar">Calendar</string>
     <string name="widget_category_device">Device</string>
+    <string name="widget_category_productivity">Productivity</string>
     <string name="widget_variant_selector">Widget: %1$s ▾</string>
 </resources>
