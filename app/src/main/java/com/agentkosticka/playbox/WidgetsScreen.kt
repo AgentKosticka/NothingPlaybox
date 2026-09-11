@@ -53,12 +53,19 @@ import com.agentkosticka.playbox.widget.BatteryVisual
 import com.agentkosticka.playbox.widget.DashboardRenderer
 import com.agentkosticka.playbox.widget.DayDialWidget
 import com.agentkosticka.playbox.widget.DevicePanelWidget
+import com.agentkosticka.playbox.widget.DualClockStore
+import com.agentkosticka.playbox.widget.DualClockWidget
+import com.agentkosticka.playbox.widget.DualClockZones
 import com.agentkosticka.playbox.widget.MilestoneTarget
 import com.agentkosticka.playbox.widget.MilestoneWidget
 import com.agentkosticka.playbox.widget.MonthMatrixWidget
 import com.agentkosticka.playbox.widget.NDotClockWidget
 import com.agentkosticka.playbox.widget.NextAlarmWidget
 import com.agentkosticka.playbox.widget.PlayboxShortcutsWidget
+import com.agentkosticka.playbox.widget.ProductivityWidgetRenderer
+import com.agentkosticka.playbox.widget.QuickTasksState
+import com.agentkosticka.playbox.widget.QuickTasksStore
+import com.agentkosticka.playbox.widget.QuickTasksWidget
 import com.agentkosticka.playbox.widget.StorageDisplay
 import com.agentkosticka.playbox.widget.StorageMatrixWidget
 import com.agentkosticka.playbox.widget.TimeBarsRenderer
@@ -94,15 +101,32 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     var now by remember { mutableStateOf(ZonedDateTime.now()) }
     var status by remember { mutableStateOf<String?>(null) }
     val store = remember(context) { WidgetInstanceSettings(context) }
+    val taskStore = remember(context) { QuickTasksStore(context) }
+    val dualClockStore = remember(context) { DualClockStore(context) }
     val validInstance = appWidgetId == null || AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)?.provider == ComponentName(context, WidgetDestination.fromKey(widgetType).provider)
     var instance by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(store.load(appWidgetId.takeIf { validInstance })) }
+    var taskState by remember(widgetType, appWidgetId, validInstance) {
+        mutableStateOf(taskStore.load(appWidgetId.takeIf { validInstance && widgetType == "quick-tasks" }))
+    }
+    var dualClockZone by remember(widgetType, appWidgetId, validInstance) {
+        mutableStateOf(dualClockStore.load(appWidgetId.takeIf { validInstance && widgetType == "dual-clock" }))
+    }
     val timeSettings = instance.time
     val utilitySettings = instance.utility
     fun saveTime(value: TimeBarsSettings) { instance = instance.copy(time = value); store.save(appWidgetId, instance) }
     fun saveUtility(value: UtilityWidgetSettings) { instance = instance.copy(utility = value); store.save(appWidgetId, instance) }
+    fun saveTasks(value: QuickTasksState) {
+        taskState = value.normalized()
+        taskStore.save(appWidgetId.takeIf { widgetType == "quick-tasks" }, taskState)
+    }
+    fun saveDualClock(value: String) {
+        dualClockZone = value
+        dualClockStore.save(appWidgetId.takeIf { widgetType == "dual-clock" }, value)
+    }
 
     var weekMenu by remember { mutableStateOf(false) }
     var variantMenu by remember { mutableStateOf(false) }
+    var zoneMenu by remember { mutableStateOf(false) }
     val category = WidgetDestination.fromKey(widgetType).category
 
     val specs = remember {
@@ -121,7 +145,9 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             WidgetSpec("device-panel", R.string.device_panel_name, R.string.widget_size_4x2, R.string.device_panel_description, DevicePanelWidget::class.java, 2f),
             WidgetSpec("milestone", R.string.milestone_name, R.string.widget_size_2x2_to_4x2, R.string.milestone_description, MilestoneWidget::class.java, 1f),
             WidgetSpec("ndot-clock", R.string.ndot_clock_name, R.string.widget_size_2x1_to_4x2, R.string.ndot_clock_description, NDotClockWidget::class.java, 2f),
+            WidgetSpec("dual-clock", R.string.dual_clock_name, R.string.widget_size_4x2, R.string.dual_clock_description, DualClockWidget::class.java, 2f),
             WidgetSpec("playbox-shortcuts", R.string.playbox_shortcuts_name, R.string.widget_size_4x1, R.string.playbox_shortcuts_description, PlayboxShortcutsWidget::class.java, 3f),
+            WidgetSpec("quick-tasks", R.string.quick_tasks_name, R.string.widget_size_4x2, R.string.quick_tasks_description, QuickTasksWidget::class.java, 2f),
         )
     }
 
@@ -230,7 +256,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
 
         val spec = specs.first { it.key == widgetType }
         val widgetName = stringResource(spec.nameRes)
-        val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm) {
+        val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone) {
             when (widgetType) {
                 "battery-column" -> UtilityWidgetRenderer.batteryColumn(battery, 360, 720)
                 "week-column" -> UtilityWidgetRenderer.weekColumn(now, timeSettings.weekStart, 360, 720)
@@ -245,7 +271,9 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                 "device-panel" -> UtilityWidgetRenderer.devicePanel(context, now, battery, storage, alarm, 720, 360)
                 "milestone" -> UtilityWidgetRenderer.milestone(now, utilitySettings.milestoneTarget, 360, 360, settings = utilitySettings)
                 "ndot-clock" -> UtilityWidgetRenderer.clockPreview(context, now, 720, 320)
+                "dual-clock" -> ProductivityWidgetRenderer.dualClock(context, now, dualClockZone, 720, 360)
                 "playbox-shortcuts" -> UtilityWidgetRenderer.shortcutsPreview(900, 300)
+                "quick-tasks" -> ProductivityWidgetRenderer.quickTasks(taskState, 720, 360)
                 else -> DashboardRenderer.dayDial(now)
             }.asImageBitmap()
         }
@@ -312,6 +340,48 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                             saveTime(timeSettings.copy(weekStart = day))
                         }
                     }
+                    "quick-tasks" -> {
+                        Text(stringResource(R.string.quick_tasks_list_title), fontFamily = NothingDotFont.family)
+                        OutlinedTextField(
+                            value = taskState.title,
+                            onValueChange = { saveTasks(taskState.copy(title = it.take(24))) },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Text(stringResource(R.string.quick_tasks_tasks), fontFamily = NothingDotFont.family)
+                        taskState.normalized().tasks.forEachIndexed { index, task ->
+                            OutlinedTextField(
+                                value = task.text,
+                                onValueChange = { value ->
+                                    val tasks = taskState.normalized().tasks.toMutableList()
+                                    tasks[index] = task.copy(text = value.take(60), done = task.done && value.isNotBlank())
+                                    saveTasks(taskState.copy(tasks = tasks))
+                                },
+                                label = { Text(stringResource(R.string.quick_tasks_task_label, index + 1)) },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                        }
+                    }
+                    "dual-clock" -> {
+                        Text(stringResource(R.string.dual_clock_second_zone), fontFamily = NothingDotFont.family)
+                        Box {
+                            OutlinedButton(onClick = { zoneMenu = true }, modifier = Modifier.fillMaxWidth()) {
+                                Text(DualClockZones.label(dualClockZone))
+                            }
+                            DropdownMenu(expanded = zoneMenu, onDismissRequest = { zoneMenu = false }) {
+                                DualClockZones.common.forEach { option ->
+                                    DropdownMenuItem(
+                                        text = { Text(option.label) },
+                                        onClick = {
+                                            saveDualClock(option.id)
+                                            zoneMenu = false
+                                        },
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 if (widgetType in listOf("month-matrix", "week-strip", "week-column")) {
@@ -321,10 +391,10 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                     }
                 }
                 Text(
-                    if (widgetType == "ndot-clock" || widgetType == "playbox-shortcuts") {
-                        stringResource(R.string.system_widget_help)
-                    } else {
-                        stringResource(R.string.shared_widget_refresh_help)
+                    when (widgetType) {
+                        "ndot-clock", "playbox-shortcuts", "dual-clock" -> stringResource(R.string.system_widget_help)
+                        "quick-tasks" -> stringResource(R.string.interactive_widget_help)
+                        else -> stringResource(R.string.shared_widget_refresh_help)
                     },
                     color = Muted,
                 )
