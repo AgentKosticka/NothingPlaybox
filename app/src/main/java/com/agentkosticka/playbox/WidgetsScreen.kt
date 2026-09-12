@@ -68,6 +68,8 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     val habitStore = remember(context) { HabitTrackerStore(context) }
     val tallyStore = remember(context) { TallyStore(context) }
     val noteStore = remember(context) { PinnedNoteStore(context) }
+    val focusStore = remember(context) { FocusTimerStore(context) }
+    val goalStore = remember(context) { GoalTrackerStore(context) }
     val validInstance = appWidgetId == null || AppWidgetManager.getInstance(context).getAppWidgetInfo(appWidgetId)?.provider == ComponentName(context, WidgetDestination.fromKey(widgetType).provider)
     var instance by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(store.load(appWidgetId.takeIf { validInstance })) }
     var taskState by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(taskStore.load(appWidgetId.takeIf { validInstance && widgetType == "quick-tasks" })) }
@@ -75,6 +77,8 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     var habitState by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(habitStore.load(appWidgetId.takeIf { validInstance && widgetType == "habit-tracker" }, now.toLocalDate())) }
     var tallyState by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(tallyStore.load(appWidgetId.takeIf { validInstance && widgetType == "tally-counter" })) }
     var noteState by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(noteStore.load(appWidgetId.takeIf { validInstance && widgetType == "pinned-note" })) }
+    var focusState by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(focusStore.load(appWidgetId.takeIf { validInstance && widgetType == "focus-timer" })) }
+    var goalState by remember(widgetType, appWidgetId, validInstance) { mutableStateOf(goalStore.load(appWidgetId.takeIf { validInstance && widgetType == "goal-tracker" })) }
     val timeSettings = instance.time
     val utilitySettings = instance.utility
 
@@ -114,6 +118,8 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             WidgetSpec("habit-tracker", R.string.habit_tracker_name, R.string.widget_size_4x2, R.string.habit_tracker_description, HabitTrackerWidget::class.java, 2f),
             WidgetSpec("tally-counter", R.string.tally_counter_name, R.string.widget_size_2x2_to_4x2, R.string.tally_counter_description, TallyCounterWidget::class.java, 1.6f),
             WidgetSpec("pinned-note", R.string.pinned_note_name, R.string.widget_size_4x2, R.string.pinned_note_description, PinnedNoteWidget::class.java, 2f),
+            WidgetSpec("focus-timer", R.string.focus_timer_name, R.string.widget_size_4x2, R.string.focus_timer_description, FocusTimerWidget::class.java, 2f),
+            WidgetSpec("goal-tracker", R.string.goal_tracker_name, R.string.widget_size_4x2, R.string.goal_tracker_description, GoalTrackerWidget::class.java, 2f),
         )
     }
 
@@ -178,7 +184,25 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
 
         val spec = specs.first { it.key == widgetType }
         val widgetName = stringResource(spec.nameRes)
-        val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone, habitState, tallyState, noteState) {
+        val focusPreviewLabel = context.getString(when (focusState.phase) {
+            FocusPhase.FOCUS -> R.string.focus_phase_focus
+            FocusPhase.BREAK -> R.string.focus_phase_break
+            FocusPhase.PAUSED_FOCUS, FocusPhase.PAUSED_BREAK -> R.string.focus_phase_paused
+            FocusPhase.IDLE -> R.string.focus_phase_ready
+        })
+        val focusPreviewSessions = context.resources.getQuantityString(R.plurals.focus_sessions, focusState.completedSessions, focusState.completedSessions)
+        val goalPreviewLabel = context.getString(when (goalState.preset) {
+            GoalPreset.WATER -> R.string.goal_water
+            GoalPreset.READ -> R.string.goal_read
+            GoalPreset.MOVE -> R.string.goal_move
+            GoalPreset.CUSTOM -> R.string.goal_custom
+        })
+        val goalPreviewUnit = context.getString(when (goalState.preset) {
+            GoalPreset.WATER -> R.string.goal_unit_glasses
+            GoalPreset.READ, GoalPreset.MOVE -> R.string.goal_unit_minutes
+            GoalPreset.CUSTOM -> R.string.goal_unit_units
+        })
+        val preview = remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone, habitState, tallyState, noteState, focusState, goalState, focusPreviewLabel, focusPreviewSessions, goalPreviewLabel, goalPreviewUnit) {
             when (widgetType) {
                 "battery-column" -> UtilityWidgetRenderer.batteryColumn(battery, 360, 720)
                 "week-column" -> UtilityWidgetRenderer.weekColumn(now, timeSettings.weekStart, 360, 720)
@@ -199,6 +223,8 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                 "habit-tracker" -> HabitTrackerRenderer.preview(habitState, now.toLocalDate(), 720, 360)
                 "tally-counter" -> TallyRenderer.render(tallyState, 720, 360)
                 "pinned-note" -> PinnedNoteRenderer.render(noteState, 720, 360)
+                "focus-timer" -> FocusTimerRenderer.render(focusState, focusState.remainingMillis(), focusPreviewLabel, focusPreviewSessions, 720, 300, WidgetPalette.resolve(context, style = focusState.style))
+                "goal-tracker" -> GoalTrackerRenderer.render(goalState, goalPreviewLabel, goalPreviewUnit, 720, 300, WidgetPalette.resolve(context, style = goalState.style))
                 else -> DashboardRenderer.dayDial(now)
             }.asImageBitmap()
         }
@@ -260,9 +286,17 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                         SettingChips(PinnedNoteStyle.entries.toList(), noteState.style, ::noteStyleLabel) { saveNote(noteState.copy(style = it)) }
                         Text(stringResource(R.string.local_content_help), color = Muted)
                     }
+                    "focus-timer" -> {
+                        Text(stringResource(R.string.focus_timer_gallery_help), color = Muted)
+                        Text(stringResource(R.string.focus_timer_precise_help), color = Muted)
+                    }
+                    "goal-tracker" -> {
+                        Text(stringResource(R.string.goal_tracker_gallery_help), color = Muted)
+                        Text(stringResource(R.string.local_content_help), color = Muted)
+                    }
                 }
                 if (widgetType in listOf("month-matrix", "week-strip", "week-column")) CalendarSettingsEditor(instance.agenda, false) { settings -> instance = instance.copy(agenda = settings); store.save(appWidgetId, instance) }
-                Text(when (widgetType) { "ndot-clock", "playbox-shortcuts", "dual-clock", "pinned-note" -> stringResource(R.string.system_widget_help); "quick-tasks", "habit-tracker", "tally-counter" -> stringResource(R.string.interactive_widget_help); else -> stringResource(R.string.shared_widget_refresh_help) }, color = Muted)
+                Text(when (widgetType) { "ndot-clock", "playbox-shortcuts", "dual-clock", "pinned-note" -> stringResource(R.string.system_widget_help); "quick-tasks", "habit-tracker", "tally-counter", "focus-timer", "goal-tracker" -> stringResource(R.string.interactive_widget_help); else -> stringResource(R.string.shared_widget_refresh_help) }, color = Muted)
                 if (appWidgetId == null) AddWidgetButton(spec.provider, widgetName, onStatus = { status = it })
                 status?.let { Text(it, color = Muted) }
             }
