@@ -54,6 +54,33 @@ class ResearchWidgetLogicTest {
     }
 
     @Test
+    fun focusDelayedCompletionCarriesOverdueTimeThroughBreak() {
+        val focus = FocusTimerEngine.startFocus(
+            FocusTimerState(focusMinutes = 25, breakMinutes = 5),
+            wall,
+            elapsed,
+        )
+
+        val lateBreak = FocusTimerEngine.reconcile(
+            focus,
+            wall + 28 * 60_000L,
+            elapsed + 28 * 60_000L,
+        )
+        assertEquals(FocusPhase.BREAK, lateBreak.phase)
+        assertEquals(1, lateBreak.completedSessions)
+        assertEquals(2 * 60_000L, lateBreak.remainingMillis(wall + 28 * 60_000L, elapsed + 28 * 60_000L))
+
+        val fullyMissedBreak = FocusTimerEngine.reconcile(
+            focus,
+            wall + 31 * 60_000L,
+            elapsed + 31 * 60_000L,
+        )
+        assertEquals(FocusPhase.IDLE, fullyMissedBreak.phase)
+        assertEquals(1, fullyMissedBreak.completedSessions)
+        assertEquals(25 * 60_000L, fullyMissedBreak.remainingMillis(wall + 31 * 60_000L, elapsed + 31 * 60_000L))
+    }
+
+    @Test
     fun focusResetKeepsConfiguredDurationsAndClearsRunningSession() {
         val running = FocusTimerEngine.startFocus(
             FocusTimerState(focusMinutes = 45, breakMinutes = 10, completedSessions = 3),
