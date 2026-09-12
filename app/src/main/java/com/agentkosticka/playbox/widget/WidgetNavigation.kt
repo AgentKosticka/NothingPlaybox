@@ -35,7 +35,9 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
     DEVICE("device-panel", WidgetCategory.DEVICE, DevicePanelWidget::class.java),
     SHORTCUTS("playbox-shortcuts", WidgetCategory.DEVICE, PlayboxShortcutsWidget::class.java),
     QUICK_TASKS("quick-tasks", WidgetCategory.PRODUCTIVITY, QuickTasksWidget::class.java),
-    HABIT_TRACKER("habit-tracker", WidgetCategory.PRODUCTIVITY, HabitTrackerWidget::class.java);
+    HABIT_TRACKER("habit-tracker", WidgetCategory.PRODUCTIVITY, HabitTrackerWidget::class.java),
+    TALLY_COUNTER("tally-counter", WidgetCategory.PRODUCTIVITY, TallyCounterWidget::class.java),
+    PINNED_NOTE("pinned-note", WidgetCategory.PRODUCTIVITY, PinnedNoteWidget::class.java);
 
     companion object {
         fun fromKey(key: String?): WidgetDestination = entries.firstOrNull { it.key == key } ?: TIME_BARS
