@@ -439,7 +439,7 @@ object ProductivityWidgetRenderer {
         canvas.drawText(value, x, baseline, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
             textSize = size
-            typeface = NothingDotFont.typeface
+            typeface = if (size >= min(canvas.width, canvas.height) * .15f) NothingDotFont.typeface else WidgetTypography.body
             textAlign = align
             isSubpixelText = true
         })
@@ -456,7 +456,7 @@ object ProductivityWidgetRenderer {
         align: Paint.Align = Paint.Align.LEFT,
     ) {
         var size = maxSize
-        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = NothingDotFont.typeface }
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { typeface = if (maxSize >= min(canvas.width, canvas.height) * .15f) NothingDotFont.typeface else WidgetTypography.body }
         while (size > 12f) {
             paint.textSize = size
             if (paint.measureText(value) <= maxWidth) break

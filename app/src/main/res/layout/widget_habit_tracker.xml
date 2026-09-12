@@ -6,6 +6,7 @@
     android:orientation="vertical"
     android:paddingHorizontal="16dp"
     android:paddingVertical="10dp"
+    android:clipToOutline="true"
     android:background="@drawable/widget_card_background">
 
     <LinearLayout
@@ -25,7 +26,7 @@
                 android:id="@+id/habit_tracker_name"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="NDot57"
+                android:fontFamily="sans-serif"
                 android:text="READ"
                 android:textColor="@color/widget_on_surface"
                 android:textSize="@dimen/widget_text_title"
@@ -36,7 +37,7 @@
                 android:id="@+id/habit_tracker_meta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:fontFamily="NDot57"
+                android:fontFamily="sans-serif"
                 android:text="SEP · 8 DAYS"
                 android:textColor="@color/widget_on_surface_variant"
                 android:textSize="@dimen/widget_text_label"
@@ -47,7 +48,7 @@
             android:id="@+id/habit_tracker_streak"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:fontFamily="NDot57"
+            android:fontFamily="sans-serif"
             android:text="3 DAYS"
             android:textColor="@color/widget_on_surface_variant"
             android:textSize="@dimen/widget_text_label" />
@@ -63,9 +64,9 @@
 
     <TextView
         android:id="@+id/habit_tracker_toggle"
-        style="@style/Widget.Playbox.ControlLabel"
+        style="@style/Widget.Playbox.PrimaryControl"
         android:layout_width="match_parent"
-        android:layout_height="32dp"
+        android:layout_height="48dp"
         android:gravity="center"
         android:text="MARK TODAY" />
 </LinearLayout>

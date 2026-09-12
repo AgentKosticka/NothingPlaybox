@@ -14,7 +14,7 @@
     <string name="playbox_shortcuts_name">Playbox shortcuts</string><string name="playbox_shortcuts_description">One-tap access to the Matrix studio, widget gallery and Nothing OS Always-on Glyph Toy selector.</string>
     <string name="quick_tasks_name">Quick tasks</string><string name="quick_tasks_description">A four-item checklist you can complete directly on the home screen. Each widget keeps its own list.</string>
     <string name="dual_clock_name">Dual clock</string><string name="dual_clock_description">Local time beside a chosen world time zone, with both dates visible when midnight differs.</string>
-    <string name="habit_tracker_name">Habit grid</string><string name="habit_tracker_description">A GitHub-style monthly habit tracker. Mark today directly on the home screen and keep each habit in its own widget.</string>
+    <string name="habit_tracker_name">Habit grid</string><string name="habit_tracker_description">A monthly habit tracker. Mark today directly on the home screen and keep each habit in its own widget.</string>
     <string name="tally_counter_name">Tally counter</string><string name="tally_counter_description">A fast home-screen counter with −, reset and + controls, configurable step size, label and visual style.</string>
     <string name="pinned_note_name">Pinned note</string><string name="pinned_note_description">Keep a short note visible on your home screen with card, terminal or minimal styling.</string>
     <string name="next_event_name">Now / next event</string><string name="next_event_description">A compact calendar widget that shows the current meeting or your next event with a time-until label.</string>
@@ -25,7 +25,7 @@
     <string name="widget_size_2x2">2 × 2</string><string name="widget_size_2x1_to_4x2">2 × 1 → 4 × 2</string><string name="widget_size_2x2_to_4x2">2 × 2 → 4 × 2</string><string name="widget_size_4x2">4 × 2</string><string name="widget_size_4x1_to_4x2">4 × 1 → 4 × 2</string><string name="widget_size_4x1">4 × 1</string><string name="widget_header">%1$s / %2$s</string>
     <string name="time_bars_preview_cd">Live preview of four dotted time progress bars</string><string name="time_bars_header">TIME BARS / RESIZABLE</string><string name="fill_style">FILL STYLE</string><string name="fill_left_to_right">Left to right</string><string name="fill_right_to_left">Right to left</string><string name="fill_density">Density</string><string name="density_fill_help">Scattered dots build up in a stable pattern as each period passes.</string><string name="directional_fill_help">Dots fill %1$s as each period passes.</string><string name="bitmap_refresh_help">Refreshes about every 15 minutes. Android battery saving may delay bitmap widgets.</string><string name="widget_preview_cd">%1$s preview</string>
     <string name="visual">VISUAL</string><string name="battery_visual_ring">Ring</string><string name="battery_visual_dots">Dots</string><string name="battery_visual_bar">Bar</string><string name="measure">MEASURE</string><string name="storage_used">Used</string><string name="storage_free">Free</string><string name="show">SHOW</string><string name="year_elapsed">Elapsed</string><string name="year_remaining">Remaining</string><string name="count_down_to">COUNT DOWN TO</string><string name="milestone_weekend">Weekend</string><string name="milestone_month_end">Month end</string><string name="milestone_year_end">Year end</string>
-    <string name="system_widget_help">System-driven widget: no periodic worker needed.</string><string name="interactive_widget_help">Interactive widget: home-screen actions update immediately and need no periodic worker.</string><string name="shared_widget_refresh_help">Bitmap widgets refresh together about every 15 minutes and immediately on relevant clock, alarm or charging events.</string><string name="week_starts_on">WEEK STARTS ON</string><string name="pin_widget_fallback">Long-press your home screen → Widgets → Nothing Playbox → %1$s.</string><string name="pin_widget_finish">Finish adding the widget in your launcher.</string><string name="add_to_home_screen">ADD TO HOME SCREEN</string>
+    <string name="system_widget_help">System-driven widget: no periodic worker needed.</string><string name="interactive_widget_help">Changes appear immediately on your home screen.</string><string name="shared_widget_refresh_help">Bitmap widgets refresh together about every 15 minutes and immediately on relevant clock, alarm or charging events.</string><string name="week_starts_on">WEEK STARTS ON</string><string name="pin_widget_fallback">Long-press your home screen → Widgets → Nothing Playbox → %1$s.</string><string name="pin_widget_finish">Finish adding the widget in your launcher.</string><string name="add_to_home_screen">ADD TO HOME SCREEN</string>
     <string name="quick_tasks_list_title">LIST TITLE</string><string name="quick_tasks_tasks">TASKS</string><string name="quick_tasks_task_label">Task %1$d</string><string name="dual_clock_second_zone">SECOND CLOCK</string><string name="habit_tracker_label">HABIT</string><string name="habit_tracker_mark_today">MARK TODAY</string><string name="habit_tracker_done_today">DONE TODAY</string><string name="habit_tracker_local_help">Habit name and completion history stay on this device and are excluded from Android backup/device transfer.</string><string name="habit_style_dots">Dots</string><string name="habit_style_squares">Squares</string><string name="habit_style_rings">Rings</string>
     <string name="tally_label">LABEL</string><string name="tally_step">STEP</string><string name="tally_value">VALUE</string><string name="tally_style_big">Big number</string><string name="tally_style_dots">Dot matrix</string>
     <string name="note_title">TITLE</string><string name="note_body">NOTE</string><string name="note_style_card">Card</string><string name="note_style_terminal">Terminal</string><string name="note_style_minimal">Minimal</string><string name="local_content_help">Content stays on this device and is excluded from Android backup/device transfer.</string>
@@ -34,7 +34,7 @@
     <string name="focus_phase_ready">Ready</string><string name="focus_phase_focus">Focus</string><string name="focus_phase_break">Break</string><string name="focus_phase_paused">Paused</string>
     <string name="focus_start">START</string><string name="focus_pause">PAUSE</string><string name="focus_resume">RESUME</string><string name="focus_reset">RESET</string><string name="focus_skip">SKIP</string><string name="focus_style">STYLE</string><string name="focus_precise">PRECISE</string>
     <string name="focus_content_description">%1$s timer, %2$s remaining, %3$d completed sessions</string>
-    <string name="focus_timer_gallery_help">Start, pause, reset, skip phases and cycle Playbox appearance directly from the widget. The live countdown is system-driven and does not use a periodic worker.</string>
+    <string name="focus_timer_gallery_help">Start, pause and skip from your home screen. Tap the timer face to change its appearance.</string>
     <string name="focus_timer_precise_help">Precise alarm access is optional. Without it, the countdown remains endpoint-based, but Android may delay the phase-change refresh while the phone is idle.</string>
     <plurals name="focus_sessions"><item quantity="one">%d session</item><item quantity="other">%d sessions</item></plurals>
 
@@ -42,11 +42,26 @@
     <string name="goal_unit_glasses">glasses</string><string name="goal_unit_minutes">min</string><string name="goal_unit_units">units</string>
     <string name="goal_mode">MODE</string><string name="goal_look">LOOK</string>
     <string name="goal_content_description">%1$s: %2$d of %3$d %4$s, %5$d day streak</string>
-    <string name="goal_tracker_gallery_help">Use −/+ to log progress, MODE to switch presets and LOOK to cycle ring, bar and dots plus Playbox appearance.</string>
+    <string name="goal_tracker_gallery_help">Use −/+ to log progress. Tap the amount to change your goal or appearance. Changing the goal starts a new history.</string>
 
-    <string name="matrix_showcase_previous">◀</string><string name="matrix_showcase_next">▶</string><string name="matrix_showcase_set_active">SET ACTIVE</string><string name="matrix_showcase_active">ACTIVE</string><string name="matrix_showcase_not_active">not active</string><string name="matrix_showcase_content_description">Matrix effect %1$s, %2$s</string>
+    <string name="matrix_showcase_previous">◀</string><string name="matrix_showcase_next">▶</string><string name="matrix_showcase_set_active">USE</string><string name="matrix_showcase_active">ACTIVE</string><string name="matrix_showcase_not_active">not active</string><string name="matrix_showcase_content_description">Matrix effect %1$s, %2$s</string>
 
     <string name="widget_day_progress_cd">%1$d percent of today elapsed</string><string name="widget_battery_percent_cd">Battery %1$d percent, %2$s</string><string name="widget_battery_unknown_cd">Battery level unavailable, %1$s</string><string name="widget_battery_charging">charging</string><string name="widget_battery_on_battery">on battery</string>
     <string name="battery_column_name">Battery column</string><string name="battery_column_description">A vertical dotted battery gauge with percentage and charging status.</string><string name="week_column_name">Week column</string><string name="week_column_description">Seven days stacked vertically, with today highlighted. Uses your chosen week start.</string><string name="widget_size_vertical">1 column × 2 rows</string>
     <string name="widget_category_time">Time</string><string name="widget_category_battery">Battery</string><string name="widget_category_calendar">Calendar</string><string name="widget_category_device">Device</string><string name="widget_category_productivity">Productivity</string><string name="widget_variant_selector">Widget: %1$s ▾</string>
+    <string name="widget_gallery_title">Make it yours</string>
+    <string name="widget_gallery_subtitle">Choose a widget. Shape your home screen.</string>
+    <string name="widget_editor_title">Your widget</string>
+    <string name="widget_editor_subtitle">Changes apply to this home-screen widget.</string>
+    <string name="widget_customize">Customize</string>
+    <string name="widget_appearance">Appearance</string>
+    <string name="widget_goal_kind">Daily goal</string>
+    <string name="widget_precise_timing">Precise timing</string>
+    <string name="widget_appearance_classic">Classic</string>
+    <string name="widget_appearance_dynamic">Wallpaper</string>
+    <string name="widget_appearance_glass">Glass</string>
+    <string name="widget_appearance_contrast">High contrast</string>
+    <string name="widget_preview_hint">Preview · use the controls on your home screen</string>
+    <string name="widget_example_preview">Example preview · your selected calendar supplies the events</string>
+    <string name="widget_matrix_gallery_help">Starts with your active effect. Browse your library and activate effects directly from the home screen.</string>
 </resources>

@@ -8,7 +8,7 @@ The built-in library includes static/animated effects plus Radar Sweep, Breathin
 
 - **Matrix** — static artwork, frame animations, Pixel Lab, and image/video imports.
 - **Procedural** — Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Open an engine to preview it or create independent named profiles. Profiles stay editable and work with `.playbox` import/export and AOD selection.
-- **Widgets** — Time, Battery, Calendar, Device, and Productivity categories with a widget selector, live previews, settings, and one-tap launcher pinning. The Android launcher picker also exposes Matrix Showcase.
+- **Widgets** — Time, Battery, Calendar, Device, and Productivity categories with a widget selector, live previews, settings, and one-tap launcher pinning. Matrix Showcase is available in Device and in the Android launcher picker.
 - **AOD** — select the active effect, preview on the Glyph Matrix, adjust brightness/speed, rotate a playlist, and configure quiet hours. Nothing OS's Always-on Glyph Toy reads the same settings.
 
 Editor changes are kept as an in-memory draft until **Save**, including across Activity/configuration recreation. Opening an effect no longer mutates the library, and **Discard** leaves persisted data untouched.
@@ -36,7 +36,7 @@ Nothing Playbox currently ships:
 17. **Quick Tasks** — four-item home-screen checklist with native checkboxes. Each instance keeps an independent title/list and task completion updates immediately without opening the app.
 18. **Dual Clock** — local time beside a selected world time zone, including both dates so cross-midnight differences stay obvious.
 19. **Habit Grid** — a per-instance monthly habit tracker with current streak/history and direct Mark Today action. Choose Dots, Squares, or Rings for the grid style.
-20. **Tally Counter** — instant − / reset / + controls with independent label, value and step size per widget. Choose a Big Number or Dot Matrix visual.
+20. **Tally Counter** — instant − / reset / + controls with independent label, value and step size per widget. Choose large light numerals or dot typography; both show the full count.
 21. **Pinned Note** — a short home-screen note with independent content per widget and Card, Terminal, or Minimal presentation.
 22. **Now / Next Event** — the current or next calendar event with start time and a starts-in/ends-in label. Tap it to open the event.
 23. **Focus Timer** — endpoint-driven Pomodoro timer with live system countdown, start/pause/resume/reset/skip actions, automatic focus→break transitions, completed-session count, and Classic/Dynamic/Glass/High Contrast appearances. It does not use minute-by-minute polling.
@@ -58,11 +58,17 @@ New interactive widgets can use four public-Android appearance modes:
 
 Existing widgets keep their existing Classic rendering by default, so updating the app does not silently restyle a user's home screen.
 
+### Widget design
+
+The nine widgets introduced in this branch use readable system text for labels and content, with dot typography reserved for display numbers. Primary actions use a restrained red control and native press feedback. Focus and Goal keep configuration in their instance editors, reached by tapping the face; their home-screen controls are reserved for timing and logging. Matrix keeps direct browsing and activation.
+
+Bitmap panels render against the launcher’s actual content bounds, excluding the native control shelf. Rounded shells clip content consistently. Notes wrap long words and ellipsize overflow; counters retain their full numeric value in both styles. A device-rendered review suite covers the nine native layouts at compact and wide sizes in light and dark modes.
+
 ### Focus timing and optional precise alarms
 
 Focus Timer stores an absolute wall-clock endpoint plus a monotonic endpoint for the current boot. The visible countdown is a system `Chronometer`, so Playbox does not wake every second or every minute. Process death does not lose the session, reboot/time changes are reconciled from persisted state, and an active focus session is deliberately not transferred to another device during widget restore.
 
-The core timer works **without exact-alarm special access**. When precise alarm access is unavailable, Playbox uses Android's inexact idle-safe alarm path: the countdown remains endpoint-correct, but Android can delay the background phase-change refresh while the device is idle. The widget exposes **PRECISE** as an explicit user choice that opens Android's exact-alarm settings. Playbox does not request notification permission merely because Focus Timer exists.
+The core timer works **without exact-alarm special access**. When precise alarm access is unavailable, Playbox uses Android's inexact idle-safe alarm path: the countdown remains endpoint-correct, but Android can delay the background phase-change refresh while the device is idle. Tap the timer face to open its editor; **Precise timing** opens Android's exact-alarm settings. Playbox does not request notification permission merely because Focus Timer exists.
 
 All providers include launcher preview metadata. Configurable instances snapshot defaults independently, including existing widgets on upgrade. Tap an installed configurable widget to edit that instance where supported; settings opened normally in the app are defaults for new widgets. Agenda event rows, Now / Next Event, and Device Panel quadrants have their own actions. Widgets do not require Glyph hardware; Matrix Showcase remains a useful local preview/open shortcut even when direct Matrix output is unavailable.
 

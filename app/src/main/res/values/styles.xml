@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Widget.Playbox.ControlLabel" parent="">
-        <item name="android:fontFamily">NDot57</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
         <item name="android:textColor">@color/widget_on_surface</item>
         <item name="android:textSize">@dimen/widget_text_control</item>
         <item name="android:gravity">center</item>
@@ -9,7 +9,14 @@
         <item name="android:clickable">true</item>
         <item name="android:focusable">true</item>
         <item name="android:minWidth">0dp</item>
-        <item name="android:minHeight">0dp</item>
+        <item name="android:minHeight">48dp</item>
+        <item name="android:maxLines">1</item>
+        <item name="android:ellipsize">end</item>
+        <item name="android:includeFontPadding">false</item>
         <item name="android:paddingHorizontal">4dp</item>
+    </style>
+    <style name="Widget.Playbox.PrimaryControl" parent="Widget.Playbox.ControlLabel">
+        <item name="android:background">@drawable/widget_primary_button</item>
+        <item name="android:textColor">#FFFFFFFF</item>
     </style>
 </resources>

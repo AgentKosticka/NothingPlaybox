@@ -5,6 +5,7 @@
     android:layout_height="match_parent"
     android:paddingHorizontal="16dp"
     android:paddingVertical="10dp"
+    android:clipToOutline="true"
     android:background="@drawable/widget_card_background">
 
     <LinearLayout
@@ -17,7 +18,7 @@
             android:id="@+id/next_event_label"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="NDot57"
+            android:fontFamily="sans-serif"
             android:text="NEXT"
             android:textColor="@color/widget_accent"
             android:textSize="@dimen/widget_text_label" />
@@ -27,7 +28,7 @@
             android:layout_height="0dp"
             android:layout_weight="1"
             android:gravity="center_vertical"
-            android:fontFamily="NDot57"
+            android:fontFamily="sans-serif"
             android:text="Design review"
             android:textColor="@color/widget_on_surface"
             android:textSize="@dimen/widget_text_title"
@@ -41,7 +42,7 @@
             android:id="@+id/next_event_time"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:fontFamily="NDot57"
+            android:fontFamily="sans-serif"
             android:text="14:30 · starts in 42m"
             android:textColor="@color/widget_on_surface_variant"
             android:textSize="@dimen/widget_text_label"
@@ -54,7 +55,7 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:gravity="center"
-        android:fontFamily="NDot57"
+        android:fontFamily="sans-serif"
         android:text="NO UPCOMING EVENTS"
         android:textColor="@color/widget_on_surface_variant"
         android:textSize="@dimen/widget_text_body"

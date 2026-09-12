@@ -16,7 +16,6 @@ import com.agentkosticka.playbox.R
 import com.agentkosticka.playbox.ui.NothingDotFont
 import org.json.JSONObject
 import java.util.Locale
-import kotlin.math.abs
 import kotlin.math.min
 
 enum class TallyStyle { BIG_NUMBER, DOT_MATRIX }
@@ -55,7 +54,7 @@ class TallyStore(private val context: Context) {
 
     fun change(id: Int, direction: Int) = synchronized(LOCK) {
         val state = load(id)
-        save(id, state.copy(value = state.value + state.step * direction))
+        save(id, state.copy(value = (state.value.toLong() + state.step.toLong() * direction).coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()))
     }
 
     fun reset(id: Int) = synchronized(LOCK) { save(id, load(id).copy(value = 0)) }
@@ -95,6 +94,10 @@ class TallyStore(private val context: Context) {
 }
 
 class TallyCounterWidget : InstanceWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: android.os.Bundle) {
+        onUpdate(context, manager, intArrayOf(id))
+    }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         val store = TallyStore(context)
         ids.forEach { render(context, manager, it, store.load(it)) }
@@ -129,14 +132,17 @@ class TallyCounterWidget : InstanceWidgetProvider() {
         fun update(context: Context, id: Int) = render(context, AppWidgetManager.getInstance(context), id, TallyStore(context).load(id))
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: TallyState) {
-            val views = RemoteViews(context.packageName, R.layout.widget_tally_counter)
-            views.setThemedWidgetBitmap(context, R.id.tally_image) { palette -> TallyRenderer.render(state, 720, 300, palette) }
-            views.setOnClickPendingIntent(R.id.tally_image, widgetPendingIntent(context, WidgetDestination.TALLY_COUNTER, id))
-            views.setOnClickPendingIntent(R.id.tally_minus, action(context, id, ACTION_MINUS, "minus"))
-            views.setOnClickPendingIntent(R.id.tally_reset, action(context, id, ACTION_RESET, "reset"))
-            views.setOnClickPendingIntent(R.id.tally_plus, action(context, id, ACTION_PLUS, "plus"))
-            views.setContentDescription(R.id.tally_root, "${state.label.ifBlank { "Counter" }} ${state.value}, step ${state.step}")
-            manager.updateAppWidget(id, views)
+            val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
+                val views = RemoteViews(context.packageName, R.layout.widget_tally_counter)
+                views.setThemedWidgetBitmap(context, R.id.tally_image) { palette -> TallyRenderer.render(state, width, height, palette) }
+                views.setOnClickPendingIntent(R.id.tally_image, widgetPendingIntent(context, WidgetDestination.TALLY_COUNTER, id))
+                views.setOnClickPendingIntent(R.id.tally_minus, action(context, id, ACTION_MINUS, "minus"))
+                views.setOnClickPendingIntent(R.id.tally_reset, action(context, id, ACTION_RESET, "reset"))
+                views.setOnClickPendingIntent(R.id.tally_plus, action(context, id, ACTION_PLUS, "plus"))
+                views.setContentDescription(R.id.tally_root, "${state.label.ifBlank { "Counter" }} ${state.value}, step ${state.step}")
+                views
+            }
+            manager.updateAppWidget(id, sizedViews)
         }
 
         private fun action(context: Context, id: Int, action: String, suffix: String): PendingIntent {
@@ -155,24 +161,12 @@ object TallyRenderer {
         val bitmap = card(width, height, palette)
         val canvas = Canvas(bitmap)
         drawText(canvas, state.label.ifBlank { "COUNT" }.uppercase(Locale.getDefault()), width * .06f, height * .17f,
-            min(width, height) * .065f, palette.muted)
-        when (state.style) {
-            TallyStyle.BIG_NUMBER -> drawText(canvas, state.value.toString(), width / 2f, height * .68f,
-                min(width, height) * .34f, palette.foreground, Paint.Align.CENTER)
-            TallyStyle.DOT_MATRIX -> {
-                drawText(canvas, state.value.toString(), width * .94f, height * .17f,
-                    min(width, height) * .065f, palette.foreground, Paint.Align.RIGHT)
-                val active = abs(state.value) % 21
-                val radius = min(width, height) * .028f
-                repeat(21) { index ->
-                    val col = index % 7
-                    val row = index / 7
-                    canvas.drawCircle(width * (.16f + col * .115f), height * (.38f + row * .19f), radius,
-                        Paint(Paint.ANTI_ALIAS_FLAG).apply { color = if (index < active) palette.accent else palette.inactive })
-                }
-                if (state.value < 0) drawText(canvas, "−", width * .07f, height * .60f, min(width, height) * .18f, palette.foreground)
-            }
-        }
+            min(width / 280f, height / 104f) * 12f, palette.muted)
+        val value = state.value.toString()
+        val size = min(height * .48f, width * .84f / maxOf(1, value.length) * 1.3f)
+        WidgetTypography.number(canvas, value, width / 2f, height * .76f, size, palette.foreground,
+            width * .88f, Paint.Align.CENTER,
+            if (state.style == TallyStyle.DOT_MATRIX) NothingDotFont.typeface else android.graphics.Typeface.create("sans-serif-light", android.graphics.Typeface.NORMAL))
         return bitmap
     }
 }
@@ -224,6 +218,10 @@ class PinnedNoteStore(private val context: Context) {
 }
 
 class PinnedNoteWidget : InstanceWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: android.os.Bundle) {
+        onUpdate(context, manager, intArrayOf(id))
+    }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         val store = PinnedNoteStore(context); ids.forEach { render(context, manager, it, store.load(it)) }
     }
@@ -232,11 +230,14 @@ class PinnedNoteWidget : InstanceWidgetProvider() {
     companion object {
         fun update(context: Context, id: Int) = render(context, AppWidgetManager.getInstance(context), id, PinnedNoteStore(context).load(id))
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: PinnedNoteState) {
-            val views = RemoteViews(context.packageName, R.layout.widget_pinned_note)
-            views.setThemedWidgetBitmap(context, R.id.pinned_note_image) { palette -> PinnedNoteRenderer.render(state, 720, 360, palette) }
-            views.setOnClickPendingIntent(R.id.pinned_note_image, widgetPendingIntent(context, WidgetDestination.PINNED_NOTE, id))
-            views.setContentDescription(R.id.pinned_note_root, "${state.title.ifBlank { "Pinned note" }}. ${state.text.take(120)}")
-            manager.updateAppWidget(id, views)
+            val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 0) { width, height ->
+                val views = RemoteViews(context.packageName, R.layout.widget_pinned_note)
+                views.setThemedWidgetBitmap(context, R.id.pinned_note_image) { palette -> PinnedNoteRenderer.render(state, width, height, palette) }
+                views.setOnClickPendingIntent(R.id.pinned_note_image, widgetPendingIntent(context, WidgetDestination.PINNED_NOTE, id))
+                views.setContentDescription(R.id.pinned_note_root, "${state.title.ifBlank { "Pinned note" }}. ${state.text}")
+                views
+            }
+            manager.updateAppWidget(id, sizedViews)
         }
     }
 }
@@ -249,13 +250,13 @@ object PinnedNoteRenderer {
         val pad = width * .06f
         val titleColor = if (state.style == PinnedNoteStyle.TERMINAL) palette.accent else palette.foreground
         drawText(canvas, state.title.ifBlank { "NOTE" }.uppercase(Locale.getDefault()), pad, height * .17f,
-            min(width, height) * .065f, titleColor)
+            min(width / 280f, height / 104f) * 12f, titleColor)
         if (state.style == PinnedNoteStyle.CARD) {
             canvas.drawRect(pad, height * .22f, width - pad, height * .225f, Paint().apply { color = palette.inactive })
         }
         val prefix = if (state.style == PinnedNoteStyle.TERMINAL) "> " else ""
         drawWrapped(canvas, prefix + state.text.ifBlank { "Tap to write a note" }, pad, height * .34f,
-            width - pad * 2, height * .11f, min(width, height) * .057f,
+            width - pad * 2, min(width / 280f, height / 160f) * 16f,
             if (state.text.isBlank()) palette.muted else palette.foreground, state.style == PinnedNoteStyle.MINIMAL)
         return bitmap
     }
@@ -269,26 +270,28 @@ private fun card(width: Int, height: Int, palette: WidgetPalette): Bitmap {
 }
 
 private fun drawText(canvas: Canvas, value: String, x: Float, baseline: Float, size: Float, color: Int, align: Paint.Align = Paint.Align.LEFT) {
-    canvas.drawText(value, x, baseline, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        this.color = color; textSize = size; typeface = NothingDotFont.typeface; textAlign = align; isSubpixelText = true
-    })
+    WidgetTypography.text(canvas, value, x, baseline, size, color, canvas.width * .88f, align, WidgetTypography.label)
 }
 
-private fun drawWrapped(canvas: Canvas, value: String, x: Float, startBaseline: Float, maxWidth: Float, lineHeight: Float, size: Float, color: Int, spacious: Boolean) {
-    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color; textSize = size; typeface = NothingDotFont.typeface; isSubpixelText = true }
-    var baseline = startBaseline
-    val maxBottom = canvas.height * .90f
-    value.lines().forEach { paragraph ->
-        var line = ""
-        paragraph.split(Regex("\\s+")).filter { it.isNotBlank() }.forEach { word ->
-            val candidate = if (line.isEmpty()) word else "$line $word"
-            if (paint.measureText(candidate) > maxWidth && line.isNotEmpty()) {
-                if (baseline <= maxBottom) canvas.drawText(line, x, baseline, paint)
-                baseline += lineHeight * if (spacious) 1.18f else 1f
-                line = word
-            } else line = candidate
-        }
-        if (line.isNotEmpty() && baseline <= maxBottom) canvas.drawText(line, x, baseline, paint)
-        baseline += lineHeight * if (spacious) 1.18f else 1f
+private fun drawWrapped(canvas: Canvas, value: String, x: Float, startBaseline: Float, maxWidth: Float, size: Float, color: Int, spacious: Boolean) {
+    val paint = android.text.TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
+        this.color = color
+        textSize = size
+        typeface = WidgetTypography.body
     }
+    val top = startBaseline + paint.fontMetrics.ascent
+    val availableHeight = canvas.height * .90f - top
+    val spacing = if (spacious) 1.18f else 1f
+    val lines = (availableHeight / (paint.fontSpacing * spacing)).toInt().coerceAtLeast(1)
+    val layout = android.text.StaticLayout.Builder.obtain(value, 0, value.length, paint, maxWidth.toInt().coerceAtLeast(1))
+        .setIncludePad(false)
+        .setLineSpacing(0f, spacing)
+        .setMaxLines(lines)
+        .setEllipsize(android.text.TextUtils.TruncateAt.END)
+        .build()
+    canvas.save()
+    canvas.clipRect(x, top, x + maxWidth, canvas.height * .90f)
+    canvas.translate(x, top)
+    layout.draw(canvas)
+    canvas.restore()
 }

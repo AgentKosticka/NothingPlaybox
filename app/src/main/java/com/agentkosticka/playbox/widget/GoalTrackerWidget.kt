@@ -107,6 +107,18 @@ class GoalTrackerStore(private val context: Context) {
         rolled
     }
 
+    fun configure(id: Int?, preset: GoalPreset, visual: GoalVisual, style: WidgetVisualStyle) = synchronized(LOCK) {
+        fun configured(current: GoalTrackerState): GoalTrackerState = current.copy(
+            preset = preset, visual = visual, style = style,
+            value = if (preset == current.preset) current.value else 0,
+            history = if (preset == current.preset) current.history else emptyMap(),
+        )
+        if (id == null) {
+            AppWidgetManager.getInstance(context).getAppWidgetIds(ComponentName(context, GoalTrackerWidget::class.java)).forEach { load(it) }
+            preferences.edit { putString(DEFAULTS, encode(configured(load(null)))) }
+        } else mutate(id, ::configured)
+    }
+
     fun change(id: Int, direction: Int) = mutate(id) { state ->
         state.copy(value = (state.value + state.step * direction).coerceAtLeast(0))
     }
@@ -189,6 +201,10 @@ class GoalTrackerStore(private val context: Context) {
 }
 
 class GoalTrackerWidget : InstanceWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: android.os.Bundle) {
+        onUpdate(context, manager, intArrayOf(id))
+    }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         val store = GoalTrackerStore(context)
         ids.forEach { render(context, manager, it, store.load(it)) }
@@ -244,34 +260,39 @@ class GoalTrackerWidget : InstanceWidgetProvider() {
         }
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: GoalTrackerState) {
-            val views = RemoteViews(context.packageName, R.layout.widget_goal_tracker)
-            val label = context.getString(
-                when (state.preset) {
-                    GoalPreset.WATER -> R.string.goal_water
-                    GoalPreset.READ -> R.string.goal_read
-                    GoalPreset.MOVE -> R.string.goal_move
-                    GoalPreset.CUSTOM -> R.string.goal_custom
-                },
-            )
-            val unit = context.getString(
-                when (state.preset) {
-                    GoalPreset.WATER -> R.string.goal_unit_glasses
-                    GoalPreset.READ, GoalPreset.MOVE -> R.string.goal_unit_minutes
-                    GoalPreset.CUSTOM -> R.string.goal_unit_units
-                },
-            )
-            views.setStyledWidgetBitmap(context, R.id.goal_background, state.style) { palette ->
-                GoalTrackerRenderer.render(state, label, unit, 720, 300, palette)
+            val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
+                val views = RemoteViews(context.packageName, R.layout.widget_goal_tracker)
+                views.setWidgetSurface(context, R.id.goal_root, state.style)
+                val label = context.getString(
+                    when (state.preset) {
+                        GoalPreset.WATER -> R.string.goal_water
+                        GoalPreset.READ -> R.string.goal_read
+                        GoalPreset.MOVE -> R.string.goal_move
+                        GoalPreset.CUSTOM -> R.string.goal_custom
+                    },
+                )
+                val unit = context.getString(
+                    when (state.preset) {
+                        GoalPreset.WATER -> R.string.goal_unit_glasses
+                        GoalPreset.READ, GoalPreset.MOVE -> R.string.goal_unit_minutes
+                        GoalPreset.CUSTOM -> R.string.goal_unit_units
+                    },
+                )
+                views.setStyledWidgetBitmap(context, R.id.goal_background, state.style) { palette ->
+                    GoalTrackerRenderer.render(state, label, unit, width, height, palette.copy(background = android.graphics.Color.TRANSPARENT))
+                }
+                views.setOnClickPendingIntent(R.id.goal_background, widgetPendingIntent(context, WidgetDestination.GOAL_TRACKER, id))
+                views.setOnClickPendingIntent(R.id.goal_minus, action(context, id, ACTION_MINUS, 1))
+                views.setOnClickPendingIntent(R.id.goal_plus, action(context, id, ACTION_PLUS, 2))
+
+
+                views.setContentDescription(
+                    R.id.goal_root,
+                    context.getString(R.string.goal_content_description, label, state.value, state.target, unit, state.streak()),
+                )
+                views
             }
-            views.setOnClickPendingIntent(R.id.goal_minus, action(context, id, ACTION_MINUS, 1))
-            views.setOnClickPendingIntent(R.id.goal_plus, action(context, id, ACTION_PLUS, 2))
-            views.setOnClickPendingIntent(R.id.goal_mode, action(context, id, ACTION_MODE, 3))
-            views.setOnClickPendingIntent(R.id.goal_look, action(context, id, ACTION_LOOK, 4))
-            views.setContentDescription(
-                R.id.goal_root,
-                context.getString(R.string.goal_content_description, label, state.value, state.target, unit, state.streak()),
-            )
-            manager.updateAppWidget(id, views)
+            manager.updateAppWidget(id, sizedViews)
         }
 
         private fun action(context: Context, id: Int, action: String, suffix: Int): PendingIntent {
@@ -304,79 +325,53 @@ object GoalTrackerRenderer {
         canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = palette.background
         })
-        val dot = NothingDotFont.typeface
-        val pad = width * .055f
+        val scale = min(width / 280f, height / 104f)
+        val pad = 16f * scale
         val progress = (state.value.toFloat() / state.target.coerceAtLeast(1)).coerceIn(0f, 1f)
-
-        canvas.drawText(label.uppercase(Locale.getDefault()), pad, height * .18f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = palette.foreground
-            textSize = min(width, height) * .066f
-            typeface = dot
-        })
-        canvas.drawText("${state.value}/${state.target} ${unit.uppercase(Locale.getDefault())}", width - pad, height * .18f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = palette.muted
-            textSize = min(width, height) * .045f
-            typeface = dot
-            textAlign = Paint.Align.RIGHT
-        })
-
+        val cy = height * .53f
+        val cx = width - pad - 34f * scale
+        val r = 29f * scale
+        WidgetTypography.text(canvas, label.uppercase(Locale.getDefault()), pad, 22f * scale,
+            12f * scale, palette.muted, width * .58f, face = WidgetTypography.label)
+        WidgetTypography.number(canvas, state.value.toString(), pad, height * .70f,
+            48f * scale, palette.foreground, width * .56f, face = NothingDotFont.typeface)
+        WidgetTypography.text(canvas, "of ${state.target} $unit", pad, height - 8f * scale,
+            12f * scale, palette.muted, width * .58f)
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
         when (state.visual) {
             GoalVisual.RING -> {
-                val cx = width * .50f
-                val cy = height * .52f
-                val r = min(width, height) * .22f
                 val rect = RectF(cx - r, cy - r, cx + r, cy + r)
-                canvas.drawArc(rect, -90f, 360f, false, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = palette.inactive
-                    style = Paint.Style.STROKE
-                    strokeWidth = r * .22f
-                    strokeCap = Paint.Cap.ROUND
-                })
-                canvas.drawArc(rect, -90f, progress * 360f, false, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = palette.accent
-                    style = Paint.Style.STROKE
-                    strokeWidth = r * .22f
-                    strokeCap = Paint.Cap.ROUND
-                })
-                canvas.drawText("${(progress * 100).toInt()}%", cx, cy + min(width, height) * .045f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = palette.foreground
-                    textSize = min(width, height) * .105f
-                    typeface = dot
-                    textAlign = Paint.Align.CENTER
-                })
+                paint.style = Paint.Style.STROKE
+                paint.strokeWidth = 5f * scale
+                paint.strokeCap = Paint.Cap.ROUND
+                paint.color = palette.inactive
+                canvas.drawArc(rect, -90f, 360f, false, paint)
+                paint.color = palette.accent
+                if (progress > 0f) canvas.drawArc(rect, -90f, progress * 360f, false, paint)
+                WidgetTypography.text(canvas, "${(progress * 100).toInt()}%", cx, cy + 4f * scale,
+                    12f * scale, palette.foreground, r * 1.8f, Paint.Align.CENTER)
             }
             GoalVisual.BAR -> {
-                val left = width * .10f
-                val right = width * .90f
-                val top = height * .46f
-                val bottom = height * .60f
-                canvas.drawRoundRect(left, top, right, bottom, 28f, 28f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.inactive })
-                canvas.drawRoundRect(left, top, left + (right - left) * progress, bottom, 28f, 28f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent })
+                repeat(10) { index ->
+                    paint.color = if (index < (progress * 10).toInt()) palette.accent else palette.inactive
+                    val y = cy + r - index * 6f * scale
+                    canvas.drawRoundRect(cx - r, y - 4f * scale, cx + r, y, 2f * scale, 2f * scale, paint)
+                }
             }
             GoalVisual.DOTS -> {
-                val dots = state.target.coerceIn(5, 30)
-                val active = (progress * dots).toInt().coerceIn(0, dots)
-                val columns = min(dots, 10)
-                val rows = (dots + columns - 1) / columns
-                val dotRadius = min(width / (columns * 3f), height / (rows * 5f)).coerceAtLeast(6f)
-                repeat(dots) { index ->
-                    val col = index % columns
-                    val row = index / columns
-                    val x = width * .18f + (width * .64f) * (col + .5f) / columns
-                    val y = height * .38f + (height * .30f) * (row + .5f) / rows
-                    canvas.drawCircle(x, y, dotRadius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                        color = if (index < active) palette.accent else palette.inactive
-                    })
+                val count = state.target.coerceAtMost(30)
+                val columns = if (count <= 10) 4 else 5
+                val rows = (count + columns - 1) / columns
+                val pitch = min(14f * scale, r * 2 / rows)
+                repeat(count) { index ->
+                    paint.color = if (index < state.value) palette.accent else palette.inactive
+                    canvas.drawCircle(cx + (index % columns - (columns - 1) / 2f) * pitch,
+                        cy + (index / columns - (rows - 1) / 2f) * pitch, pitch * .28f, paint)
                 }
             }
         }
-
-        val streak = state.streak()
-        canvas.drawText("$streak DAY STREAK", pad, height * .88f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = palette.muted
-            textSize = min(width, height) * .043f
-            typeface = dot
-        })
+        WidgetTypography.text(canvas, "${state.streak()} day streak", cx, height - 8f * scale,
+            10f * scale, palette.muted, width * .34f, Paint.Align.CENTER)
         return bitmap
     }
 }

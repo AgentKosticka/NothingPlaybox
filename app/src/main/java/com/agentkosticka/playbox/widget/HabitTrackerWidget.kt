@@ -272,9 +272,10 @@ object HabitTrackerRenderer {
         val firstOffset = month.atDay(1).dayOfWeek.value - 1
         val cellWidth = (right - left) / 7f
         val headerHeight = (bottom - top) * .16f
-        val cellHeight = (bottom - top - headerHeight) / 6f
-        val textSize = min(cellWidth, cellHeight) * .25f
-        val markRadius = min(cellWidth, cellHeight) * .20f
+        val rows = (firstOffset + month.lengthOfMonth() + 6) / 7
+        val cellHeight = (bottom - top - headerHeight) / rows
+        val textSize = min(cellWidth * .25f, headerHeight * .65f)
+        val markRadius = min(cellWidth, cellHeight) * .26f
         val labels = arrayOf("M", "T", "W", "T", "F", "S", "S")
 
         labels.forEachIndexed { index, label ->
@@ -331,7 +332,7 @@ object HabitTrackerRenderer {
         canvas.drawText(value, x, baseline, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
             textSize = size
-            typeface = NothingDotFont.typeface
+            typeface = WidgetTypography.label
             textAlign = align
             isSubpixelText = true
         })

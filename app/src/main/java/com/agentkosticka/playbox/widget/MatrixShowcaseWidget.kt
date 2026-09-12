@@ -29,6 +29,10 @@ import kotlin.math.min
  * changes the repository's active effect on explicit user action, and opens Playbox for playback.
  */
 class MatrixShowcaseWidget : InstanceWidgetProvider() {
+    override fun onAppWidgetOptionsChanged(context: Context, manager: AppWidgetManager, id: Int, options: android.os.Bundle) {
+        onUpdate(context, manager, intArrayOf(id))
+    }
+
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         val repository = EffectRepository(context)
         val store = MatrixShowcaseStore(context)
@@ -98,26 +102,30 @@ class MatrixShowcaseWidget : InstanceWidgetProvider() {
             selection: MatrixShowcaseSelection,
             activeId: String?,
         ) {
-            val views = RemoteViews(context.packageName, R.layout.widget_matrix_showcase)
-            val active = activeId == selection.effect.id
-            views.setStyledWidgetBitmap(context, R.id.matrix_showcase_image, selection.style) { palette ->
-                MatrixShowcaseRenderer.render(selection.effect, active, 720, 360, palette)
+            val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
+                val views = RemoteViews(context.packageName, R.layout.widget_matrix_showcase)
+                views.setWidgetSurface(context, R.id.matrix_showcase_root, selection.style)
+                val active = activeId == selection.effect.id
+                views.setStyledWidgetBitmap(context, R.id.matrix_showcase_image, selection.style) { palette ->
+                    MatrixShowcaseRenderer.render(selection.effect, active, width, height, palette.copy(background = android.graphics.Color.TRANSPARENT))
+                }
+                views.setTextViewText(R.id.matrix_showcase_active, context.getString(if (active) R.string.matrix_showcase_active else R.string.matrix_showcase_set_active))
+                views.setOnClickPendingIntent(R.id.matrix_showcase_previous, action(context, id, ACTION_PREVIOUS, 1))
+                views.setOnClickPendingIntent(R.id.matrix_showcase_next, action(context, id, ACTION_NEXT, 2))
+                views.setOnClickPendingIntent(R.id.matrix_showcase_active, action(context, id, ACTION_ACTIVE, 3))
+                views.setOnClickPendingIntent(R.id.matrix_showcase_style, action(context, id, ACTION_STYLE, 4))
+                views.setOnClickPendingIntent(R.id.matrix_showcase_image, openPlaybox(context, id))
+                views.setContentDescription(
+                    R.id.matrix_showcase_root,
+                    context.getString(
+                        R.string.matrix_showcase_content_description,
+                        selection.effect.name,
+                        if (active) context.getString(R.string.matrix_showcase_active) else context.getString(R.string.matrix_showcase_not_active),
+                    ),
+                )
+                views
             }
-            views.setTextViewText(R.id.matrix_showcase_active, context.getString(if (active) R.string.matrix_showcase_active else R.string.matrix_showcase_set_active))
-            views.setOnClickPendingIntent(R.id.matrix_showcase_previous, action(context, id, ACTION_PREVIOUS, 1))
-            views.setOnClickPendingIntent(R.id.matrix_showcase_next, action(context, id, ACTION_NEXT, 2))
-            views.setOnClickPendingIntent(R.id.matrix_showcase_active, action(context, id, ACTION_ACTIVE, 3))
-            views.setOnClickPendingIntent(R.id.matrix_showcase_style, action(context, id, ACTION_STYLE, 4))
-            views.setOnClickPendingIntent(R.id.matrix_showcase_image, openPlaybox(context, id))
-            views.setContentDescription(
-                R.id.matrix_showcase_root,
-                context.getString(
-                    R.string.matrix_showcase_content_description,
-                    selection.effect.name,
-                    if (active) context.getString(R.string.matrix_showcase_active) else context.getString(R.string.matrix_showcase_not_active),
-                ),
-            )
-            manager.updateAppWidget(id, views)
+            manager.updateAppWidget(id, sizedViews)
         }
 
         private fun action(context: Context, id: Int, action: String, suffix: Int): PendingIntent {
@@ -225,24 +233,12 @@ object MatrixShowcaseRenderer {
         })
 
         val frame = effect.frames.first()
-        val dot = NothingDotFont.typeface
-        val pad = width * .055f
-        canvas.drawText(effect.name.take(24).uppercase(Locale.getDefault()), pad, height * .16f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = palette.foreground
-            textSize = min(width, height) * .06f
-            typeface = dot
-        })
-        canvas.drawText(
-            if (active) "ACTIVE" else if (effect.isAnimated) "ANIMATED" else "STATIC",
-            width - pad,
-            height * .16f,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = if (active) palette.accent else palette.muted
-                textSize = min(width, height) * .043f
-                textAlign = Paint.Align.RIGHT
-                typeface = dot
-            },
-        )
+        val scale = min(width / 280f, height / 104f)
+        val pad = 16f * scale
+        WidgetTypography.text(canvas, effect.name, pad, 20f * scale, 12f * scale,
+            palette.foreground, width * .62f, face = WidgetTypography.label)
+        WidgetTypography.text(canvas, if (active) "ACTIVE" else if (effect.isAnimated) "ANIMATED" else "STATIC",
+            width - pad, 20f * scale, 9f * scale, palette.muted, width * .25f, Paint.Align.RIGHT)
 
         val gridHeight = height * .68f
         val gridSize = min(width * .45f, gridHeight)

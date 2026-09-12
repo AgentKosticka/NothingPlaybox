@@ -35,6 +35,7 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
     STORAGE("storage-matrix", WidgetCategory.DEVICE, StorageMatrixWidget::class.java),
     DEVICE("device-panel", WidgetCategory.DEVICE, DevicePanelWidget::class.java),
     SHORTCUTS("playbox-shortcuts", WidgetCategory.DEVICE, PlayboxShortcutsWidget::class.java),
+    MATRIX_SHOWCASE("matrix-showcase", WidgetCategory.DEVICE, MatrixShowcaseWidget::class.java),
     QUICK_TASKS("quick-tasks", WidgetCategory.PRODUCTIVITY, QuickTasksWidget::class.java),
     HABIT_TRACKER("habit-tracker", WidgetCategory.PRODUCTIVITY, HabitTrackerWidget::class.java),
     TALLY_COUNTER("tally-counter", WidgetCategory.PRODUCTIVITY, TallyCounterWidget::class.java),

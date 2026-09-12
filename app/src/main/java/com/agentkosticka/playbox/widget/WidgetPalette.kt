@@ -125,3 +125,10 @@ internal fun RemoteViews.setStyledWidgetBitmap(
         Icon.createWithBitmap(render(WidgetPalette.resolve(context, night = true, style = style))),
     )
 }
+
+/** Tint the rounded native shell as well as the bitmap, including launcher day/night changes. */
+internal fun RemoteViews.setWidgetSurface(context: Context, root: Int, style: WidgetVisualStyle) {
+    setColorStateList(root, "setBackgroundTintList",
+        android.content.res.ColorStateList.valueOf(WidgetPalette.resolve(context, false, style).background),
+        android.content.res.ColorStateList.valueOf(WidgetPalette.resolve(context, true, style).background))
+}

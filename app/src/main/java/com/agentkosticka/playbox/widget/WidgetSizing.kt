@@ -21,3 +21,19 @@ internal fun sizedWidgetViews(
     if (portrait == landscape) return portraitViews
     return RemoteViews(render(landscape.first, landscape.second), portraitViews)
 }
+
+/** Account for the native control shelf before calculating bitmap geometry. */
+internal fun interactiveWidgetViews(options: Bundle, controlsHeight: Int, render: (Int, Int) -> RemoteViews): RemoteViews {
+    fun at(width: Float, height: Float): RemoteViews {
+        val (w, h) = UtilityWidgetRenderer.bitmapSize(width.toInt().coerceAtLeast(1),
+            (height.toInt() - controlsHeight).coerceAtLeast(1))
+        return render(w, h)
+    }
+    val sizes = options.getParcelableArrayList(AppWidgetManager.OPTION_APPWIDGET_SIZES, android.util.SizeF::class.java)
+    if (!sizes.isNullOrEmpty()) return RemoteViews(sizes.distinct().take(16).associateWith { at(it.width, it.height) })
+    val minW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 280).toFloat()
+    val minH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT, 160).toFloat()
+    val maxW = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_WIDTH, minW.toInt()).toFloat()
+    val maxH = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, minH.toInt()).toFloat()
+    return RemoteViews(at(maxW, minH), at(minW, maxH))
+}
