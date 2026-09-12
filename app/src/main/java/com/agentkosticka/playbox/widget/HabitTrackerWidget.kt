@@ -24,9 +24,12 @@ import kotlin.math.min
 
 private const val HABIT_HISTORY_DAYS = 400L
 
+enum class HabitGridStyle { DOTS, SQUARES, RINGS }
+
 data class HabitTrackerState(
     val name: String = "HABIT",
     val completedDays: Set<LocalDate> = emptySet(),
+    val style: HabitGridStyle = HabitGridStyle.DOTS,
 ) {
     val displayName: String get() = name.ifBlank { "HABIT" }
 
@@ -111,9 +114,8 @@ class HabitTrackerStore(private val context: Context) {
 
     private fun encode(state: HabitTrackerState): String = JSONObject().apply {
         put("name", state.name)
-        put("days", JSONArray().apply {
-            state.completedDays.sorted().forEach { put(it.toString()) }
-        })
+        put("style", state.style.name)
+        put("days", JSONArray().apply { state.completedDays.sorted().forEach { put(it.toString()) } })
     }.toString()
 
     private fun decode(raw: String?, referenceDate: LocalDate): HabitTrackerState = runCatching {
@@ -125,6 +127,8 @@ class HabitTrackerStore(private val context: Context) {
             completedDays = (0 until days.length()).mapNotNull { index ->
                 runCatching { LocalDate.parse(days.optString(index)) }.getOrNull()
             }.toSet(),
+            style = runCatching { HabitGridStyle.valueOf(json.optString("style", HabitGridStyle.DOTS.name)) }
+                .getOrDefault(HabitGridStyle.DOTS),
         ).normalized(referenceDate)
     }.getOrDefault(HabitTrackerState())
 
@@ -187,13 +191,7 @@ class HabitTrackerWidget : InstanceWidgetProvider() {
             }
         }
 
-        private fun render(
-            context: Context,
-            manager: AppWidgetManager,
-            id: Int,
-            rawState: HabitTrackerState,
-            today: LocalDate,
-        ) {
+        private fun render(context: Context, manager: AppWidgetManager, id: Int, rawState: HabitTrackerState, today: LocalDate) {
             val state = rawState.normalized(today)
             val streak = state.currentStreak(today)
             val month = YearMonth.from(today)
@@ -212,15 +210,9 @@ class HabitTrackerWidget : InstanceWidgetProvider() {
             views.setThemedWidgetBitmap(context, R.id.habit_tracker_grid) { palette ->
                 HabitTrackerRenderer.monthGrid(state, today, 720, 220, palette)
             }
-            views.setOnClickPendingIntent(
-                R.id.habit_tracker_header,
-                widgetPendingIntent(context, WidgetDestination.HABIT_TRACKER, id),
-            )
+            views.setOnClickPendingIntent(R.id.habit_tracker_header, widgetPendingIntent(context, WidgetDestination.HABIT_TRACKER, id))
             views.setOnClickPendingIntent(R.id.habit_tracker_toggle, togglePendingIntent(context, id))
-            views.setContentDescription(
-                R.id.habit_tracker_root,
-                "${state.displayName}, $completedThisMonth completed days this month, $streak day streak",
-            )
+            views.setContentDescription(R.id.habit_tracker_root, "${state.displayName}, $completedThisMonth completed days this month, $streak day streak")
             manager.updateAppWidget(id, views)
         }
 
@@ -229,12 +221,7 @@ class HabitTrackerWidget : InstanceWidgetProvider() {
                 .setAction(ACTION_TOGGLE_TODAY)
                 .setData(Uri.parse("playbox://habit-tracker/$id/today"))
                 .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, id)
-            return PendingIntent.getBroadcast(
-                context,
-                id,
-                intent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            )
+            return PendingIntent.getBroadcast(context, id, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         }
     }
 }
@@ -251,44 +238,23 @@ object HabitTrackerRenderer {
         val bitmap = createBitmap(width, height)
         val canvas = Canvas(bitmap)
         val radius = min(width, height) * .09f
-        canvas.drawRoundRect(
-            0f,
-            0f,
-            width.toFloat(),
-            height.toFloat(),
-            radius,
-            radius,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.background },
-        )
+        canvas.drawRoundRect(0f, 0f, width.toFloat(), height.toFloat(), radius, radius,
+            Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.background })
         drawText(canvas, state.displayName.uppercase(Locale.getDefault()), width * .06f, height * .15f,
             min(width, height) * .06f, palette.foreground)
         val streak = state.currentStreak(today)
         drawText(canvas, if (streak == 1) "1 DAY" else "$streak DAYS", width * .94f, height * .15f,
             min(width, height) * .05f, palette.muted, Paint.Align.RIGHT)
         drawMonthGrid(canvas, state, today, width * .06f, height * .22f, width * .94f, height * .77f, palette)
-        drawText(
-            canvas,
-            if (state.isDone(today)) "DONE TODAY" else "MARK TODAY",
-            width / 2f,
-            height * .92f,
-            min(width, height) * .055f,
-            if (state.isDone(today)) palette.accent else palette.foreground,
-            Paint.Align.CENTER,
-        )
+        drawText(canvas, if (state.isDone(today)) "DONE TODAY" else "MARK TODAY", width / 2f, height * .92f,
+            min(width, height) * .055f, if (state.isDone(today)) palette.accent else palette.foreground, Paint.Align.CENTER)
         return bitmap
     }
 
-    fun monthGrid(
-        rawState: HabitTrackerState,
-        today: LocalDate,
-        width: Int,
-        height: Int,
-        palette: WidgetPalette = WidgetPalette.current(),
-    ): Bitmap {
+    fun monthGrid(rawState: HabitTrackerState, today: LocalDate, width: Int, height: Int, palette: WidgetPalette = WidgetPalette.current()): Bitmap {
         val state = rawState.normalized(today)
         val bitmap = createBitmap(width, height)
-        val canvas = Canvas(bitmap)
-        drawMonthGrid(canvas, state, today, 0f, 0f, width.toFloat(), height.toFloat(), palette)
+        drawMonthGrid(Canvas(bitmap), state, today, 0f, 0f, width.toFloat(), height.toFloat(), palette)
         return bitmap
     }
 
@@ -308,19 +274,12 @@ object HabitTrackerRenderer {
         val headerHeight = (bottom - top) * .16f
         val cellHeight = (bottom - top - headerHeight) / 6f
         val textSize = min(cellWidth, cellHeight) * .25f
-        val dotRadius = min(cellWidth, cellHeight) * .20f
+        val markRadius = min(cellWidth, cellHeight) * .20f
         val labels = arrayOf("M", "T", "W", "T", "F", "S", "S")
 
         labels.forEachIndexed { index, label ->
-            drawText(
-                canvas,
-                label,
-                left + cellWidth * (index + .5f),
-                top + headerHeight * .72f,
-                textSize,
-                palette.muted,
-                Paint.Align.CENTER,
-            )
+            drawText(canvas, label, left + cellWidth * (index + .5f), top + headerHeight * .72f,
+                textSize, palette.muted, Paint.Align.CENTER)
         }
 
         for (day in 1..month.lengthOfMonth()) {
@@ -332,34 +291,43 @@ object HabitTrackerRenderer {
             val cy = top + headerHeight + cellHeight * (row + .5f)
             val completed = state.isDone(date)
             val future = date.isAfter(today)
-            val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = when {
-                    completed -> palette.accent
-                    future -> palette.inactive
-                    else -> palette.muted
-                }
-                style = Paint.Style.FILL
+            val color = when {
+                completed -> palette.accent
+                future -> palette.inactive
+                else -> palette.muted
             }
-            canvas.drawCircle(cx, cy, dotRadius, fill)
+            drawMark(canvas, cx, cy, markRadius, color, completed, state.style)
             if (date == today) {
-                canvas.drawCircle(cx, cy, dotRadius * 1.45f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = palette.foreground
+                canvas.drawCircle(cx, cy, markRadius * 1.48f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+                    this.color = palette.foreground
                     style = Paint.Style.STROKE
-                    strokeWidth = maxOf(2f, dotRadius * .28f)
+                    strokeWidth = maxOf(2f, markRadius * .28f)
                 })
             }
         }
     }
 
-    private fun drawText(
-        canvas: Canvas,
-        value: String,
-        x: Float,
-        baseline: Float,
-        size: Float,
-        color: Int,
-        align: Paint.Align = Paint.Align.LEFT,
-    ) {
+    private fun drawMark(canvas: Canvas, cx: Float, cy: Float, radius: Float, color: Int, completed: Boolean, style: HabitGridStyle) {
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply { this.color = color }
+        when (style) {
+            HabitGridStyle.DOTS -> {
+                paint.style = Paint.Style.FILL
+                canvas.drawCircle(cx, cy, radius, paint)
+            }
+            HabitGridStyle.SQUARES -> {
+                paint.style = Paint.Style.FILL
+                val corner = radius * .35f
+                canvas.drawRoundRect(cx - radius, cy - radius, cx + radius, cy + radius, corner, corner, paint)
+            }
+            HabitGridStyle.RINGS -> {
+                paint.style = if (completed) Paint.Style.FILL else Paint.Style.STROKE
+                paint.strokeWidth = maxOf(2f, radius * .36f)
+                canvas.drawCircle(cx, cy, radius, paint)
+            }
+        }
+    }
+
+    private fun drawText(canvas: Canvas, value: String, x: Float, baseline: Float, size: Float, color: Int, align: Paint.Align = Paint.Align.LEFT) {
         canvas.drawText(value, x, baseline, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             this.color = color
             textSize = size
