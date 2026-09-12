@@ -381,7 +381,7 @@ class FocusTimerWidget : InstanceWidgetProvider() {
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: FocusTimerState) {
             val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
-                val views = RemoteViews(context.packageName, R.layout.widget_focus_timer)
+                val views = widgetRemoteViews(context, R.layout.widget_focus_timer)
                 views.setWidgetSurface(context, R.id.focus_root, state.style)
                 val remaining = state.remainingMillis()
                 val phaseLabel = context.getString(

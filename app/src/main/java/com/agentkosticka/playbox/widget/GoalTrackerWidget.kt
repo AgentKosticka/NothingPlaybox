@@ -261,7 +261,7 @@ class GoalTrackerWidget : InstanceWidgetProvider() {
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: GoalTrackerState) {
             val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
-                val views = RemoteViews(context.packageName, R.layout.widget_goal_tracker)
+                val views = widgetRemoteViews(context, R.layout.widget_goal_tracker)
                 views.setWidgetSurface(context, R.id.goal_root, state.style)
                 val label = context.getString(
                     when (state.preset) {

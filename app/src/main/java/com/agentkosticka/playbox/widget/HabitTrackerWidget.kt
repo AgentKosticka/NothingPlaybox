@@ -196,7 +196,7 @@ class HabitTrackerWidget : InstanceWidgetProvider() {
             val streak = state.currentStreak(today)
             val month = YearMonth.from(today)
             val completedThisMonth = state.completedDays.count { YearMonth.from(it) == month }
-            val views = RemoteViews(context.packageName, R.layout.widget_habit_tracker)
+            val views = widgetRemoteViews(context, R.layout.widget_habit_tracker)
             views.setTextViewText(R.id.habit_tracker_name, state.displayName.uppercase(Locale.getDefault()))
             views.setTextViewText(
                 R.id.habit_tracker_meta,

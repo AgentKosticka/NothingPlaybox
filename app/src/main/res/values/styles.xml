@@ -17,6 +17,6 @@
     </style>
     <style name="Widget.Playbox.PrimaryControl" parent="Widget.Playbox.ControlLabel">
         <item name="android:background">@drawable/widget_primary_button</item>
-        <item name="android:textColor">#FFFFFFFF</item>
+        <item name="android:textColor">@color/widget_on_accent</item>
     </style>
 </resources>

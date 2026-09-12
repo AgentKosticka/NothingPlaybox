@@ -2,7 +2,7 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
  android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:gravity="center"
  android:padding="6dp" android:background="@drawable/widget_card_background">
- <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BATTERY" android:textColor="#BBBBBB" android:textSize="9sp" />
+ <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="BATTERY" android:textColor="@color/widget_on_surface_variant" android:textSize="9sp" />
  <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="8dp"
- android:text="● ● ●\n● ● ●\n● ● ●\n● ● ●\n68%" android:gravity="center" android:fontFamily="monospace" android:textColor="#FFFFFF" android:textSize="11sp" />
+ android:text="● ● ●\n● ● ●\n● ● ●\n● ● ●\n68%" android:gravity="center" android:fontFamily="monospace" android:textColor="@color/widget_on_surface" android:textSize="11sp" />
 </LinearLayout>

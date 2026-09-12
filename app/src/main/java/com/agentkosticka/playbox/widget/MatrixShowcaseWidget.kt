@@ -103,7 +103,7 @@ class MatrixShowcaseWidget : InstanceWidgetProvider() {
             activeId: String?,
         ) {
             val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
-                val views = RemoteViews(context.packageName, R.layout.widget_matrix_showcase)
+                val views = widgetRemoteViews(context, R.layout.widget_matrix_showcase)
                 views.setWidgetSurface(context, R.id.matrix_showcase_root, selection.style)
                 val active = activeId == selection.effect.id
                 views.setStyledWidgetBitmap(context, R.id.matrix_showcase_image, selection.style) { palette ->

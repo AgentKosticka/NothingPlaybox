@@ -182,7 +182,7 @@ class QuickTasksWidget : InstanceWidgetProvider() {
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, rawState: QuickTasksState) {
             val state = rawState.normalized()
-            val views = RemoteViews(context.packageName, R.layout.widget_quick_tasks)
+            val views = widgetRemoteViews(context, R.layout.widget_quick_tasks)
             val visibleTasks = state.tasks.count { it.text.isNotBlank() }
             val doneTasks = state.tasks.count { it.text.isNotBlank() && it.done }
             views.setTextViewText(R.id.quick_tasks_title, state.displayTitle)
@@ -336,7 +336,7 @@ class DualClockWidget : InstanceWidgetProvider() {
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, rawZoneId: String) {
             val zoneId = validatedZoneId(rawZoneId)
-            val views = RemoteViews(context.packageName, R.layout.widget_dual_clock)
+            val views = widgetRemoteViews(context, R.layout.widget_dual_clock)
             views.setTextViewText(R.id.dual_clock_remote_label, DualClockZones.label(zoneId).uppercase(Locale.getDefault()))
             views.setString(R.id.dual_clock_remote_time, "setTimeZone", zoneId)
             views.setString(R.id.dual_clock_remote_date, "setTimeZone", zoneId)

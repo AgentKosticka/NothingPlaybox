@@ -77,6 +77,8 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     var now by remember { mutableStateOf(ZonedDateTime.now()) }
     var status by remember { mutableStateOf<String?>(null) }
     val store = remember(context) { WidgetInstanceSettings(context) }
+    val appearanceSettings = remember(context) { WidgetAppearanceSettings(context) }
+    var classicRed by remember { mutableStateOf(appearanceSettings.classicRed) }
     val taskStore = remember(context) { QuickTasksStore(context) }
     val dualClockStore = remember(context) { DualClockStore(context) }
     val habitStore = remember(context) { HabitTrackerStore(context) }
@@ -159,6 +161,17 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             Text(stringResource(if (appWidgetId == null) R.string.widget_gallery_subtitle else R.string.widget_editor_subtitle),
                 style = MaterialTheme.typography.bodyMedium, color = Muted)
         }
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(Modifier.weight(1f)) {
+                Text(stringResource(R.string.widget_classic_red))
+                Text(stringResource(R.string.widget_classic_red_description), color = Muted,
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            Switch(checked = classicRed, onCheckedChange = {
+                classicRed = it
+                appearanceSettings.classicRed = it
+            })
+        }
         if (appWidgetId != null) {
             TextButton(onClick = onEditDefaults) { Text(stringResource(R.string.widget_edit_defaults)) }
             Text(stringResource(R.string.widget_instance_explanation), color = Muted)
@@ -198,7 +211,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                 WidgetPreviewStage(stringResource(R.string.matrix_showcase_name), stringResource(R.string.widget_size_4x2)) {
                     NativeWidgetPreview(Modifier.fillMaxWidth().height(180.dp), stringResource(R.string.matrix_showcase_description)) { width, height ->
                         val palette = WidgetPalette.resolve(context, style = WidgetVisualStyle.DYNAMIC)
-                        RemoteViews(context.packageName, R.layout.widget_matrix_showcase).apply {
+                        widgetRemoteViews(context, R.layout.widget_matrix_showcase).apply {
                             setWidgetSurface(context, R.id.matrix_showcase_root, WidgetVisualStyle.DYNAMIC)
                             setImageViewBitmap(R.id.matrix_showcase_image, MatrixShowcaseRenderer.render(effect, effect.id == activeId,
                                 width, (height - 56 * context.resources.displayMetrics.density).toInt().coerceAtLeast(1), palette.copy(background = android.graphics.Color.TRANSPARENT)))
@@ -221,7 +234,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
         if (widgetType == "next-event") {
             WidgetPreviewStage(stringResource(R.string.next_event_name), stringResource(R.string.widget_size_2x1_to_4x2), example = true) {
                 NativeWidgetPreview(Modifier.fillMaxWidth().height(160.dp), stringResource(R.string.next_event_description)) { _, _ ->
-                    RemoteViews(context.packageName, R.layout.widget_next_event)
+                    widgetRemoteViews(context, R.layout.widget_next_event)
                 }
             }
             if (appWidgetId == null) AddWidgetButton(NextEventWidget::class.java, stringResource(R.string.next_event_name), onStatus = { status = it })
@@ -230,7 +243,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             status?.let { Text(it, color = Muted) }; return@Column
         }
         if (widgetType == "time-bars") {
-            val preview = remember(now, timeSettings) { TimeBarsRenderer.render(now, timeSettings, 900, 360).asImageBitmap() }
+            val preview = remember(now, timeSettings, classicRed) { TimeBarsRenderer.render(now, timeSettings, 900, 360).asImageBitmap() }
             Image(preview, stringResource(R.string.time_bars_preview_cd), Modifier.fillMaxWidth().aspectRatio(2.5f))
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)) {
                 Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -268,7 +281,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             GoalPreset.READ, GoalPreset.MOVE -> R.string.goal_unit_minutes
             GoalPreset.CUSTOM -> R.string.goal_unit_units
         })
-        val preview = if (widgetType in listOf("quick-tasks", "dual-clock", "habit-tracker", "tally-counter", "pinned-note", "focus-timer", "goal-tracker")) null else remember(now, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone, habitState, tallyState, noteState, focusState, goalState, focusPreviewLabel, focusPreviewSessions, goalPreviewLabel, goalPreviewUnit) {
+        val preview = if (widgetType in listOf("quick-tasks", "dual-clock", "habit-tracker", "tally-counter", "pinned-note", "focus-timer", "goal-tracker")) null else remember(now, classicRed, widgetType, timeSettings, utilitySettings, battery, storage, alarm, taskState, dualClockZone, habitState, tallyState, noteState, focusState, goalState, focusPreviewLabel, focusPreviewSessions, goalPreviewLabel, goalPreviewUnit) {
             when (widgetType) {
                 "battery-column" -> UtilityWidgetRenderer.batteryColumn(battery, 360, 720)
                 "week-column" -> UtilityWidgetRenderer.weekColumn(now, timeSettings.weekStart, 360, 720)
@@ -310,7 +323,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
             } else {
                 NativeWidgetPreview(Modifier.fillMaxWidth().height(if (widgetType == "habit-tracker" || widgetType == "quick-tasks") 200.dp else 180.dp),
                     stringResource(R.string.widget_preview_cd, widgetName)) { width, height ->
-                    val views = RemoteViews(context.packageName, nativeLayout)
+                    val views = widgetRemoteViews(context, nativeLayout)
                     val contentHeight = (height - 56 * context.resources.displayMetrics.density).toInt().coerceAtLeast(1)
                     val palette = WidgetPalette.resolve(context)
                     when (widgetType) {

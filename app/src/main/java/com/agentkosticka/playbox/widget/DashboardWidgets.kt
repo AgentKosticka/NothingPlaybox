@@ -43,7 +43,7 @@ open class DashboardWidget : InstanceWidgetProvider() {
                 val ids = manager.getAppWidgetIds(ComponentName(context, provider))
                 if (ids.isNotEmpty()) {
                     val battery = batteryStatus(context)
-                    val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
+                    val views = widgetRemoteViews(context, R.layout.widget_time_bars)
                     views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette ->
                         if (provider == DayDialWidget::class.java) {
                             DashboardRenderer.dayDial(now, palette)

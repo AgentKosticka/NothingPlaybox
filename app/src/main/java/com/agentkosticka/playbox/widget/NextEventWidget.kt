@@ -46,7 +46,7 @@ class NextEventWidget : InstanceWidgetProvider() {
         }
 
         private fun views(context: Context, id: Int, settings: AgendaSettings, state: CalendarDataState, now: ZonedDateTime): RemoteViews {
-            val views = RemoteViews(context.packageName, R.layout.widget_next_event)
+            val views = widgetRemoteViews(context, R.layout.widget_next_event)
             val edit = widgetPendingIntent(context, WidgetDestination.NEXT_EVENT, id)
             views.setOnClickPendingIntent(R.id.next_event_root, edit)
             views.setOnClickPendingIntent(R.id.next_event_empty, edit)

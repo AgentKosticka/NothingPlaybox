@@ -98,7 +98,7 @@ class TimeBarsWidget : InstanceWidgetProvider() {
             widgetIds(context).forEach { id ->
                 val timeSettings = WidgetInstanceSettings(context).load(id).time
                 val views = sizedWidgetViews(manager.getAppWidgetOptions(id), 250, 110) { width, height ->
-                    val views = RemoteViews(context.packageName, R.layout.widget_time_bars)
+                    val views = widgetRemoteViews(context, R.layout.widget_time_bars)
                     views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette -> TimeBarsRenderer.render(now, timeSettings, width, height, palette) }
                     views.setContentDescription(R.id.time_bars_image, timeProgress(now, timeSettings.weekStart).joinToString { "${it.label}: ${(it.fraction * 100).toInt()} percent" })
                     views.setOnClickPendingIntent(R.id.time_bars_image, widgetPendingIntent(context, WidgetDestination.TIME_BARS, id))

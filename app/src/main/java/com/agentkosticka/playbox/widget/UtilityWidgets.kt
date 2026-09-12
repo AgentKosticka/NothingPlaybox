@@ -51,7 +51,7 @@ class MilestoneWidget : UtilityDashboardWidget()
 class NDotClockWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { id ->
-            val views = RemoteViews(context.packageName, R.layout.widget_ndot_clock)
+            val views = widgetRemoteViews(context, R.layout.widget_ndot_clock)
             views.setOnClickPendingIntent(R.id.ndot_clock_root, widgetPendingIntent(context, WidgetDestination.CLOCK, id))
             manager.updateAppWidget(id, views)
         }
@@ -62,7 +62,7 @@ class NDotClockWidget : InstanceWidgetProvider() {
 class PlayboxShortcutsWidget : InstanceWidgetProvider() {
     override fun onUpdate(context: Context, manager: AppWidgetManager, ids: IntArray) {
         ids.forEach { id ->
-            val views = RemoteViews(context.packageName, R.layout.widget_playbox_shortcuts)
+            val views = widgetRemoteViews(context, R.layout.widget_playbox_shortcuts)
             views.setOnClickPendingIntent(
                 R.id.shortcut_matrix,
                 PendingIntent.getActivity(
@@ -181,7 +181,7 @@ open class UtilityDashboardWidget : InstanceWidgetProvider() {
                     val time = settings.time
                     val eventDates = calendarDots.dates(id, time.weekStart, provider)
                     val views = sizedWidgetViews(manager.getAppWidgetOptions(id), defaultWidth(provider), defaultHeight(provider)) { width, height ->
-                        val views = RemoteViews(context.packageName, if (provider == DevicePanelWidget::class.java) R.layout.widget_device_panel else R.layout.widget_time_bars)
+                        val views = widgetRemoteViews(context, if (provider == DevicePanelWidget::class.java) R.layout.widget_device_panel else R.layout.widget_time_bars)
                         views.setThemedWidgetBitmap(context, R.id.time_bars_image) { palette ->
                             when (provider) {
                                 BatteryColumnWidget::class.java -> UtilityWidgetRenderer.batteryColumn(battery, width, height, palette)
@@ -349,8 +349,8 @@ object UtilityWidgetRenderer {
                     unit * .06f, unit * .06f, Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent })
             }
             text(canvas, date.dayOfWeek.name.take(1), width * .24f, y, unit * .13f,
-                if (date.isAfter(today)) palette.muted else palette.foreground)
-            text(canvas, date.dayOfMonth.toString(), width * .76f, y, unit * .15f, palette.foreground, Paint.Align.RIGHT)
+                if (date == today) palette.onAccent else if (date.isAfter(today)) palette.muted else palette.foreground)
+            text(canvas, date.dayOfMonth.toString(), width * .76f, y, unit * .15f, if (date == today) palette.onAccent else palette.foreground, Paint.Align.RIGHT)
             if (eventDates?.contains(date) == true) dot(canvas, width * .49f, y - unit * .04f, unit * .025f, true, palette)
         }
         return bitmap
@@ -609,7 +609,7 @@ object UtilityWidgetRenderer {
                 Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent },
             )
             text(canvas, day.toString(), x, y, min(width, height) * .052f,
-                if (today) palette.foreground else palette.muted, Paint.Align.CENTER)
+                if (today) palette.onAccent else palette.muted, Paint.Align.CENTER)
             if (eventDates?.contains(date.withDayOfMonth(day)) == true) dot(canvas, x, y + min(width, height) * .027f, min(width, height) * .009f, true, palette)
         }
         return bitmap
@@ -643,7 +643,7 @@ object UtilityWidgetRenderer {
                 Paint(Paint.ANTI_ALIAS_FLAG).apply { color = palette.accent },
             )
             text(canvas, date.dayOfMonth.toString(), x, height * .72f, min(width, height) * .11f,
-                palette.foreground, Paint.Align.CENTER)
+                if (current) palette.onAccent else palette.foreground, Paint.Align.CENTER)
             if (eventDates == null) dot(canvas, x, height * .86f, min(width, height) * .018f, !date.isAfter(today), palette, current)
             else if (date in eventDates) dot(canvas, x, height * .88f, min(width, height) * .014f, true, palette)
         }

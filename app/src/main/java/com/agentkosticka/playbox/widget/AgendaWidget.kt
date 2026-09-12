@@ -56,7 +56,7 @@ class AgendaWidget : InstanceWidgetProvider() {
 
 internal fun agendaViews(context: Context, id: Int, settings: AgendaSettings, state: CalendarDataState, now: ZonedDateTime, widthDp: Int, heightDp: Int): RemoteViews {
     val wide = widthDp >= 250
-    val views = RemoteViews(context.packageName, if (wide) R.layout.widget_agenda_wide else R.layout.widget_agenda_compact)
+    val views = widgetRemoteViews(context, if (wide) R.layout.widget_agenda_wide else R.layout.widget_agenda_compact)
     val edit = widgetPendingIntent(context, WidgetDestination.AGENDA, id)
     views.setOnClickPendingIntent(R.id.agenda_root, edit)
     views.setOnClickPendingIntent(R.id.agenda_header, edit)

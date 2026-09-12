@@ -6,6 +6,7 @@ import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.drawable.Icon
 import android.widget.RemoteViews
+import com.agentkosticka.playbox.R
 
 /** Public-Android appearance modes that harmonise with Nothing OS without private OS APIs. */
 enum class WidgetVisualStyle {
@@ -26,7 +27,16 @@ data class WidgetPalette(
     val container: Int,
     val accent: Int,
 ) {
+    /** Filled calendar selections need an inverse label when the accent is pale. */
+    val onAccent: Int get() = if (androidx.core.graphics.ColorUtils.calculateLuminance(accent) > 0.179)
+        android.graphics.Color.BLACK else android.graphics.Color.WHITE
+
     companion object {
+        private var applicationContext: Context? = null
+
+        internal fun initialize(context: Context) {
+            applicationContext = context.applicationContext
+        }
         private val LIGHT = WidgetPalette(
             background = 0xFFF1F1F1.toInt(),
             foreground = 0xFF111111.toInt(),
@@ -66,31 +76,42 @@ data class WidgetPalette(
         fun resolve(
             context: Context,
             night: Boolean? = null,
-            style: WidgetVisualStyle = WidgetVisualStyle.CLASSIC,
+            style: WidgetVisualStyle = WidgetVisualStyle.DYNAMIC,
         ): WidgetPalette {
             val resolvedNight = night ?: context.resources.configuration.isNightMode
             val classic = if (resolvedNight) DARK else LIGHT
-            return when (style) {
+            val palette = when (style) {
                 WidgetVisualStyle.CLASSIC -> classic
                 WidgetVisualStyle.HIGH_CONTRAST -> if (resolvedNight) DARK_CONTRAST else LIGHT_CONTRAST
                 WidgetVisualStyle.GLASS -> classic.copy(
                     background = classic.background.withAlpha(if (resolvedNight) 0xD0 else 0xC2),
                     container = classic.container.withAlpha(if (resolvedNight) 0xB8 else 0xA8),
                 )
-                WidgetVisualStyle.DYNAMIC -> classic.copy(
-                    // System accent colors are wallpaper-derived on modern Android. Keeping the
-                    // established Playbox surface colors preserves contrast across launcher hosts.
-                    accent = runCatching { context.getColor(android.R.color.system_accent1_500) }
-                        .getOrDefault(classic.accent),
-                    inactive = runCatching { context.getColor(android.R.color.system_neutral1_500) }
-                        .getOrDefault(classic.inactive),
-                )
+                WidgetVisualStyle.DYNAMIC -> {
+                    val config = Configuration(context.resources.configuration).apply {
+                        uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
+                            if (resolvedNight) Configuration.UI_MODE_NIGHT_YES else Configuration.UI_MODE_NIGHT_NO
+                    }
+                    val themed = context.createConfigurationContext(config)
+                    // XML and bitmap widgets consume the same role definitions.
+                    WidgetPalette(
+                        themed.getColor(R.color.widget_surface),
+                        themed.getColor(R.color.widget_on_surface),
+                        themed.getColor(R.color.widget_on_surface_variant),
+                        themed.getColor(R.color.widget_inactive),
+                        themed.getColor(R.color.widget_container),
+                        themed.getColor(R.color.widget_accent),
+                    )
+                }
             }
+            return if (WidgetAppearanceSettings(context).classicRed)
+                palette.copy(accent = WidgetAppearanceSettings.NOTHING_RED) else palette
         }
 
-        /** Used by in-app bitmap previews when only system configuration is available. */
+        /** Preview defaults use application resources, which include the applied overlays. */
         fun current(): WidgetPalette =
-            if (Resources.getSystem().configuration.isNightMode) DARK else LIGHT
+            applicationContext?.let { resolve(it) }
+                ?: if (Resources.getSystem().configuration.isNightMode) DARK else LIGHT
     }
 }
 
@@ -108,7 +129,7 @@ internal fun RemoteViews.setThemedWidgetBitmap(
     viewId: Int,
     render: (WidgetPalette) -> Bitmap,
 ) {
-    setStyledWidgetBitmap(context, viewId, WidgetVisualStyle.CLASSIC, render)
+    setStyledWidgetBitmap(context, viewId, WidgetVisualStyle.DYNAMIC, render)
 }
 
 /** Same as [setThemedWidgetBitmap], with an explicit Playbox appearance mode. */

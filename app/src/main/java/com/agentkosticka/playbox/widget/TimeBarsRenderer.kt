@@ -111,8 +111,14 @@ object TimeBarsRenderer {
             val dotY = y + 6f
             val rows = 2
             val dots = filledDots(columns * rows, bar.fraction, settings.fill, index)
+            // Use fill order so the final fifth also follows reverse and density modes.
+            val firstEightyPercent = filledDots(columns * rows, .8, settings.fill, index)
             dots.forEachIndexed { dot, filled ->
-                paint.color = if (filled) palette.foreground else palette.inactive
+                paint.color = when {
+                    !filled -> palette.inactive
+                    !firstEightyPercent[dot] -> palette.accent
+                    else -> palette.foreground
+                }
                 // Column-major order lets the rows fill one dot at a time.
                 canvas.drawCircle(left + dot / rows * step, dotY + dot % rows * 12f,
                     3.4f, paint)

@@ -133,7 +133,7 @@ class TallyCounterWidget : InstanceWidgetProvider() {
 
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: TallyState) {
             val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 56) { width, height ->
-                val views = RemoteViews(context.packageName, R.layout.widget_tally_counter)
+                val views = widgetRemoteViews(context, R.layout.widget_tally_counter)
                 views.setThemedWidgetBitmap(context, R.id.tally_image) { palette -> TallyRenderer.render(state, width, height, palette) }
                 views.setOnClickPendingIntent(R.id.tally_image, widgetPendingIntent(context, WidgetDestination.TALLY_COUNTER, id))
                 views.setOnClickPendingIntent(R.id.tally_minus, action(context, id, ACTION_MINUS, "minus"))
@@ -231,7 +231,7 @@ class PinnedNoteWidget : InstanceWidgetProvider() {
         fun update(context: Context, id: Int) = render(context, AppWidgetManager.getInstance(context), id, PinnedNoteStore(context).load(id))
         private fun render(context: Context, manager: AppWidgetManager, id: Int, state: PinnedNoteState) {
             val sizedViews = interactiveWidgetViews(manager.getAppWidgetOptions(id), 0) { width, height ->
-                val views = RemoteViews(context.packageName, R.layout.widget_pinned_note)
+                val views = widgetRemoteViews(context, R.layout.widget_pinned_note)
                 views.setThemedWidgetBitmap(context, R.id.pinned_note_image) { palette -> PinnedNoteRenderer.render(state, width, height, palette) }
                 views.setOnClickPendingIntent(R.id.pinned_note_image, widgetPendingIntent(context, WidgetDestination.PINNED_NOTE, id))
                 views.setContentDescription(R.id.pinned_note_root, "${state.title.ifBlank { "Pinned note" }}. ${state.text}")

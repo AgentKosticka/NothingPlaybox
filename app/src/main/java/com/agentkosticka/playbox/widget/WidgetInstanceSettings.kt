@@ -131,6 +131,22 @@ class WidgetInstanceSettings(private val context: Context) {
 }
 
 open class InstanceWidgetProvider : AppWidgetProvider() {
+    companion object {
+        /** All widget families share palette invalidation, even when their renderers differ. */
+        fun refreshAll(context: Context) {
+            val manager = AppWidgetManager.getInstance(context)
+            WidgetDestination.entries.forEach { destination ->
+                val component = ComponentName(context, destination.provider)
+                val ids = manager.getAppWidgetIds(component)
+                if (ids.isNotEmpty()) context.sendBroadcast(
+                    android.content.Intent(AppWidgetManager.ACTION_APPWIDGET_UPDATE)
+                        .setComponent(component)
+                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids)
+                )
+            }
+        }
+    }
+
     override fun onDeleted(context: Context, appWidgetIds: IntArray) {
         val store = WidgetInstanceSettings(context)
         appWidgetIds.forEach(store::delete)
