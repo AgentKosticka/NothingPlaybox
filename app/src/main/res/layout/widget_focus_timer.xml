@@ -22,7 +22,9 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:textSize="38sp"
+            android:fontFamily="NDot57"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="@dimen/widget_text_hero"
             android:textStyle="bold"
             android:visibility="gone" />
 
@@ -31,17 +33,21 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
+            android:fontFamily="NDot57"
             android:text="25:00"
-            android:textSize="38sp"
+            android:textColor="@color/widget_on_surface"
+            android:textSize="@dimen/widget_text_hero"
             android:textStyle="bold" />
 
-        <Button
+        <TextView
             android:id="@+id/focus_precise"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="82dp"
             android:layout_height="36dp"
             android:layout_gravity="top|end"
+            android:layout_margin="4dp"
             android:text="@string/focus_precise"
-            android:textSize="8sp" />
+            android:textSize="@dimen/widget_text_label" />
     </FrameLayout>
 
     <LinearLayout
@@ -49,33 +55,41 @@
         android:layout_height="42dp"
         android:orientation="horizontal"
         android:gravity="center">
-        <Button
+
+        <TextView
             android:id="@+id/focus_reset"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="@string/focus_reset"
-            android:textSize="9sp" />
-        <Button
+            android:layout_margin="4dp"
+            android:text="@string/focus_reset" />
+
+        <TextView
             android:id="@+id/focus_start_pause"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1.25"
-            android:text="@string/focus_start"
-            android:textSize="9sp" />
-        <Button
+            android:layout_margin="4dp"
+            android:text="@string/focus_start" />
+
+        <TextView
             android:id="@+id/focus_skip"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="@string/focus_skip"
-            android:textSize="9sp" />
-        <Button
+            android:layout_margin="4dp"
+            android:text="@string/focus_skip" />
+
+        <TextView
             android:id="@+id/focus_style"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="@string/focus_style"
-            android:textSize="9sp" />
+            android:layout_margin="4dp"
+            android:text="@string/focus_style" />
     </LinearLayout>
 </LinearLayout>
