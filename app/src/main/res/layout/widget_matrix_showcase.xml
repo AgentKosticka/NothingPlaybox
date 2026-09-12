@@ -20,36 +20,42 @@
         android:gravity="center"
         android:orientation="horizontal">
 
-        <Button
+        <TextView
             android:id="@+id/matrix_showcase_previous"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.8"
-            android:text="@string/matrix_showcase_previous"
-            android:textSize="12sp" />
+            android:layout_margin="4dp"
+            android:text="@string/matrix_showcase_previous" />
 
-        <Button
+        <TextView
             android:id="@+id/matrix_showcase_active"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1.6"
+            android:layout_margin="4dp"
             android:text="@string/matrix_showcase_set_active"
-            android:textSize="9sp" />
+            android:textSize="@dimen/widget_text_label" />
 
-        <Button
+        <TextView
             android:id="@+id/matrix_showcase_style"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:layout_margin="4dp"
             android:text="@string/focus_style"
-            android:textSize="9sp" />
+            android:textSize="@dimen/widget_text_label" />
 
-        <Button
+        <TextView
             android:id="@+id/matrix_showcase_next"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="0.8"
-            android:text="@string/matrix_showcase_next"
-            android:textSize="12sp" />
+            android:layout_margin="4dp"
+            android:text="@string/matrix_showcase_next" />
     </LinearLayout>
 </LinearLayout>
