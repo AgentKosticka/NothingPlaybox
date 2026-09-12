@@ -13,12 +13,14 @@ enum class WidgetCategory(@param:StringRes val titleRes: Int) {
     BATTERY(R.string.widget_category_battery),
     CALENDAR(R.string.widget_category_calendar),
     DEVICE(R.string.widget_category_device),
+    PRODUCTIVITY(R.string.widget_category_productivity),
 }
 
 enum class WidgetDestination(val key: String, val category: WidgetCategory, val provider: Class<*>) {
     TIME_BARS("time-bars", WidgetCategory.TIME, TimeBarsWidget::class.java),
     DAY_DIAL("day-dial", WidgetCategory.TIME, DayDialWidget::class.java),
     CLOCK("ndot-clock", WidgetCategory.TIME, NDotClockWidget::class.java),
+    DUAL_CLOCK("dual-clock", WidgetCategory.TIME, DualClockWidget::class.java),
     ALARM("next-alarm", WidgetCategory.TIME, NextAlarmWidget::class.java),
     MILESTONE("milestone", WidgetCategory.TIME, MilestoneWidget::class.java),
     BATTERY_GLYPH("battery-glyph", WidgetCategory.BATTERY, BatteryGlyphWidget::class.java),
@@ -28,10 +30,18 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
     WEEK("week-strip", WidgetCategory.CALENDAR, WeekStripWidget::class.java),
     WEEK_COLUMN("week-column", WidgetCategory.CALENDAR, WeekColumnWidget::class.java),
     AGENDA("agenda", WidgetCategory.CALENDAR, AgendaWidget::class.java),
+    NEXT_EVENT("next-event", WidgetCategory.CALENDAR, NextEventWidget::class.java),
     YEAR("year-dots", WidgetCategory.CALENDAR, YearDotsWidget::class.java),
     STORAGE("storage-matrix", WidgetCategory.DEVICE, StorageMatrixWidget::class.java),
     DEVICE("device-panel", WidgetCategory.DEVICE, DevicePanelWidget::class.java),
-    SHORTCUTS("playbox-shortcuts", WidgetCategory.DEVICE, PlayboxShortcutsWidget::class.java);
+    SHORTCUTS("playbox-shortcuts", WidgetCategory.DEVICE, PlayboxShortcutsWidget::class.java),
+    MATRIX_SHOWCASE("matrix-showcase", WidgetCategory.DEVICE, MatrixShowcaseWidget::class.java),
+    QUICK_TASKS("quick-tasks", WidgetCategory.PRODUCTIVITY, QuickTasksWidget::class.java),
+    HABIT_TRACKER("habit-tracker", WidgetCategory.PRODUCTIVITY, HabitTrackerWidget::class.java),
+    TALLY_COUNTER("tally-counter", WidgetCategory.PRODUCTIVITY, TallyCounterWidget::class.java),
+    PINNED_NOTE("pinned-note", WidgetCategory.PRODUCTIVITY, PinnedNoteWidget::class.java),
+    FOCUS_TIMER("focus-timer", WidgetCategory.PRODUCTIVITY, FocusTimerWidget::class.java),
+    GOAL_TRACKER("goal-tracker", WidgetCategory.PRODUCTIVITY, GoalTrackerWidget::class.java);
 
     companion object {
         fun fromKey(key: String?): WidgetDestination = entries.firstOrNull { it.key == key } ?: TIME_BARS

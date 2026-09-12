@@ -444,7 +444,7 @@ private fun HomeScreen(
             contentPadding = PaddingValues(16.dp, 8.dp, 16.dp, 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            item {
+            if (section != "Widgets") item {
                 val heading = when (section) {
                     "Procedural" -> selectedEngine?.name ?: stringResource(R.string.home_title_procedural)
                     "Widgets" -> stringResource(R.string.home_title_widgets)
@@ -461,7 +461,7 @@ private fun HomeScreen(
                 Spacer(Modifier.height(4.dp))
                 Text(subtitle, color = Muted)
             }
-            if (section == "Widgets") item { WidgetsScreen(widgetType, onWidgetType, widgetId, onEditDefaults) }
+            if (section == "Widgets") item { WidgetsScreen(widgetType, onWidgetType, widgetId, onEditDefaults, repository) }
             if (section == "AOD") item { AodScreen(repository, glyphClient) }
             if (section == "Procedural" && selectedEngine == null) {
                 items(engines, key = { "engine-${it.id}" }) { effect ->

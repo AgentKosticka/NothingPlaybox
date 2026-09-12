@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/matrix_showcase_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:clipToOutline="true"
+    android:background="@drawable/widget_card_background">
+
+    <ImageView
+        android:id="@+id/matrix_showcase_image"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:contentDescription="@string/matrix_showcase_description"
+        android:scaleType="fitXY" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:paddingHorizontal="8dp"
+        android:paddingBottom="8dp"
+        android:gravity="center"
+        android:orientation="horizontal">
+
+        <TextView
+            android:id="@+id/matrix_showcase_previous"
+            android:contentDescription="Previous effect"
+            style="@style/Widget.Playbox.ControlLabel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.8"
+            android:layout_marginHorizontal="2dp"
+            android:text="@string/matrix_showcase_previous" />
+
+        <TextView
+            android:id="@+id/matrix_showcase_active"
+            style="@style/Widget.Playbox.PrimaryControl"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1.6"
+            android:layout_marginHorizontal="2dp"
+            android:text="@string/matrix_showcase_set_active" />
+
+        <TextView
+            android:id="@+id/matrix_showcase_style"
+            style="@style/Widget.Playbox.ControlLabel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:layout_marginHorizontal="2dp"
+            android:background="@android:color/transparent"
+            android:text="@string/focus_style" />
+
+        <TextView
+            android:id="@+id/matrix_showcase_next"
+            android:contentDescription="Next effect"
+            style="@style/Widget.Playbox.ControlLabel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.8"
+            android:layout_marginHorizontal="2dp"
+            android:text="@string/matrix_showcase_next" />
+    </LinearLayout>
+</LinearLayout>
