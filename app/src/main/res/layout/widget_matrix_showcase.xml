@@ -36,8 +36,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1.6"
             android:layout_margin="4dp"
-            android:text="@string/matrix_showcase_set_active"
-            android:textSize="@dimen/widget_text_label" />
+            android:text="@string/matrix_showcase_set_active" />
 
         <TextView
             android:id="@+id/matrix_showcase_style"
@@ -46,8 +45,7 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:layout_margin="4dp"
-            android:text="@string/focus_style"
-            android:textSize="@dimen/widget_text_label" />
+            android:text="@string/focus_style" />
 
         <TextView
             android:id="@+id/matrix_showcase_next"
