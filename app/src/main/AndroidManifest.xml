@@ -16,30 +16,16 @@
         android:name=".PlayboxApplication"
         android:theme="@style/Theme.NothingPlaybox">
 
-        <activity
-            android:name=".MainActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        <activity android:name=".MainActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
         </activity>
-
         <activity android:name=".widget.WidgetActionActivity" android:exported="false" android:theme="@android:style/Theme.NoDisplay" />
-        <receiver android:name=".widget.AgendaWidget" android:exported="false" android:label="@string/agenda_name">
-            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/agenda_widget" />
-        </receiver>
+
+        <receiver android:name=".widget.AgendaWidget" android:exported="false" android:label="@string/agenda_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/agenda_widget" /></receiver>
+        <receiver android:name=".widget.NextEventWidget" android:exported="false" android:label="@string/next_event_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/next_event_widget" /></receiver>
 
         <receiver android:name=".widget.TimeBarsWidget" android:exported="false" android:label="@string/time_bars_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.intent.action.TIME_SET" />
-                <action android:name="android.intent.action.TIMEZONE_CHANGED" />
-                <action android:name="android.intent.action.DATE_CHANGED" />
-                <action android:name="android.intent.action.BOOT_COMPLETED" />
-                <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-            </intent-filter>
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /><action android:name="android.intent.action.TIME_SET" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /><action android:name="android.intent.action.DATE_CHANGED" /><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/time_bars_widget" />
         </receiver>
 
@@ -59,21 +45,13 @@
         <receiver android:name=".widget.DualClockWidget" android:exported="false" android:label="@string/dual_clock_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/dual_clock_widget" /></receiver>
         <receiver android:name=".widget.PlayboxShortcutsWidget" android:exported="false" android:label="@string/playbox_shortcuts_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/playbox_shortcuts_widget" /></receiver>
         <receiver android:name=".widget.QuickTasksWidget" android:exported="false" android:label="@string/quick_tasks_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/quick_tasks_widget" /></receiver>
-
-        <receiver android:name=".widget.HabitTrackerWidget" android:exported="false" android:label="@string/habit_tracker_name">
-            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /><action android:name="android.intent.action.DATE_CHANGED" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /></intent-filter>
-            <meta-data android:name="android.appwidget.provider" android:resource="@xml/habit_tracker_widget" />
-        </receiver>
+        <receiver android:name=".widget.HabitTrackerWidget" android:exported="false" android:label="@string/habit_tracker_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /><action android:name="android.intent.action.DATE_CHANGED" /><action android:name="android.intent.action.TIMEZONE_CHANGED" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/habit_tracker_widget" /></receiver>
         <receiver android:name=".widget.TallyCounterWidget" android:exported="false" android:label="@string/tally_counter_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/tally_counter_widget" /></receiver>
         <receiver android:name=".widget.PinnedNoteWidget" android:exported="false" android:label="@string/pinned_note_name"><intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter><meta-data android:name="android.appwidget.provider" android:resource="@xml/pinned_note_widget" /></receiver>
 
         <service android:name=".matrix.PlayboxToyService" android:exported="true" tools:ignore="ExportedService">
             <intent-filter><action android:name="com.nothing.glyph.TOY" /></intent-filter>
-            <meta-data android:name="com.nothing.glyph.toy.name" android:resource="@string/toy_name" />
-            <meta-data android:name="com.nothing.glyph.toy.summary" android:resource="@string/toy_summary" />
-            <meta-data android:name="com.nothing.glyph.toy.image" android:resource="@drawable/toy_preview" />
-            <meta-data android:name="com.nothing.glyph.toy.aod_support" android:value="1" />
+            <meta-data android:name="com.nothing.glyph.toy.name" android:resource="@string/toy_name" /><meta-data android:name="com.nothing.glyph.toy.summary" android:resource="@string/toy_summary" /><meta-data android:name="com.nothing.glyph.toy.image" android:resource="@drawable/toy_preview" /><meta-data android:name="com.nothing.glyph.toy.aod_support" android:value="1" />
         </service>
     </application>
-
 </manifest>
