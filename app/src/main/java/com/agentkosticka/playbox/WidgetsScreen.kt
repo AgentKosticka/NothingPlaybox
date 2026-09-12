@@ -94,6 +94,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
     val specs = remember {
         listOf(
             WidgetSpec("agenda", R.string.agenda_name, R.string.widget_size_2x2_to_4x2, R.string.agenda_description, AgendaWidget::class.java, 1f),
+            WidgetSpec("next-event", R.string.next_event_name, R.string.widget_size_2x1_to_4x2, R.string.next_event_description, NextEventWidget::class.java, 2f),
             WidgetSpec("battery-column", R.string.battery_column_name, R.string.widget_size_vertical, R.string.battery_column_description, BatteryColumnWidget::class.java, .5f),
             WidgetSpec("week-column", R.string.week_column_name, R.string.widget_size_vertical, R.string.week_column_description, WeekColumnWidget::class.java, .5f),
             WidgetSpec("day-dial", R.string.day_dial_name, R.string.widget_size_2x2, R.string.day_dial_description, DayDialWidget::class.java, 1f),
@@ -147,6 +148,13 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
         if (widgetType == "agenda") {
             CalendarSettingsEditor(instance.agenda, true) { settings -> instance = instance.copy(agenda = settings); store.save(appWidgetId, instance) }
             if (appWidgetId == null) AddWidgetButton(AgendaWidget::class.java, stringResource(R.string.agenda_name), onStatus = { status = it })
+            status?.let { Text(it, color = Muted) }; return@Column
+        }
+        if (widgetType == "next-event") {
+            Text(stringResource(R.string.next_event_description), color = Muted)
+            CalendarSettingsEditor(instance.agenda, true) { settings -> instance = instance.copy(agenda = settings); store.save(appWidgetId, instance); TimeBarsWidget.requestImmediateUpdate(context) }
+            Text(stringResource(R.string.shared_widget_refresh_help), color = Muted)
+            if (appWidgetId == null) AddWidgetButton(NextEventWidget::class.java, stringResource(R.string.next_event_name), onStatus = { status = it })
             status?.let { Text(it, color = Muted) }; return@Column
         }
         if (widgetType == "time-bars") {
