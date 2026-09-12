@@ -67,6 +67,10 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider" android:resource="@xml/goal_tracker_widget" />
         </receiver>
+        <receiver android:name=".widget.MatrixShowcaseWidget" android:exported="false" android:label="@string/matrix_showcase_name">
+            <intent-filter><action android:name="android.appwidget.action.APPWIDGET_UPDATE" /></intent-filter>
+            <meta-data android:name="android.appwidget.provider" android:resource="@xml/matrix_showcase_widget" />
+        </receiver>
 
         <service android:name=".matrix.PlayboxToyService" android:exported="true" tools:ignore="ExportedService">
             <intent-filter><action android:name="com.nothing.glyph.TOY" /></intent-filter>
