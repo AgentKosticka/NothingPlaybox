@@ -1,6 +1,6 @@
 # Nothing Playbox
 
-Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It combines a 137-pixel intensity editor, multi-frame animation, image/video import, live procedural engines, a simulator, direct Matrix output, portable `.playbox` files, 22 home-screen widgets, and configurable Always-on Glyph playback.
+Nothing Playbox is an offline Glyph Matrix studio for Nothing Phone (4a) Pro. It combines a 137-pixel intensity editor, multi-frame animation, image/video import, live procedural engines, a simulator, direct Matrix output, portable `.playbox` files, **25 home-screen widgets**, and configurable Always-on Glyph playback.
 
 The built-in library includes static/animated effects plus Radar Sweep, Breathing Orbit, Woven Light, Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Procedural effects are evaluated live from compact saved settings instead of storing giant baked animation loops.
 
@@ -8,7 +8,7 @@ The built-in library includes static/animated effects plus Radar Sweep, Breathin
 
 - **Matrix** — static artwork, frame animations, Pixel Lab, and image/video imports.
 - **Procedural** — Conway Life, Shifting Noise, Lava Lamp, Organic Bloom, Ripple Field, and Starfield. Open an engine to preview it or create independent named profiles. Profiles stay editable and work with `.playbox` import/export and AOD selection.
-- **Widgets** — Time, Battery, Calendar, Device, and Productivity categories with a widget selector, live previews, settings, and one-tap launcher pinning for all 22 widgets.
+- **Widgets** — Time, Battery, Calendar, Device, and Productivity categories with a widget selector, live previews, settings, and one-tap launcher pinning. The Android launcher picker also exposes Matrix Showcase.
 - **AOD** — select the active effect, preview on the Glyph Matrix, adjust brightness/speed, rotate a playlist, and configure quiet hours. Nothing OS's Always-on Glyph Toy reads the same settings.
 
 Editor changes are kept as an in-memory draft until **Save**, including across Activity/configuration recreation. Opening an effect no longer mutates the library, and **Discard** leaves persisted data untouched.
@@ -39,16 +39,48 @@ Nothing Playbox currently ships:
 20. **Tally Counter** — instant − / reset / + controls with independent label, value and step size per widget. Choose a Big Number or Dot Matrix visual.
 21. **Pinned Note** — a short home-screen note with independent content per widget and Card, Terminal, or Minimal presentation.
 22. **Now / Next Event** — the current or next calendar event with start time and a starts-in/ends-in label. Tap it to open the event.
+23. **Focus Timer** — endpoint-driven Pomodoro timer with live system countdown, start/pause/resume/reset/skip actions, automatic focus→break transitions, completed-session count, and Classic/Dynamic/Glass/High Contrast appearances. It does not use minute-by-minute polling.
+24. **Goal Tracker** — one-tap Water, Reading, Movement, or simple daily-goal tracking with −/+, daily rollover, 90-day local history, streaks, Ring/Bar/Dots visuals, and adaptive appearances.
+25. **Matrix Showcase** — browses Playbox's existing local effect library using the real Phone (4a) Pro physical LED mask. Previous/next and Set Active are direct actions; tapping the preview opens Playbox. The widget never takes background Glyph Matrix ownership.
 
 Time Bars keeps its horizontal layout when resized, including five columns by two rows, without stretching its dots or text.
 
-Bitmap widgets share one periodic WorkManager refresh (about every 15 minutes). Setting changes and relevant system events request a coalesced background refresh instead of rendering the whole widget fleet in the UI callback. Agenda and Now / Next Event reuse that same calendar refresh. NDot Clock, Dual Clock, Quick Tasks, Habit Grid, Tally Counter, Pinned Note, and shortcuts are system/event/user-action driven and do not require their own periodic polling. Android may defer periodic work during Doze/battery saving.
+Bitmap widgets share one periodic WorkManager refresh (about every 15 minutes). Setting changes and relevant system events request a coalesced background refresh instead of rendering the whole widget fleet in the UI callback. Agenda and Now / Next Event reuse that same calendar refresh. NDot Clock, Dual Clock, Quick Tasks, Habit Grid, Tally Counter, Pinned Note, Focus Timer, Goal Tracker, Matrix Showcase, and shortcuts are system/event/user-action driven and do not require their own periodic polling. Android may defer periodic work during Doze/battery saving.
 
-All providers include launcher preview metadata. Configurable instances snapshot defaults independently, including existing widgets on upgrade. Tap an installed widget to edit that instance; settings opened normally in the app are defaults for new widgets. Agenda event rows, Now / Next Event, and Device Panel quadrants have their own actions. Widgets do not require Glyph hardware.
+### Nothing OS 5 appearance foundation
+
+New interactive widgets can use four public-Android appearance modes:
+
+- **Classic** — the established Playbox light/dark treatment.
+- **Dynamic** — uses Android's wallpaper-derived system accent colors while preserving Playbox contrast-aware surfaces.
+- **Glass** — a translucent Playbox treatment intended to harmonise with Nothing OS 5's more transparent home-screen direction without claiming access to a private Nothing “Lucent” API.
+- **High Contrast** — opaque black/white surfaces for wallpapers or environments where translucency hurts readability.
+
+Existing widgets keep their existing Classic rendering by default, so updating the app does not silently restyle a user's home screen.
+
+### Focus timing and optional precise alarms
+
+Focus Timer stores an absolute wall-clock endpoint plus a monotonic endpoint for the current boot. The visible countdown is a system `Chronometer`, so Playbox does not wake every second or every minute. Process death does not lose the session, reboot/time changes are reconciled from persisted state, and an active focus session is deliberately not transferred to another device during widget restore.
+
+The core timer works **without exact-alarm special access**. When precise alarm access is unavailable, Playbox uses Android's inexact idle-safe alarm path: the countdown remains endpoint-correct, but Android can delay the background phase-change refresh while the device is idle. The widget exposes **PRECISE** as an explicit user choice that opens Android's exact-alarm settings. Playbox does not request notification permission merely because Focus Timer exists.
+
+All providers include launcher preview metadata. Configurable instances snapshot defaults independently, including existing widgets on upgrade. Tap an installed configurable widget to edit that instance where supported; settings opened normally in the app are defaults for new widgets. Agenda event rows, Now / Next Event, and Device Panel quadrants have their own actions. Widgets do not require Glyph hardware; Matrix Showcase remains a useful local preview/open shortcut even when direct Matrix output is unavailable.
 
 Calendar access is optional and read-only, requested only from calendar settings. Each calendar widget can select calendars independently; an untouched selection follows visible calendars, while an explicitly empty selection stays empty. Event dots use occupied dates with exclusive end boundaries. Agenda and Now / Next Event do not persist calendar event records. Calendar queries run off the UI thread and share the existing widget refresh path. Permission denial and provider errors have distinct states and never fail the shared worker.
 
-Widget settings are remapped when Android restores widget IDs. Calendar selections must be chosen again after restoration because calendar database IDs may refer to different accounts on the destination device. Quick Tasks text, Habit Grid names/history, Pinned Note content, and Tally Counter state stay app-private and are deliberately excluded from Android backup/device transfer; restored personal productivity widgets start from the destination device's local defaults instead of uploading personal content.
+Widget settings are remapped when Android restores widget IDs. Calendar selections must be chosen again after restoration because calendar database IDs may refer to different accounts on the destination device. Quick Tasks text, Habit Grid names/history, Pinned Note content, Tally Counter state, Focus Timer session data, Goal Tracker history, and Matrix Showcase selection stay app-private and are deliberately excluded from Android backup/device transfer; restored personal productivity widgets start from the destination device's local defaults instead of uploading personal content.
+
+## Research-driven scope choices
+
+The widget expansion was guided by Nothing Community, NothingTech discussions, current Nothing OS 5 feedback, Phone (4a) Pro Glyph projects, and Android platform constraints. The highest-confidence missing requests were a correct Focus/Pomodoro timer, direct daily-goal tracking, and a home-screen bridge into the 4a Pro Matrix ecosystem; those are implemented here.
+
+Some frequently requested ideas are deliberately **not** duplicated in this branch:
+
+- **Weather** — Nothing already ships a first-party weather widget; a third-party version would add network/location/background work to an otherwise local-first app.
+- **True widget stacking** — launcher/host functionality rather than something one AppWidget can faithfully provide.
+- **Away Time / screen-time clone** — Nothing OS 5 already covers this class of feature and a third-party clone would require broader usage access.
+- **A third calendar widget** — Playbox already has responsive Agenda plus Now / Next Event, including calendar filtering, current/upcoming events, all-day support and event opening.
+- **Task reminders in this PR** — Quick Tasks stays intentionally permission-free. Reminder scheduling and multiple-list editing should land only as a coordinated schema/editor/permission feature, not as a half-configured migration.
 
 ## Build and verification
 
@@ -64,7 +96,7 @@ Linux/macOS:
 ./gradlew testDebugUnitTest lintDebug assembleDebug assembleRelease assembleDebugAndroidTest
 ```
 
-Pull requests run unit tests, lint, debug + release builds, SDK/wrapper integrity checks, and the Android instrumentation suite on an emulator. CI artifacts/reports are retained for 30 days.
+Pull requests run unit tests, lint, debug + release builds, SDK/wrapper integrity checks, and the Android instrumentation suite on an emulator. CI artifacts/reports are retained for 30 days. Focus Timer and Goal Tracker also have deterministic JVM coverage for phase transitions, pause/resume endpoint math, reset, daily rollover, history pruning, streak behavior, and appearance cycling.
 
 ### Tagged releases
 
@@ -92,7 +124,7 @@ User effects are stored as bounded per-effect atomic files in app-private storag
 
 Imported images/videos are converted to 13×13 luminance frames and original media is not retained. Video import accepts at most 60 seconds/600 samples and keeps all decode paths bounded before conversion.
 
-The app has no network permission, accounts, analytics, advertising, or app-managed cloud dependency. Android backup/device transfer includes only explicitly allowlisted per-widget configuration (`widget-instances.xml` plus the Dual Clock `dual-clock.xml`) to support widget restoration. Effect libraries, Quick Tasks checklist content, Habit Grid names/history, Pinned Note content, Tally Counter state, and other app data remain excluded; use `.playbox` files for manual effect export. Calendar event records are never persisted, logged, or uploaded by Playbox.
+The app has no network permission, accounts, analytics, advertising, or app-managed cloud dependency. Android backup/device transfer includes only explicitly allowlisted per-widget configuration (`widget-instances.xml` plus the Dual Clock `dual-clock.xml`) to support widget restoration. Effect libraries, Quick Tasks checklist content, Habit Grid names/history, Pinned Note content, Tally Counter state, Focus Timer state, Goal Tracker history, Matrix Showcase selection, and other app data remain excluded; use `.playbox` files for manual effect export. Calendar event records are never persisted, logged, or uploaded by Playbox.
 
 ## Licensing
 
