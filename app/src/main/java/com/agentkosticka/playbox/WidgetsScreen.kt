@@ -161,6 +161,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
         }
         if (appWidgetId != null) {
             TextButton(onClick = onEditDefaults) { Text(stringResource(R.string.widget_edit_defaults)) }
+            Text(stringResource(R.string.widget_instance_explanation), color = Muted)
             if (!validInstance) { Text(stringResource(R.string.widget_instance_missing)); return@Column }
         }
         Row(Modifier.fillMaxWidth().horizontalScroll(categoryScroll), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
