@@ -18,33 +18,43 @@
         android:layout_height="42dp"
         android:orientation="horizontal"
         android:gravity="center">
-        <Button
+
+        <TextView
             android:id="@+id/goal_minus"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:layout_margin="4dp"
             android:text="−"
-            android:textSize="18sp" />
-        <Button
+            android:textSize="@dimen/widget_text_title" />
+
+        <TextView
             android:id="@+id/goal_plus"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
+            android:layout_margin="4dp"
             android:text="+"
-            android:textSize="18sp" />
-        <Button
+            android:textSize="@dimen/widget_text_title" />
+
+        <TextView
             android:id="@+id/goal_mode"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="@string/goal_mode"
-            android:textSize="9sp" />
-        <Button
+            android:layout_margin="4dp"
+            android:text="@string/goal_mode" />
+
+        <TextView
             android:id="@+id/goal_look"
+            style="@style/Widget.Playbox.ControlLabel"
             android:layout_width="0dp"
             android:layout_height="match_parent"
             android:layout_weight="1"
-            android:text="@string/goal_look"
-            android:textSize="9sp" />
+            android:layout_margin="4dp"
+            android:text="@string/goal_look" />
     </LinearLayout>
 </LinearLayout>
