@@ -30,6 +30,7 @@ enum class WidgetDestination(val key: String, val category: WidgetCategory, val 
     WEEK("week-strip", WidgetCategory.CALENDAR, WeekStripWidget::class.java),
     WEEK_COLUMN("week-column", WidgetCategory.CALENDAR, WeekColumnWidget::class.java),
     AGENDA("agenda", WidgetCategory.CALENDAR, AgendaWidget::class.java),
+    NEXT_EVENT("next-event", WidgetCategory.CALENDAR, NextEventWidget::class.java),
     YEAR("year-dots", WidgetCategory.CALENDAR, YearDotsWidget::class.java),
     STORAGE("storage-matrix", WidgetCategory.DEVICE, StorageMatrixWidget::class.java),
     DEVICE("device-panel", WidgetCategory.DEVICE, DevicePanelWidget::class.java),
