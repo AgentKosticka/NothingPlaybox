@@ -20,7 +20,7 @@
             android:fontFamily="NDot57"
             android:text="NEXT"
             android:textColor="@color/widget_accent"
-            android:textSize="11sp" />
+            android:textSize="@dimen/widget_text_label" />
         <TextView
             android:id="@+id/next_event_title"
             android:layout_width="match_parent"
@@ -30,10 +30,11 @@
             android:fontFamily="NDot57"
             android:text="Design review"
             android:textColor="@color/widget_on_surface"
-            android:textSize="20sp"
+            android:textSize="@dimen/widget_text_title"
             android:autoSizeTextType="uniform"
-            android:autoSizeMinTextSize="14sp"
-            android:autoSizeMaxTextSize="24sp"
+            android:autoSizeMinTextSize="@dimen/widget_text_body"
+            android:autoSizeMaxTextSize="@dimen/widget_text_title"
+            android:autoSizeStepGranularity="@dimen/widget_text_autosize_step"
             android:maxLines="2"
             android:ellipsize="end" />
         <TextView
@@ -43,7 +44,7 @@
             android:fontFamily="NDot57"
             android:text="14:30 · starts in 42m"
             android:textColor="@color/widget_on_surface_variant"
-            android:textSize="12sp"
+            android:textSize="@dimen/widget_text_label"
             android:maxLines="1"
             android:ellipsize="end" />
     </LinearLayout>
@@ -56,6 +57,6 @@
         android:fontFamily="NDot57"
         android:text="NO UPCOMING EVENTS"
         android:textColor="@color/widget_on_surface_variant"
-        android:textSize="13sp"
+        android:textSize="@dimen/widget_text_body"
         android:visibility="gone" />
 </FrameLayout>
