@@ -1,99 +1,30 @@
 <resources>
-    <string name="day_dial_name">Day dial</string>
-    <string name="day_dial_description">A dotted ring of today’s progress, with weekday and date. Refreshes about every 15 minutes.</string>
-    <string name="battery_dots_name">Battery dots</string>
-    <string name="battery_dots_description">One dot per battery percent, plus charging status. Refreshes about every 15 minutes.</string>
-    <string name="time_bars_name">Time bars</string>
-    <string name="time_bars_description">Four dotted bars tracking your day, week, month and year. Choose your week start and fill style in Playbox. Refreshes about every 15 minutes.</string>
-
-    <string name="battery_glyph_name">Battery glyph</string>
-    <string name="battery_glyph_description">Responsive Nothing-style battery meter with ring, dot or bar modes and charging time when Android can estimate it.</string>
-    <string name="next_alarm_name">Next alarm</string>
-    <string name="next_alarm_description">Your next system alarm, day and time-until, rendered in the Nothing visual language.</string>
-    <string name="storage_matrix_name">Storage matrix</string>
-    <string name="storage_matrix_description">A 100-dot internal-storage meter. Choose whether it shows free or used space.</string>
-    <string name="month_matrix_name">Month matrix</string>
-    <string name="month_matrix_description">A compact monthly calendar with today highlighted and the same configurable week start as Time Bars.</string>
-    <string name="week_strip_name">Week strip</string>
-    <string name="week_strip_description">A slim seven-day strip for the current week with today highlighted. Resizes from compact to wide.</string>
-    <string name="year_dots_name">Year dots</string>
-    <string name="year_dots_description">Every day of the year in a 12-row dot matrix. Switch between elapsed and remaining days.</string>
-    <string name="device_panel_name">Device panel</string>
-    <string name="device_panel_description">Battery, free storage, next alarm and today’s progress in one Nothing-style dashboard.</string>
-    <string name="milestone_name">Milestone</string>
-    <string name="milestone_description">Countdown to the weekend, next month or next year with a dotted progress track.</string>
-    <string name="ndot_clock_name">NDot clock</string>
-    <string name="ndot_clock_description">A live home-screen clock using Nothing OS NDot57 on Nothing phones, with automatic system-time updates.</string>
-    <string name="playbox_shortcuts_name">Playbox shortcuts</string>
-    <string name="playbox_shortcuts_description">One-tap access to the Matrix studio, widget gallery and Nothing OS Always-on Glyph Toy selector.</string>
-    <string name="quick_tasks_name">Quick tasks</string>
-    <string name="quick_tasks_description">A four-item checklist you can complete directly on the home screen. Each widget keeps its own list.</string>
-    <string name="dual_clock_name">Dual clock</string>
-    <string name="dual_clock_description">Local time beside a chosen world time zone, with both dates visible when midnight differs.</string>
-    <string name="habit_tracker_name">Habit grid</string>
-    <string name="habit_tracker_description">A GitHub-style monthly habit tracker. Mark today directly on the home screen and keep each habit in its own widget.</string>
-
-    <string name="widget_size_2x2">2 × 2</string>
-    <string name="widget_size_2x1_to_4x2">2 × 1 → 4 × 2</string>
-    <string name="widget_size_2x2_to_4x2">2 × 2 → 4 × 2</string>
-    <string name="widget_size_4x2">4 × 2</string>
-    <string name="widget_size_4x1_to_4x2">4 × 1 → 4 × 2</string>
-    <string name="widget_size_4x1">4 × 1</string>
-    <string name="widget_header">%1$s / %2$s</string>
-    <string name="time_bars_preview_cd">Live preview of four dotted time progress bars</string>
-    <string name="time_bars_header">TIME BARS / RESIZABLE</string>
-    <string name="fill_style">FILL STYLE</string>
-    <string name="fill_left_to_right">Left to right</string>
-    <string name="fill_right_to_left">Right to left</string>
-    <string name="fill_density">Density</string>
-    <string name="density_fill_help">Scattered dots build up in a stable pattern as each period passes.</string>
-    <string name="directional_fill_help">Dots fill %1$s as each period passes.</string>
-    <string name="bitmap_refresh_help">Refreshes about every 15 minutes. Android battery saving may delay bitmap widgets.</string>
-    <string name="widget_preview_cd">%1$s preview</string>
-    <string name="visual">VISUAL</string>
-    <string name="battery_visual_ring">Ring</string>
-    <string name="battery_visual_dots">Dots</string>
-    <string name="battery_visual_bar">Bar</string>
-    <string name="measure">MEASURE</string>
-    <string name="storage_used">Used</string>
-    <string name="storage_free">Free</string>
-    <string name="show">SHOW</string>
-    <string name="year_elapsed">Elapsed</string>
-    <string name="year_remaining">Remaining</string>
-    <string name="count_down_to">COUNT DOWN TO</string>
-    <string name="milestone_weekend">Weekend</string>
-    <string name="milestone_month_end">Month end</string>
-    <string name="milestone_year_end">Year end</string>
-    <string name="system_widget_help">System-driven widget: no periodic worker needed.</string>
-    <string name="interactive_widget_help">Interactive widget: home-screen actions update immediately and need no periodic worker.</string>
-    <string name="shared_widget_refresh_help">Bitmap widgets refresh together about every 15 minutes and immediately on relevant clock, alarm or charging events.</string>
-    <string name="week_starts_on">WEEK STARTS ON</string>
-    <string name="pin_widget_fallback">Long-press your home screen → Widgets → Nothing Playbox → %1$s.</string>
-    <string name="pin_widget_finish">Finish adding the widget in your launcher.</string>
-    <string name="add_to_home_screen">ADD TO HOME SCREEN</string>
-    <string name="quick_tasks_list_title">LIST TITLE</string>
-    <string name="quick_tasks_tasks">TASKS</string>
-    <string name="quick_tasks_task_label">Task %1$d</string>
-    <string name="dual_clock_second_zone">SECOND CLOCK</string>
-    <string name="habit_tracker_label">HABIT</string>
-    <string name="habit_tracker_mark_today">MARK TODAY</string>
-    <string name="habit_tracker_done_today">DONE TODAY</string>
-    <string name="habit_tracker_local_help">Habit name and completion history stay on this device and are excluded from Android backup/device transfer.</string>
-
-    <string name="widget_day_progress_cd">%1$d percent of today elapsed</string>
-    <string name="widget_battery_percent_cd">Battery %1$d percent, %2$s</string>
-    <string name="widget_battery_unknown_cd">Battery level unavailable, %1$s</string>
-    <string name="widget_battery_charging">charging</string>
-    <string name="widget_battery_on_battery">on battery</string>
-    <string name="battery_column_name">Battery column</string>
-    <string name="battery_column_description">A vertical dotted battery gauge with percentage and charging status.</string>
-    <string name="week_column_name">Week column</string>
-    <string name="week_column_description">Seven days stacked vertically, with today highlighted. Uses your chosen week start.</string>
-    <string name="widget_size_vertical">1 column × 2 rows</string>
-    <string name="widget_category_time">Time</string>
-    <string name="widget_category_battery">Battery</string>
-    <string name="widget_category_calendar">Calendar</string>
-    <string name="widget_category_device">Device</string>
-    <string name="widget_category_productivity">Productivity</string>
-    <string name="widget_variant_selector">Widget: %1$s ▾</string>
+    <string name="day_dial_name">Day dial</string><string name="day_dial_description">A dotted ring of today’s progress, with weekday and date. Refreshes about every 15 minutes.</string>
+    <string name="battery_dots_name">Battery dots</string><string name="battery_dots_description">One dot per battery percent, plus charging status. Refreshes about every 15 minutes.</string>
+    <string name="time_bars_name">Time bars</string><string name="time_bars_description">Four dotted bars tracking your day, week, month and year. Choose your week start and fill style in Playbox. Refreshes about every 15 minutes.</string>
+    <string name="battery_glyph_name">Battery glyph</string><string name="battery_glyph_description">Responsive Nothing-style battery meter with ring, dot or bar modes and charging time when Android can estimate it.</string>
+    <string name="next_alarm_name">Next alarm</string><string name="next_alarm_description">Your next system alarm, day and time-until, rendered in the Nothing visual language.</string>
+    <string name="storage_matrix_name">Storage matrix</string><string name="storage_matrix_description">A 100-dot internal-storage meter. Choose whether it shows free or used space.</string>
+    <string name="month_matrix_name">Month matrix</string><string name="month_matrix_description">A compact monthly calendar with today highlighted and the same configurable week start as Time Bars.</string>
+    <string name="week_strip_name">Week strip</string><string name="week_strip_description">A slim seven-day strip for the current week with today highlighted. Resizes from compact to wide.</string>
+    <string name="year_dots_name">Year dots</string><string name="year_dots_description">Every day of the year in a 12-row dot matrix. Switch between elapsed and remaining days.</string>
+    <string name="device_panel_name">Device panel</string><string name="device_panel_description">Battery, free storage, next alarm and today’s progress in one Nothing-style dashboard.</string>
+    <string name="milestone_name">Milestone</string><string name="milestone_description">Countdown to the weekend, next month or next year with a dotted progress track.</string>
+    <string name="ndot_clock_name">NDot clock</string><string name="ndot_clock_description">A live home-screen clock using Nothing OS NDot57 on Nothing phones, with automatic system-time updates.</string>
+    <string name="playbox_shortcuts_name">Playbox shortcuts</string><string name="playbox_shortcuts_description">One-tap access to the Matrix studio, widget gallery and Nothing OS Always-on Glyph Toy selector.</string>
+    <string name="quick_tasks_name">Quick tasks</string><string name="quick_tasks_description">A four-item checklist you can complete directly on the home screen. Each widget keeps its own list.</string>
+    <string name="dual_clock_name">Dual clock</string><string name="dual_clock_description">Local time beside a chosen world time zone, with both dates visible when midnight differs.</string>
+    <string name="habit_tracker_name">Habit grid</string><string name="habit_tracker_description">A GitHub-style monthly habit tracker. Mark today directly on the home screen and keep each habit in its own widget.</string>
+    <string name="tally_counter_name">Tally counter</string><string name="tally_counter_description">A fast home-screen counter with −, reset and + controls, configurable step size, label and visual style.</string>
+    <string name="pinned_note_name">Pinned note</string><string name="pinned_note_description">Keep a short note visible on your home screen with card, terminal or minimal styling.</string>
+    <string name="widget_size_2x2">2 × 2</string><string name="widget_size_2x1_to_4x2">2 × 1 → 4 × 2</string><string name="widget_size_2x2_to_4x2">2 × 2 → 4 × 2</string><string name="widget_size_4x2">4 × 2</string><string name="widget_size_4x1_to_4x2">4 × 1 → 4 × 2</string><string name="widget_size_4x1">4 × 1</string><string name="widget_header">%1$s / %2$s</string>
+    <string name="time_bars_preview_cd">Live preview of four dotted time progress bars</string><string name="time_bars_header">TIME BARS / RESIZABLE</string><string name="fill_style">FILL STYLE</string><string name="fill_left_to_right">Left to right</string><string name="fill_right_to_left">Right to left</string><string name="fill_density">Density</string><string name="density_fill_help">Scattered dots build up in a stable pattern as each period passes.</string><string name="directional_fill_help">Dots fill %1$s as each period passes.</string><string name="bitmap_refresh_help">Refreshes about every 15 minutes. Android battery saving may delay bitmap widgets.</string><string name="widget_preview_cd">%1$s preview</string>
+    <string name="visual">VISUAL</string><string name="battery_visual_ring">Ring</string><string name="battery_visual_dots">Dots</string><string name="battery_visual_bar">Bar</string><string name="measure">MEASURE</string><string name="storage_used">Used</string><string name="storage_free">Free</string><string name="show">SHOW</string><string name="year_elapsed">Elapsed</string><string name="year_remaining">Remaining</string><string name="count_down_to">COUNT DOWN TO</string><string name="milestone_weekend">Weekend</string><string name="milestone_month_end">Month end</string><string name="milestone_year_end">Year end</string>
+    <string name="system_widget_help">System-driven widget: no periodic worker needed.</string><string name="interactive_widget_help">Interactive widget: home-screen actions update immediately and need no periodic worker.</string><string name="shared_widget_refresh_help">Bitmap widgets refresh together about every 15 minutes and immediately on relevant clock, alarm or charging events.</string><string name="week_starts_on">WEEK STARTS ON</string><string name="pin_widget_fallback">Long-press your home screen → Widgets → Nothing Playbox → %1$s.</string><string name="pin_widget_finish">Finish adding the widget in your launcher.</string><string name="add_to_home_screen">ADD TO HOME SCREEN</string>
+    <string name="quick_tasks_list_title">LIST TITLE</string><string name="quick_tasks_tasks">TASKS</string><string name="quick_tasks_task_label">Task %1$d</string><string name="dual_clock_second_zone">SECOND CLOCK</string><string name="habit_tracker_label">HABIT</string><string name="habit_tracker_mark_today">MARK TODAY</string><string name="habit_tracker_done_today">DONE TODAY</string><string name="habit_tracker_local_help">Habit name and completion history stay on this device and are excluded from Android backup/device transfer.</string>
+    <string name="tally_label">LABEL</string><string name="tally_step">STEP</string><string name="tally_value">VALUE</string><string name="tally_style_big">Big number</string><string name="tally_style_dots">Dot matrix</string>
+    <string name="note_title">TITLE</string><string name="note_body">NOTE</string><string name="note_style_card">Card</string><string name="note_style_terminal">Terminal</string><string name="note_style_minimal">Minimal</string><string name="local_content_help">Content stays on this device and is excluded from Android backup/device transfer.</string>
+    <string name="widget_day_progress_cd">%1$d percent of today elapsed</string><string name="widget_battery_percent_cd">Battery %1$d percent, %2$s</string><string name="widget_battery_unknown_cd">Battery level unavailable, %1$s</string><string name="widget_battery_charging">charging</string><string name="widget_battery_on_battery">on battery</string>
+    <string name="battery_column_name">Battery column</string><string name="battery_column_description">A vertical dotted battery gauge with percentage and charging status.</string><string name="week_column_name">Week column</string><string name="week_column_description">Seven days stacked vertically, with today highlighted. Uses your chosen week start.</string><string name="widget_size_vertical">1 column × 2 rows</string>
+    <string name="widget_category_time">Time</string><string name="widget_category_battery">Battery</string><string name="widget_category_calendar">Calendar</string><string name="widget_category_device">Device</string><string name="widget_category_productivity">Productivity</string><string name="widget_variant_selector">Widget: %1$s ▾</string>
 </resources>
