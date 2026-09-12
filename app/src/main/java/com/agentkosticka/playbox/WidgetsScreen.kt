@@ -238,6 +238,8 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
                     "habit-tracker" -> {
                         Text(stringResource(R.string.habit_tracker_label), fontFamily = NothingDotFont.family)
                         OutlinedTextField(value = habitState.name, onValueChange = { saveHabit(habitState.copy(name = it.take(24))) }, singleLine = true, modifier = Modifier.fillMaxWidth())
+                        Text(stringResource(R.string.visual), fontFamily = NothingDotFont.family)
+                        SettingChips(HabitGridStyle.entries.toList(), habitState.style, ::habitStyleLabel) { saveHabit(habitState.copy(style = it)) }
                         OutlinedButton(onClick = { val today = now.toLocalDate(); saveHabit(habitState.toggle(today, today)) }, modifier = Modifier.fillMaxWidth()) { Text(stringResource(if (habitState.isDone(now.toLocalDate())) R.string.habit_tracker_done_today else R.string.habit_tracker_mark_today)) }
                         Text(stringResource(R.string.habit_tracker_local_help), color = Muted)
                     }
@@ -279,6 +281,7 @@ fun WidgetsScreen(widgetType: String, onWidgetType: (String) -> Unit, appWidgetI
 @Composable private fun storageDisplayLabel(value: StorageDisplay): String = stringResource(when (value) { StorageDisplay.USED -> R.string.storage_used; StorageDisplay.FREE -> R.string.storage_free })
 @Composable private fun yearDisplayLabel(value: YearDisplay): String = stringResource(when (value) { YearDisplay.ELAPSED -> R.string.year_elapsed; YearDisplay.REMAINING -> R.string.year_remaining })
 @Composable private fun milestoneTargetLabel(value: MilestoneTarget): String = stringResource(when (value) { MilestoneTarget.CUSTOM -> R.string.milestone_custom; MilestoneTarget.WEEKEND -> R.string.milestone_weekend; MilestoneTarget.MONTH_END -> R.string.milestone_month_end; MilestoneTarget.YEAR_END -> R.string.milestone_year_end })
+@Composable private fun habitStyleLabel(value: HabitGridStyle): String = stringResource(when (value) { HabitGridStyle.DOTS -> R.string.habit_style_dots; HabitGridStyle.SQUARES -> R.string.habit_style_squares; HabitGridStyle.RINGS -> R.string.habit_style_rings })
 @Composable private fun tallyStyleLabel(value: TallyStyle): String = stringResource(if (value == TallyStyle.BIG_NUMBER) R.string.tally_style_big else R.string.tally_style_dots)
 @Composable private fun noteStyleLabel(value: PinnedNoteStyle): String = stringResource(when (value) { PinnedNoteStyle.CARD -> R.string.note_style_card; PinnedNoteStyle.TERMINAL -> R.string.note_style_terminal; PinnedNoteStyle.MINIMAL -> R.string.note_style_minimal })
 
