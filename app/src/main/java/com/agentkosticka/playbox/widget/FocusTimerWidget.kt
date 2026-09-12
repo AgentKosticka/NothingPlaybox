@@ -113,16 +113,30 @@ object FocusTimerEngine {
 
     fun reconcile(state: FocusTimerState, nowWall: Long, nowElapsed: Long): FocusTimerState {
         if (!state.phase.running || state.remainingMillis(nowWall, nowElapsed) > 0L) return state
-        return if (state.phase == FocusPhase.FOCUS) {
-            startPhase(
-                state.copy(completedSessions = state.completedSessions + 1),
-                FocusPhase.BREAK,
-                state.breakMinutes * 60_000L,
-                nowWall,
-                nowElapsed,
-            )
+        if (state.phase == FocusPhase.BREAK) return reset(state)
+
+        val completed = state.copy(completedSessions = state.completedSessions + 1).normalized()
+        val overdue = overdueMillis(state, nowWall, nowElapsed)
+        val breakDuration = completed.breakMinutes * 60_000L
+        if (overdue >= breakDuration) return reset(completed)
+
+        return startPhase(
+            completed,
+            FocusPhase.BREAK,
+            breakDuration - overdue,
+            nowWall,
+            nowElapsed,
+        )
+    }
+
+    private fun overdueMillis(state: FocusTimerState, nowWall: Long, nowElapsed: Long): Long {
+        val sameBoot = state.startElapsedMillis > 0L &&
+            nowElapsed >= state.startElapsedMillis &&
+            state.endElapsedMillis >= state.startElapsedMillis
+        return if (sameBoot) {
+            (nowElapsed - state.endElapsedMillis).coerceAtLeast(0L)
         } else {
-            reset(state)
+            (nowWall - state.endWallMillis).coerceAtLeast(0L)
         }
     }
 
