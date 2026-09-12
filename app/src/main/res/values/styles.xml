@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Widget.Playbox.ControlLabel">
+    <style name="Widget.Playbox.ControlLabel" parent="">
         <item name="android:fontFamily">NDot57</item>
         <item name="android:textColor">@color/widget_on_surface</item>
         <item name="android:textSize">@dimen/widget_text_control</item>
