@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<lint>
+    <!--
+      WidgetsScreen explicitly observes LocalConfiguration.current.locales, so configuration
+      changes invalidate this composition before these preview-only resource reads are recomputed.
+      Scope the suppression to this file rather than disabling the rule project-wide.
+    -->
+    <issue id="LocalContextGetResourceValueCall">
+        <ignore path="src/main/java/com/agentkosticka/playbox/WidgetsScreen.kt" />
+    </issue>
+</lint>
