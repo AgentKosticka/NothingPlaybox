@@ -28,7 +28,7 @@
                 android:fontFamily="NDot57"
                 android:text="READ"
                 android:textColor="@color/widget_on_surface"
-                android:textSize="15sp"
+                android:textSize="@dimen/widget_text_title"
                 android:maxLines="1"
                 android:ellipsize="end" />
 
@@ -39,7 +39,7 @@
                 android:fontFamily="NDot57"
                 android:text="SEP · 8 DAYS"
                 android:textColor="@color/widget_on_surface_variant"
-                android:textSize="10sp"
+                android:textSize="@dimen/widget_text_label"
                 android:maxLines="1" />
         </LinearLayout>
 
@@ -50,7 +50,7 @@
             android:fontFamily="NDot57"
             android:text="3 DAYS"
             android:textColor="@color/widget_on_surface_variant"
-            android:textSize="11sp" />
+            android:textSize="@dimen/widget_text_label" />
     </LinearLayout>
 
     <ImageView
@@ -63,11 +63,9 @@
 
     <TextView
         android:id="@+id/habit_tracker_toggle"
+        style="@style/Widget.Playbox.ControlLabel"
         android:layout_width="match_parent"
         android:layout_height="32dp"
         android:gravity="center"
-        android:fontFamily="NDot57"
-        android:text="MARK TODAY"
-        android:textColor="@color/widget_accent"
-        android:textSize="12sp" />
+        android:text="MARK TODAY" />
 </LinearLayout>
