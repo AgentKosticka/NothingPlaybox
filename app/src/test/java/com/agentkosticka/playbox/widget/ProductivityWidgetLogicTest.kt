@@ -43,15 +43,17 @@ class ProductivityWidgetLogicTest {
     }
 
     @Test
-    fun habitTrackerBoundsHistoryAndComputesCurrentStreak() {
+    fun habitTrackerBoundsHistoryComputesCurrentStreakAndKeepsStyle() {
         val today = LocalDate.of(2026, 9, 11)
         val state = HabitTrackerState(
             name = "R".repeat(40),
             completedDays = setOf(today, today.minusDays(1), today.minusDays(3), today.minusDays(500), today.plusDays(1)),
+            style = HabitGridStyle.RINGS,
         ).normalized(today)
         assertEquals(24, state.name.length)
         assertEquals(setOf(today, today.minusDays(1), today.minusDays(3)), state.completedDays)
         assertEquals(2, state.currentStreak(today))
+        assertEquals(HabitGridStyle.RINGS, state.style)
         assertTrue(state.isDone(today))
         assertFalse(state.toggle(today, today).isDone(today))
     }
