@@ -385,9 +385,12 @@ class FocusTimerWidget : InstanceWidgetProvider() {
                 state.completedSessions,
                 state.completedSessions,
             )
-            views.setStyledWidgetBitmap(context, R.id.focus_background, state.style) { palette ->
-                FocusTimerRenderer.render(state, remaining, phaseLabel, sessions, 720, 300, palette)
+            val palette = WidgetPalette.resolve(context, style = state.style)
+            views.setStyledWidgetBitmap(context, R.id.focus_background, state.style) { renderedPalette ->
+                FocusTimerRenderer.render(state, remaining, phaseLabel, sessions, 720, 300, renderedPalette)
             }
+            views.setTextColor(R.id.focus_chronometer, palette.foreground)
+            views.setTextColor(R.id.focus_static_time, palette.foreground)
 
             val running = state.phase.running
             views.setViewVisibility(R.id.focus_chronometer, if (running) View.VISIBLE else View.GONE)
