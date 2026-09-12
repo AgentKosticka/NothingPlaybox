@@ -24,7 +24,7 @@
             android:fontFamily="NDot57"
             android:text="TODAY"
             android:textColor="@color/widget_on_surface"
-            android:textSize="15sp"
+            android:textSize="@dimen/widget_text_title"
             android:maxLines="1"
             android:ellipsize="end" />
 
@@ -35,7 +35,7 @@
             android:fontFamily="NDot57"
             android:text="2/4"
             android:textColor="@color/widget_on_surface_variant"
-            android:textSize="12sp" />
+            android:textSize="@dimen/widget_text_label" />
     </LinearLayout>
 
     <TextView
@@ -47,7 +47,7 @@
         android:fontFamily="NDot57"
         android:text="TAP TO ADD TASKS"
         android:textColor="@color/widget_on_surface_variant"
-        android:textSize="13sp"
+        android:textSize="@dimen/widget_text_body"
         android:visibility="gone" />
 
     <CheckBox
@@ -56,11 +56,12 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:buttonTint="@color/widget_accent"
+        android:button="@drawable/quick_task_check"
+        android:background="@null"
         android:fontFamily="NDot57"
         android:text="Reply to messages"
         android:textColor="@color/widget_on_surface"
-        android:textSize="14sp"
+        android:textSize="@dimen/widget_text_body"
         android:maxLines="1"
         android:ellipsize="end" />
 
@@ -70,11 +71,12 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:buttonTint="@color/widget_accent"
+        android:button="@drawable/quick_task_check"
+        android:background="@null"
         android:fontFamily="NDot57"
         android:text="Pick up groceries"
         android:textColor="@color/widget_on_surface"
-        android:textSize="14sp"
+        android:textSize="@dimen/widget_text_body"
         android:maxLines="1"
         android:ellipsize="end"
         android:checked="true" />
@@ -85,11 +87,12 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:buttonTint="@color/widget_accent"
+        android:button="@drawable/quick_task_check"
+        android:background="@null"
         android:fontFamily="NDot57"
         android:text="Plan tomorrow"
         android:textColor="@color/widget_on_surface"
-        android:textSize="14sp"
+        android:textSize="@dimen/widget_text_body"
         android:maxLines="1"
         android:ellipsize="end" />
 
@@ -99,11 +102,12 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center_vertical"
-        android:buttonTint="@color/widget_accent"
+        android:button="@drawable/quick_task_check"
+        android:background="@null"
         android:fontFamily="NDot57"
         android:text="Charge headphones"
         android:textColor="@color/widget_on_surface"
-        android:textSize="14sp"
+        android:textSize="@dimen/widget_text_body"
         android:maxLines="1"
         android:ellipsize="end"
         android:checked="true" />
