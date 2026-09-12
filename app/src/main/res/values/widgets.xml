@@ -33,12 +33,15 @@
     <string name="focus_phase_ready">Ready</string><string name="focus_phase_focus">Focus</string><string name="focus_phase_break">Break</string><string name="focus_phase_paused">Paused</string>
     <string name="focus_start">START</string><string name="focus_pause">PAUSE</string><string name="focus_resume">RESUME</string><string name="focus_reset">RESET</string><string name="focus_skip">SKIP</string><string name="focus_style">STYLE</string><string name="focus_precise">PRECISE</string>
     <string name="focus_content_description">%1$s timer, %2$s remaining, %3$d completed sessions</string>
+    <string name="focus_timer_gallery_help">Start, pause, reset, skip phases and cycle Playbox appearance directly from the widget. The live countdown is system-driven and does not use a periodic worker.</string>
+    <string name="focus_timer_precise_help">Precise alarm access is optional. Without it, the countdown remains endpoint-based, but Android may delay the phase-change refresh while the phone is idle.</string>
     <plurals name="focus_sessions"><item quantity="one">%d session</item><item quantity="other">%d sessions</item></plurals>
 
     <string name="goal_water">Water</string><string name="goal_read">Reading</string><string name="goal_move">Movement</string><string name="goal_custom">Daily goal</string>
     <string name="goal_unit_glasses">glasses</string><string name="goal_unit_minutes">min</string><string name="goal_unit_units">units</string>
     <string name="goal_mode">MODE</string><string name="goal_look">LOOK</string>
     <string name="goal_content_description">%1$s: %2$d of %3$d %4$s, %5$d day streak</string>
+    <string name="goal_tracker_gallery_help">Use −/+ to log progress, MODE to switch presets and LOOK to cycle ring, bar and dots plus Playbox appearance.</string>
 
     <string name="widget_day_progress_cd">%1$d percent of today elapsed</string><string name="widget_battery_percent_cd">Battery %1$d percent, %2$s</string><string name="widget_battery_unknown_cd">Battery level unavailable, %1$s</string><string name="widget_battery_charging">charging</string><string name="widget_battery_on_battery">on battery</string>
     <string name="battery_column_name">Battery column</string><string name="battery_column_description">A vertical dotted battery gauge with percentage and charging status.</string><string name="week_column_name">Week column</string><string name="week_column_description">Seven days stacked vertically, with today highlighted. Uses your chosen week start.</string><string name="widget_size_vertical">1 column × 2 rows</string>
