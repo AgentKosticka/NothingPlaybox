@@ -8,7 +8,7 @@ espressoCore = "3.7.0"
 lifecycle = "2.11.0"
 activityCompose = "1.13.0"
 composeBom = "2026.08.00"
-work = "2.11.2"
+work = "2.12.0"
 
 [libraries]
 androidx-work = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "work" }
